@@ -488,7 +488,7 @@ function buildSystemPrompt(body: GeneratePackBody) {
 
   return [
     `You generate Irish primary school reading packs.`,
-    `Stage: ${stage}. Class: ${klass}.`,
+    `CEFR: ${cefrLevel} (legacy stage band ${stage}). Class: ${klass}.`,
     guards.map((g) => `- ${g}`).join("\n"),
     plcBits.length ? `\nCurriculum target:\n${plcBits.map((p) => `- ${p}`).join("\n")}` : "",
     contextBits.length ? `\nTeacher context:\n${contextBits.map((c) => `- ${c}`).join("\n")}` : "",
@@ -505,7 +505,7 @@ function buildUserInstruction(body: GeneratePackBody, primaryTextHint: string) {
   return [
     `Create a reading pack.`,
     `Title: ${body.title || "Reading Pack"}`,
-    `Stage: ${stage}`,
+    `CEFR: ${cefrLevel} (legacy stage band ${stage})`,
     `Class: ${body.schoolClass ?? 3}`,
 
     `\nPrimary material:\n${primaryTextHint}`,
@@ -548,8 +548,8 @@ async function callOpenAIResponses(payload: any) {
 }
 
 /* ---------------- Route ---------------- */
-
-export async function POST(req: Request) {
+import { parseCefrLevel, cefrToStageBand } from "../../../../lib/cefr";
+(req: Request) {
   try {
     const rawBody = await req.json();
     const body = normalizeTeacherRequest(rawBody);
@@ -694,4 +694,5 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
+
 
