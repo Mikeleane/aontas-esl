@@ -1,0 +1,26 @@
+# --- Next.js / Node ---
+node_modules/
+.next/
+out/
+dist/
+.turbo/
+.vercel/
+coverage/
+*.log
+.DS_Store
+
+# --- Env files ---
+.env.local
+.env.*.local
+
+# --- Local backups / patches / zips ---
+*.zip
+_patch/
+_patch_backups/
+_ui_backup_*/
+.wordiness_backups/
+PATCH_NOTES.txt
+
+# --- Temporary / backup configs ---
+*.bak_*
+tsconfig.json.bak*

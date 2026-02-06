@@ -1,0 +1,740 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Wordiness: Confusables Hunt</title>
+  <style>
+    :root{
+      --bg:#070a12;
+      --panel:rgba(255,255,255,.06);
+      --stroke:rgba(255,255,255,.12);
+      --text:rgba(238,242,255,.92);
+      --muted:rgba(238,242,255,.70);
+      --good:rgba(34,197,94,.95);
+      --bad:rgba(239,68,68,.92);
+      --tap:46px;
+      --r:18px;
+      --primary:rgba(34,197,94,.22);
+      --primaryStroke:rgba(34,197,94,.55);
+      --shadow:rgba(0,0,0,.38);
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background:
+        radial-gradient(1200px 700px at 20% -10%, rgba(99,102,241,.24), transparent 55%),
+        radial-gradient(900px 600px at 90% 10%, rgba(56,189,248,.18), transparent 55%),
+        var(--bg);
+      color:var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      min-height:100dvh;
+      padding:16px 12px calc(92px + env(safe-area-inset-bottom,0px));
+    }
+    .wrap{max-width:1100px;margin:0 auto;}
+    header{
+      display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+      margin-bottom:12px;
+    }
+    .brand{
+      display:flex;gap:10px;align-items:center;
+      padding:10px 12px;border:1px solid var(--stroke);
+      background:linear-gradient(to bottom, rgba(255,255,255,.07), rgba(255,255,255,.03));
+      border-radius:20px;
+      box-shadow:0 18px 50px var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+    .brand img{width:34px;height:34px;border-radius:10px;object-fit:contain}
+    h1{margin:0;font-size:18px;letter-spacing:.2px}
+    .sub{margin:2px 0 0;color:var(--muted);font-size:13px;line-height:1.35}
+    .panel{
+      border:1px solid var(--stroke);
+      background:var(--panel);
+      border-radius:22px;
+      padding:14px;
+      box-shadow:0 24px 70px var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    /* GOAL banner */
+    .goal{
+      display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(0,0,0,.18);
+      border-radius:18px;
+      padding:12px 12px;
+      margin-bottom:12px;
+    }
+    .goal .left{min-width:240px;flex:1}
+    .goalTitle{font-weight:900;font-size:15px;letter-spacing:.25px;margin:0 0 6px}
+    .goalText{margin:0;color:var(--muted);font-size:13px;line-height:1.35}
+    .targetsBar{
+      display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:flex-end;
+    }
+    .targetChip{
+      display:inline-flex;align-items:center;justify-content:center;gap:8px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.18);
+      background:rgba(255,255,255,.06);
+      padding:8px 10px;
+      min-height:40px;
+      font-weight:900;
+      letter-spacing:.6px;
+    }
+    .targetChip b{font-size:18px;line-height:1}
+    .mini{
+      color:var(--muted);
+      font-weight:700;
+      letter-spacing:.1px;
+      font-size:12px;
+    }
+
+    .controls{
+      display:grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap:10px;
+      margin-bottom:12px;
+    }
+    .control{
+      grid-column: span 6;
+      border:1px solid var(--stroke);
+      background:rgba(0,0,0,.18);
+      border-radius:16px;
+      padding:10px 10px;
+    }
+    .control label{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13px;color:var(--muted)}
+    .control input[type="range"]{width:100%}
+    .row{
+      display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+      padding-top:6px;
+    }
+
+    button, .chip, select{
+      min-height:var(--tap);
+      border-radius:999px;
+      border:1px solid var(--stroke);
+      background:rgba(255,255,255,.06);
+      color:var(--text);
+      padding:10px 12px;
+      font-weight:750;
+      cursor:pointer;
+      user-select:none;
+      touch-action:manipulation;
+    }
+    select{padding-right:34px}
+    button:hover{background:rgba(255,255,255,.09)}
+    .chip{
+      font-weight:850;
+      background:rgba(0,0,0,.22);
+    }
+
+    .btnPrimary{
+      border:1px solid var(--primaryStroke);
+      background:linear-gradient(to bottom, rgba(34,197,94,.22), rgba(34,197,94,.14));
+      box-shadow:0 14px 40px rgba(34,197,94,.12);
+    }
+    .btnPrimary:active{transform:translateY(1px)}
+    .btnDanger{
+      border:1px solid rgba(239,68,68,.45);
+      background:rgba(239,68,68,.10);
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap:10px;
+    }
+    @media (max-width:900px){ .grid{grid-template-columns: repeat(4, 1fr);} }
+    @media (max-width:620px){ .grid{grid-template-columns: repeat(2, 1fr);} }
+
+    .word{
+      min-height:56px;
+      border-radius:16px;
+      border:1px solid var(--stroke);
+      background:rgba(0,0,0,.18);
+      padding:12px 12px;
+      display:flex;align-items:center;justify-content:center;
+      text-align:center;
+      font-size:18px;
+      font-weight:900;
+      letter-spacing:.35px;
+      cursor:pointer;
+      user-select:none;
+      position:relative;
+      overflow:hidden;
+    }
+    .word.small{font-size:16px}
+    .word.good{outline:3px solid rgba(34,197,94,.55); background:rgba(34,197,94,.10)}
+    .word.bad{outline:3px solid rgba(239,68,68,.45); background:rgba(239,68,68,.10)}
+    .mark{
+      text-decoration: underline;
+      text-decoration-thickness: 3px;
+      text-underline-offset: 3px;
+    }
+
+    .footer{
+      display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;
+      margin-top:12px;
+      color:var(--muted);
+      font-size:13px;
+    }
+    .stat{display:flex;gap:10px;flex-wrap:wrap}
+    .stat span{
+      padding:6px 10px;border:1px solid var(--stroke);
+      border-radius:999px;background:rgba(0,0,0,.18)
+    }
+
+    /* Sticky action bar (tablet-friendly) */
+    .sticky{
+      position:fixed;
+      left:0;right:0;bottom:0;
+      padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));
+      background:linear-gradient(to top, rgba(7,10,18,.92), rgba(7,10,18,.35));
+      backdrop-filter: blur(10px);
+      border-top:1px solid rgba(255,255,255,.10);
+    }
+    .stickyInner{
+      max-width:1100px;margin:0 auto;
+      display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;
+    }
+    .bigStart{
+      flex:1;
+      min-width:240px;
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:center;
+      font-size:16px;
+      font-weight:950;
+      letter-spacing:.3px;
+    }
+    .successToast{
+      flex:2;
+      min-width:260px;
+      padding:10px 12px;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(0,0,0,.18);
+      color:var(--muted);
+      font-weight:800;
+    }
+    .successToast b{color:var(--text)}
+    .hidden{display:none !important;}
+
+    /* End panel */
+    .overlay{
+      position:fixed; inset:0;
+      display:none;
+      align-items:center; justify-content:center;
+      background:rgba(0,0,0,.45);
+      backdrop-filter: blur(6px);
+      padding:18px 12px;
+    }
+    .overlay.show{display:flex;}
+    .modal{
+      max-width:520px;width:100%;
+      border-radius:22px;
+      border:1px solid rgba(255,255,255,.16);
+      background:rgba(10,14,26,.88);
+      box-shadow:0 30px 90px rgba(0,0,0,.55);
+      padding:14px;
+    }
+    .modal h2{margin:0 0 8px;font-size:18px;letter-spacing:.2px}
+    .modal p{margin:0 0 10px;color:var(--muted);line-height:1.35}
+    .modal .row{justify-content:flex-end}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <img id="crest" src="/wordiness/crest.png" alt="Crest" />
+        <div>
+          <h1>Confusables Hunt</h1>
+          <div class="sub">
+            Dyslexia support game: some letters look similar (mirror letters). Scan like reading and tap the correct words.
+          </div>
+        </div>
+      </div>
+      <div class="brand" style="align-items:flex-end">
+        <div style="text-align:right">
+          <div class="sub">Wordiness</div>
+          <div style="font-weight:900;font-size:14px">Focus Game</div>
+        </div>
+      </div>
+    </header>
+
+    <div class="panel">
+      <div class="goal">
+        <div class="left">
+          <div class="goalTitle">GOAL</div>
+          <p class="goalText">
+            Tap the words that contain the <b>target letters</b> (common confusing letter shapes for dyslexic readers).
+            Press <b>START ROUND</b> to begin.
+          </p>
+        </div>
+        <div class="targetsBar">
+          <span class="mini">Target set</span>
+          <select id="setSelect" aria-label="Choose target letter set"></select>
+          <span id="targetsChip" class="targetChip" aria-label="Current targets"><b>p b d q</b></span>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="control" style="grid-column: span 6;">
+          <label>Mode <span id="modeLabel" class="chip">Supported</span></label>
+          <div class="row">
+            <button id="modeStandard" type="button">Standard</button>
+            <button id="modeSupported" type="button">Supported</button>
+            <span class="chip">Supported = fewer words + more time</span>
+          </div>
+        </div>
+
+        <div class="control" style="grid-column: span 6;">
+          <label>Round length <span id="timeLabel" class="chip">35s</span></label>
+          <input id="timeRange" type="range" min="10" max="90" step="5" value="35" />
+          <div class="row">
+            <button id="startBtnTop" type="button" class="btnPrimary">START ROUND</button>
+            <button id="stopBtnTop" type="button" class="btnDanger">Stop</button>
+            <button id="newSetBtn" type="button">New words</button>
+          </div>
+        </div>
+
+        <div class="control" style="grid-column: span 6;">
+          <label>Words on screen <span id="countLabel" class="chip">20</span></label>
+          <input id="countRange" type="range" min="8" max="42" step="2" value="20" />
+          <div class="row">
+            <button id="rowScanBtn" type="button">Row Scan: Off</button>
+            <button id="hintBtn" type="button">Highlight targets: Off</button>
+          </div>
+        </div>
+
+        <div class="control" style="grid-column: span 6;">
+          <label>Speech and feedback <span class="chip">optional</span></label>
+          <div class="row">
+            <button id="ttsBtn" type="button">TTS: Off</button>
+            <span class="chip">Targets found: <b id="foundTargets">0</b>/<b id="totalTargets">0</b></span>
+            <span class="chip">Accuracy: <b id="accuracy">0%</b></span>
+          </div>
+          <div class="sub" style="margin-top:6px">
+            Tip: TTS reads the word you tap (helps confirm decoding without pressure).
+          </div>
+        </div>
+      </div>
+
+      <div id="grid" class="grid" aria-label="Word grid"></div>
+
+      <div class="footer">
+        <div class="stat">
+          <span>Time: <b id="timeLeft">Ready</b></span>
+          <span>Score: <b id="score">0</b></span>
+          <span>Correct: <b id="correct">0</b></span>
+          <span>Misses: <b id="misses">0</b></span>
+        </div>
+        <div class="stat">
+          <span>Success = find most targets, not perfection.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sticky bar -->
+  <div class="sticky" role="region" aria-label="Round controls">
+    <div class="stickyInner">
+      <button id="startBtn" type="button" class="btnPrimary bigStart">START ROUND</button>
+      <div id="toast" class="successToast">
+        <b>Ready:</b> Choose a target set, then press START. Tap words that contain those letters.
+      </div>
+      <button id="stopBtn" type="button" class="btnDanger">Stop</button>
+    </div>
+  </div>
+
+  <!-- End summary -->
+  <div id="overlay" class="overlay" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Round summary">
+      <h2 id="endTitle">Round complete</h2>
+      <p id="endText"></p>
+      <div class="row">
+        <button id="playAgain" type="button" class="btnPrimary">Play again</button>
+        <button id="closeEnd" type="button">Close</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  const grid = document.getElementById('grid');
+  const timeLeftEl = document.getElementById('timeLeft');
+  const scoreEl = document.getElementById('score');
+  const correctEl = document.getElementById('correct');
+  const missesEl = document.getElementById('misses');
+
+  const foundTargetsEl = document.getElementById('foundTargets');
+  const totalTargetsEl = document.getElementById('totalTargets');
+  const accuracyEl = document.getElementById('accuracy');
+
+  const modeLabel = document.getElementById('modeLabel');
+  const timeRange = document.getElementById('timeRange');
+  const timeLabel = document.getElementById('timeLabel');
+  const countRange = document.getElementById('countRange');
+  const countLabel = document.getElementById('countLabel');
+
+  const ttsBtn = document.getElementById('ttsBtn');
+  const rowScanBtn = document.getElementById('rowScanBtn');
+  const hintBtn = document.getElementById('hintBtn');
+
+  const targetsChip = document.getElementById('targetsChip');
+  const setSelect = document.getElementById('setSelect');
+
+  const startBtn = document.getElementById('startBtn');
+  const startBtnTop = document.getElementById('startBtnTop');
+  const stopBtn = document.getElementById('stopBtn');
+  const stopBtnTop = document.getElementById('stopBtnTop');
+  const newSetBtn = document.getElementById('newSetBtn');
+
+  const toast = document.getElementById('toast');
+
+  const overlay = document.getElementById('overlay');
+  const endTitle = document.getElementById('endTitle');
+  const endText = document.getElementById('endText');
+  const playAgain = document.getElementById('playAgain');
+  const closeEnd = document.getElementById('closeEnd');
+
+  // Confusable sets: dyslexia-friendly options
+  const sets = [
+    { id:"bdpq", name:"b d p q (mirror set)", letters:["b","d","p","q"] },
+    { id:"bd",   name:"b d (mirror pair)",   letters:["b","d"] },
+    { id:"pq",   name:"p q (mirror pair)",   letters:["p","q"] },
+    { id:"mn",   name:"m n (similar arches)",letters:["m","n"] },
+    { id:"un",   name:"u n (similar shape)", letters:["u","n"] },
+    { id:"ilt",  name:"i l t (tall sticks)", letters:["i","l","t"] },
+    { id:"co",   name:"c o (round letters)", letters:["c","o"] },
+    { id:"sz",   name:"s z (zig-zag)",       letters:["s","z"] }
+  ];
+
+  // word pools
+  const easyWords = [
+    "bed","bad","pad","pig","big","dig","dip","queen","back","duck","drop","bake","pupil","pebble","quad","quack",
+    "paper","rabbit","book","bubble","bread","panda","pocket","badge","puddle","bucket","dragon","moon","noon",
+    "mango","name","unit","under","coconut","cookie","zoo","sun","silk","tile","little"
+  ];
+  const hardWords = [
+    "quadrilateral","disobedient","backpack","bandwidth","prodigious","debunked","equilibrium",
+    "ambidextrous","suboptimal","pseudonym","quartermaster","breadcrumb","misplaced","backdrop",
+    "doppelganger","biquadratic","compoundable","quadrupled","debriefing","commotion","connection","selection"
+  ];
+  const distractors = [
+    "same","time","rain","train","stone","home","school","lunch","play","garden","winter","summer","music","story","friend","family",
+    "castle","forest","river","mountain","teacher","classroom","library","planet","comet","orange","yellow","window","kitchen","picture"
+  ];
+
+  let targets = sets[0].letters.slice();
+  let speakOnClick = false;
+  let rowScan = false;
+  let hintMode = false;
+  let running = false;
+  let timer = null;
+  let endAt = 0;
+
+  let score = 0, correct = 0, misses = 0;
+  let foundTargets = 0, totalTargets = 0;
+
+  function shuffle(a){
+    for(let i=a.length-1;i>0;i--){
+      const j=(Math.random()*(i+1))|0;
+      [a[i],a[j]]=[a[j],a[i]];
+    }
+    return a;
+  }
+
+  function containsAnyTarget(w){
+    const s = String(w||"").toLowerCase();
+    return targets.some(ch => s.includes(ch));
+  }
+
+  function renderWordHtml(word){
+    const w = String(word||"");
+    if(!hintMode) return escapeHtml(w);
+    const lower = w.toLowerCase();
+    let out = "";
+    for(let i=0;i<w.length;i++){
+      const ch = w[i];
+      const is = targets.includes(lower[i]);
+      out += is ? '<span class="mark">'+escapeHtml(ch)+'</span>' : escapeHtml(ch);
+    }
+    return out;
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  function speak(text){
+    try{
+      if(!window.speechSynthesis) return;
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = 0.95;
+      u.pitch = 1.0;
+      window.speechSynthesis.speak(u);
+    }catch(e){}
+  }
+
+  function updateLabels(){
+    timeLabel.textContent = timeRange.value + "s";
+    countLabel.textContent = countRange.value;
+    targetsChip.innerHTML = "<b>" + targets.join(" ") + "</b>";
+  }
+
+  function updateProgress(){
+    foundTargetsEl.textContent = String(foundTargets);
+    totalTargetsEl.textContent = String(totalTargets);
+    const attempts = correct + misses;
+    const acc = attempts ? Math.round((correct/attempts)*100) : 0;
+    accuracyEl.textContent = acc + "%";
+  }
+
+  function updateToast(msg){
+    toast.innerHTML = msg;
+  }
+
+  function pickWords(n){
+    let pool = [];
+    // keep it classroom friendly
+    pool = easyWords.concat(hardWords.slice(0, 12)).concat(distractors);
+
+    // ensure targets appear (about 40%)
+    const targetPool = pool.filter(containsAnyTarget);
+    const nonPool = pool.filter(w => !containsAnyTarget(w));
+
+    const targetCount = Math.max(3, Math.round(n * 0.42));
+    const nonCount = Math.max(0, n - targetCount);
+
+    const picked = [];
+    shuffle(targetPool.slice()).slice(0, targetCount).forEach(w => picked.push(w));
+    shuffle(nonPool.slice()).slice(0, nonCount).forEach(w => picked.push(w));
+    return shuffle(picked);
+  }
+
+  function buildGrid(){
+    const n = +countRange.value;
+    const words = pickWords(n);
+    grid.innerHTML = "";
+
+    totalTargets = 0;
+    foundTargets = 0;
+
+    words.forEach((w) => {
+      const el = document.createElement('div');
+      el.className = 'word' + (String(w).length>9 ? ' small':'' );
+      el.dataset.word = w;
+      const isT = containsAnyTarget(w);
+      el.dataset.target = isT ? "1" : "0";
+      el.dataset.hit = "0";
+      el.setAttribute('role','button');
+      el.setAttribute('tabindex','0');
+      el.innerHTML = renderWordHtml(w);
+
+      if(isT) totalTargets++;
+
+      el.addEventListener('click', () => onWordClick(el));
+      el.addEventListener('keydown', (e) => {
+        if(e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onWordClick(el); }
+      });
+
+      grid.appendChild(el);
+    });
+
+    grid.style.gap = rowScan ? "12px" : "10px";
+    updateProgress();
+
+    updateToast("<b>Ready:</b> Press START. Tap words that contain: <b>" + targets.join(" ") + "</b>.");
+  }
+
+  function onWordClick(el){
+    const w = el.dataset.word || el.textContent;
+    if(speakOnClick) speak(w);
+
+    if(!running) return;
+    if(el.dataset.hit === "1") return;
+    el.dataset.hit = "1";
+
+    if(el.dataset.target === "1"){
+      correct++;
+      score += 10;
+      foundTargets++;
+      el.classList.add('good');
+      updateToast("<b>Nice.</b> Targets found: <b>" + foundTargets + "/" + totalTargets + "</b>");
+    }else{
+      misses++;
+      score = Math.max(0, score - 6);
+      el.classList.add('bad');
+      updateToast("Keep scanning. Look for: <b>" + targets.join(" ") + "</b>");
+    }
+    updateStats();
+  }
+
+  function updateStats(){
+    scoreEl.textContent = String(score);
+    correctEl.textContent = String(correct);
+    missesEl.textContent = String(misses);
+    updateProgress();
+  }
+
+  function stopRound(showSummary){
+    if(timer){ clearInterval(timer); timer = null; }
+    running = false;
+    timeLeftEl.textContent = "Stopped";
+    if(showSummary) showEndSummary();
+  }
+
+  function startRound(){
+    running = true;
+    score = 0; correct = 0; misses = 0;
+    foundTargets = 0;
+
+    updateStats();
+    // clear feedback classes
+    Array.from(grid.children).forEach(el => { el.classList.remove('good','bad'); el.dataset.hit="0"; });
+
+    const secs = +timeRange.value;
+    endAt = Date.now() + secs*1000;
+    tick();
+    if(timer) clearInterval(timer);
+    timer = setInterval(tick, 150);
+
+    updateToast("<b>Go!</b> Tap words with: <b>" + targets.join(" ") + "</b>");
+  }
+
+  function tick(){
+    const ms = endAt - Date.now();
+    const s = Math.max(0, Math.ceil(ms/1000));
+    timeLeftEl.textContent = running ? (s + "s") : "Ready";
+    if(running && ms <= 0){
+      running = false;
+      clearInterval(timer);
+      timer = null;
+      timeLeftEl.textContent = "Done";
+      showEndSummary();
+    }
+  }
+
+  function showEndSummary(){
+    const attempts = correct + misses;
+    const acc = attempts ? Math.round((correct/attempts)*100) : 0;
+
+    let title = "Round complete";
+    let msg = "Targets found: " + foundTargets + " / " + totalTargets + ". Accuracy: " + acc + "%. Score: " + score + ".";
+
+    if(totalTargets > 0 && foundTargets === totalTargets){
+      title = "Perfect!";
+      msg = "You found every target word. Targets: " + foundTargets + "/" + totalTargets + ". Accuracy: " + acc + "%. Score: " + score + ".";
+    } else if(totalTargets > 0 && foundTargets >= Math.max(1, Math.round(totalTargets*0.75))){
+      title = "Great scanning!";
+      msg = "Strong round. Targets: " + foundTargets + "/" + totalTargets + ". Accuracy: " + acc + "%. Score: " + score + ".";
+    } else {
+      title = "Good effort";
+      msg = "Try again and scan left to right. Targets: " + foundTargets + "/" + totalTargets + ". Accuracy: " + acc + "%. Score: " + score + ".";
+    }
+
+    endTitle.textContent = title;
+    endText.textContent = msg;
+    overlay.classList.add('show');
+    overlay.setAttribute('aria-hidden','false');
+  }
+
+  function closeSummary(){
+    overlay.classList.remove('show');
+    overlay.setAttribute('aria-hidden','true');
+  }
+
+  function setMode(mode){
+    if(mode === 'supported'){
+      modeLabel.textContent = "Supported";
+      timeRange.value = Math.max(40, +timeRange.value);
+      countRange.value = Math.min(20, +countRange.value);
+      hintMode = true;
+      hintBtn.textContent = "Highlight targets: On";
+    }else{
+      modeLabel.textContent = "Standard";
+      hintMode = false;
+      hintBtn.textContent = "Highlight targets: Off";
+    }
+    updateLabels();
+    buildGrid();
+  }
+
+  function populateSets(){
+    setSelect.innerHTML = "";
+    sets.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s.id;
+      opt.textContent = s.name;
+      setSelect.appendChild(opt);
+    });
+    setSelect.value = "bdpq";
+  }
+
+  function applySet(id){
+    const s = sets.find(x => x.id === id) || sets[0];
+    targets = s.letters.slice();
+    updateLabels();
+    buildGrid();
+  }
+
+  // wiring
+  document.getElementById('modeStandard').addEventListener('click', () => setMode('standard'));
+  document.getElementById('modeSupported').addEventListener('click', () => setMode('supported'));
+
+  startBtn.addEventListener('click', () => { closeSummary(); startRound(); });
+  startBtnTop.addEventListener('click', () => { closeSummary(); startRound(); });
+
+  stopBtn.addEventListener('click', () => stopRound(false));
+  stopBtnTop.addEventListener('click', () => stopRound(false));
+
+  newSetBtn.addEventListener('click', () => { stopRound(false); buildGrid(); });
+
+  timeRange.addEventListener('input', () => { updateLabels(); });
+  countRange.addEventListener('input', () => { updateLabels(); buildGrid(); });
+
+  ttsBtn.addEventListener('click', () => {
+    speakOnClick = !speakOnClick;
+    ttsBtn.textContent = "TTS: " + (speakOnClick ? "On" : "Off");
+  });
+
+  rowScanBtn.addEventListener('click', () => {
+    rowScan = !rowScan;
+    rowScanBtn.textContent = "Row Scan: " + (rowScan ? "On" : "Off");
+    buildGrid();
+  });
+
+  hintBtn.addEventListener('click', () => {
+    hintMode = !hintMode;
+    hintBtn.textContent = "Highlight targets: " + (hintMode ? "On" : "Off");
+    buildGrid();
+  });
+
+  setSelect.addEventListener('change', () => {
+    stopRound(false);
+    applySet(setSelect.value);
+  });
+
+  playAgain.addEventListener('click', () => { closeSummary(); startRound(); });
+  closeEnd.addEventListener('click', () => closeSummary());
+  overlay.addEventListener('click', (e) => { if(e.target === overlay) closeSummary(); });
+
+  // crest fallback
+  const crest = document.getElementById('crest');
+  crest.addEventListener('error', () => { crest.src = "/wordiness/crest.png"; }, { once:true });
+
+  populateSets();
+  applySet("bdpq");
+  setMode("supported"); // sensible default for dyslexia
+})();
+</script>
+
+<!-- wordiness-seed-bridge-v1 -->
+<script src="wordiness-seed-bridge.js"></script>
+</body>
+</html>

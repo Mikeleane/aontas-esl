@@ -1,0 +1,161 @@
+@import "tailwindcss";
+
+/* ==========================================
+   Aontas 10 - Kilgobnet N.S. (Light, crisp)
+   Crest palette (approx):
+   Blue:  #65CBEE
+   Navy:  #2C3669
+   Green: #179748
+   Deep:  #0C6831
+   Gold:  #F7DB1A
+   ========================================== */
+
+:root{
+  --kns-blue:#65CBEE;
+  --kns-navy:#2C3669;
+  --kns-green:#179748;
+  --kns-green-dark:#0C6831;
+  --kns-gold:#F7DB1A;
+
+  --ink:#0b1621;
+  --muted:#4b5b6a;
+
+  --panel:#ffffff;
+  --border:#d7e3ee;
+  --shadow:0 10px 30px rgba(11,22,33,.10);
+  --shadow-soft:0 8px 18px rgba(11,22,33,.08);
+
+  --bg1:#f6fbff;
+  --bg2:#fffaf0;
+}
+
+html,body{
+  height:100%;
+}
+
+body{
+  margin:0;
+  color:var(--ink);
+  background:
+    radial-gradient(900px 600px at 15% 10%, rgba(101,203,238,.35), transparent 55%),
+    radial-gradient(900px 600px at 90% 0%, rgba(247,219,26,.18), transparent 60%),
+    linear-gradient(135deg, var(--bg1), var(--bg2));
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji","Segoe UI Emoji";
+  line-height:1.35;
+}
+
+a{ color:inherit; }
+
+main{
+  max-width:1100px;
+  margin:0 auto;
+  padding:22px 16px 64px;
+}
+
+/* Make the top area feel like an app, not a webpage */
+header{
+  display:flex;
+  align-items:center;
+  gap:16px;
+  padding:14px 16px;
+  background:rgba(255,255,255,.70);
+  border:1px solid rgba(215,227,238,.85);
+  border-radius:16px;
+  box-shadow:var(--shadow-soft);
+  backdrop-filter: blur(10px);
+}
+
+header img{
+  width:92px;
+  height:auto;
+  border-radius:14px;
+  background:#fff;
+  border:1px solid rgba(215,227,238,.95);
+  box-shadow:0 6px 14px rgba(11,22,33,.12);
+}
+
+h1{
+  font-size:clamp(26px, 3.2vw, 40px);
+  margin:0;
+  letter-spacing:-.02em;
+}
+
+header p{
+  margin:.25rem 0 0 0;
+  color:var(--muted);
+}
+
+/* Global form polish (works even if the TSX has almost no classNames) */
+label{
+  font-weight:700;
+  color:var(--ink);
+}
+
+input, select, textarea{
+  width:100%;
+  box-sizing:border-box;
+  padding:10px 12px;
+  border-radius:12px;
+  border:1px solid var(--border);
+  background:rgba(255,255,255,.92);
+  color:var(--ink);
+  font-size:16px;
+  outline:none;
+  box-shadow: 0 1px 0 rgba(11,22,33,.02);
+}
+
+textarea{
+  min-height:140px;
+  resize:vertical;
+}
+
+input:focus, select:focus, textarea:focus{
+  border-color: rgba(44,54,105,.65);
+  box-shadow: 0 0 0 4px rgba(101,203,238,.25);
+}
+
+button{
+  appearance:none;
+  border:none;
+  border-radius:12px;
+  padding:10px 14px;
+  font-weight:800;
+  font-size:15px;
+  cursor:pointer;
+  color:#fff;
+  background: linear-gradient(180deg, var(--kns-green), var(--kns-green-dark));
+  box-shadow: 0 10px 18px rgba(12,104,49,.22);
+}
+
+button:hover{ filter:brightness(1.02); }
+button:active{ transform: translateY(1px); }
+
+button:disabled{
+  cursor:not-allowed;
+  opacity:.55;
+  box-shadow:none;
+  transform:none;
+}
+
+/* Make secondary-ish buttons readable if your UI already has variants */
+button.secondary, .btn-secondary button{
+  background:rgba(255,255,255,.92);
+  color:var(--ink);
+  border:1px solid var(--border);
+  box-shadow: 0 8px 14px rgba(11,22,33,.08);
+}
+
+/* Panels: if your UI uses <section> blocks, they'll instantly look "app-like" */
+section{
+  background:rgba(255,255,255,.72);
+  border:1px solid rgba(215,227,238,.90);
+  border-radius:16px;
+  padding:14px;
+  box-shadow:var(--shadow-soft);
+  backdrop-filter: blur(10px);
+}
+
+/* Small helper text */
+small, .hint{
+  color:var(--muted);
+}

@@ -1,0 +1,55 @@
+{
+  "library": "H5P.DragText 1.10",
+  "params": {
+    "taskDescription": "<p><strong>Drag the words into the correct order.</strong></p>\n<p>Tip: read the whole sentence first, then build it left → right.</p>\n",
+    "overallFeedback": [
+      {
+        "from": 0,
+        "to": 50,
+        "feedback": "Have another go — focus on the first word and punctuation clues."
+      },
+      {
+        "from": 51,
+        "to": 85,
+        "feedback": "Nearly there. Check word order and small grammar words."
+      },
+      {
+        "from": 86,
+        "to": 100,
+        "feedback": "Excellent — clean word order!"
+      }
+    ],
+    "checkAnswer": "Check",
+    "tryAgain": "Try again",
+    "showSolution": "Show solution",
+    "dropZoneIndex": "Drop Zone @index.",
+    "empty": "Drop Zone @index is empty.",
+    "contains": "Drop Zone @index contains draggable @draggable.",
+    "ariaDraggableIndex": "@index of @count draggables.",
+    "tipLabel": "Show tip",
+    "correctText": "Correct!",
+    "incorrectText": "Incorrect!",
+    "resetDropTitle": "Reset drop",
+    "resetDropDescription": "Are you sure you want to reset this drop zone?",
+    "grabbed": "Draggable is grabbed.",
+    "cancelledDragging": "Cancelled dragging.",
+    "correctAnswer": "Correct answer:",
+    "feedbackHeader": "Feedback",
+    "behaviour": {
+      "enableRetry": true,
+      "enableSolutionsButton": true,
+      "enableCheckButton": true,
+      "instantFeedback": false
+    },
+    "scoreBarLabel": "You got :num out of :total points",
+    "a11yCheck": "Check the answers. The responses will be marked as correct, incorrect, or unanswered.",
+    "a11yShowSolution": "Show the solution. The task will be marked with its correct solution.",
+    "a11yRetry": "Retry the task. Reset all responses and start the task over again.",
+    "textField": "*Tayto* *crisps* *are* *the* *best* *snack* *you* *can* *choose*!\n\n*They* *are* *made* *in* *Ireland* *and* *have* *a* *special* *Cheese* & *Onion* *flavor* *that* *everyone* *loves*.\n\n*When* *you* *eat* *Tayto*, *you* *get* *a* *crunchy*, *tasty* *treat* *that* *is* *perfect* *for* *sharing* *with* *friends* *or* *enjoying* *on* *your* *own*.\n\n*Tayto* *has* *been* *a* *favorite* *for* *many* *years* *because* *it* *uses* *real* *potatoes* *and* *a* *secret* *recipe* *that* *makes* *its* *crisps* *unique*.\n\n*Choosing* *Tayto* *means* *you* *support* *Irish* *food* *and* *enjoy* *a* *snack* *full* *of* *flavor*.\n\n*So* *next* *time* *you* *want* *a* *crisp*, *pick* *Tayto* *for* *the* *best* *taste* *and* *quality*!"
+  },
+  "metadata": {
+    "title": "Reading Pack — Word order",
+    "license": "U",
+    "defaultLanguage": "en"
+  }
+}
