@@ -1,7 +1,8 @@
-"use client";
+﻿"use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import ReadingPackApp, { type ReadingPackData } from "./_features/reading/ReadingPackApp";
+import { CEFR_LEVELS, type CefrLevel, parseCefrLevel, cefrToStageBand, stageBandToCefr } from "../lib/cefr";
 
 type InputKind = "link" | "text" | "paste" | "upload";
 
@@ -14,7 +15,8 @@ type MaterialInput =
 type TeacherRequest = {
   meta: {
     schoolClass?: number; // 1-6
-    stage?: number; // 1-4
+    cefrLevel?: CefrLevel; // A1-C2
+    stage?: number; // legacy band (1-4)
     titleHint?: string;
     allowLocalNames?: boolean;
     pilotMode?: boolean;
@@ -30,7 +32,7 @@ type TeacherRequest = {
 
 const API_URL = "/api/reading/generate-pack";
 
-// From your spec (trimmed to the practical “teacher UI” set)
+// From your spec (trimmed to the practical â€œteacher UIâ€ set)
 const TEXT_TYPES = [
   "Narrative",
   "Recount",
@@ -48,7 +50,7 @@ const PURPOSES = [
   "Comprehension (literal + inferential)",
   "Vocabulary (tier 2/3 words)",
   "Fluency (pace, expression)",
-  "Author’s craft (structure, language)",
+  "Authorâ€™s craft (structure, language)",
   "Critical thinking (bias, viewpoint, evidence)",
   "Writing connection (model a text type)",
   "Oral language (discussion prompts)",
@@ -181,6 +183,7 @@ function teacherRequestToApiBody(req: TeacherRequest) {
 
   return {
     title: req.meta.titleHint,
+    cefrLevel: req.meta.cefrLevel,
     stage: req.meta.stage,
     schoolClass: req.meta.schoolClass,
     pilotMode: req.meta.pilotMode,
@@ -193,7 +196,7 @@ function teacherRequestToApiBody(req: TeacherRequest) {
     primaryMaterialId: "primary",
     teacherContext,
 
-    // Optional “alignment-ish” fields your API prompt can mention
+    // Optional â€œalignment-ishâ€ fields your API prompt can mention
     genre: req.alignment.textType,
     purpose: (req.alignment.purpose || []).join("; "),
   };
@@ -213,7 +216,7 @@ export default function Page() {
 
   // Alignment/meta
   const [schoolClass, setSchoolClass] = useState<number>(5);
-  const [stage, setStage] = useState<number>(4);
+  const [cefrLevel, setCefrLevel] = useState<CefrLevel>("B1");
   const [titleHint, setTitleHint] = useState<string>("");
   const [textType, setTextType] = useState<string>(TEXT_TYPES[0]);
   const [purpose, setPurpose] = useState<string[]>(["Comprehension (literal + inferential)"]);
@@ -227,7 +230,7 @@ export default function Page() {
   const [err, setErr] = useState<string>("");
   const abortRef = useRef<AbortController | null>(null);
 
-  // Persist teacher form (so a refresh doesn’t nuke everything)
+  // Persist teacher form (so a refresh doesnâ€™t nuke everything)
   useEffect(() => {
     try {
       const raw = localStorage.getItem("a10_teacherInputs_v1");
@@ -240,7 +243,8 @@ export default function Page() {
       if (obj?.pasted) setPasted(obj.pasted);
 
       if (typeof obj?.schoolClass === "number") setSchoolClass(clamp(obj.schoolClass, 1, 6));
-      if (typeof obj?.stage === "number") setStage(clamp(obj.stage, 1, 4));
+      if (typeof obj?.cefrLevel === "string") setCefrLevel(parseCefrLevel(obj.cefrLevel, "B1"));
+    else if (typeof obj?.stage === "number") setCefrLevel(stageBandToCefr(clamp(obj.stage, 1, 4)));
       if (typeof obj?.titleHint === "string") setTitleHint(obj.titleHint);
       if (typeof obj?.textType === "string") setTextType(obj.textType);
       if (Array.isArray(obj?.purpose)) setPurpose(obj.purpose);
@@ -264,7 +268,9 @@ export default function Page() {
           uploaded,
           pasted,
           schoolClass,
-          stage,
+          cefrLevel,
+
+          stage: cefrToStageBand(cefrLevel),
           titleHint,
           textType,
           purpose,
@@ -277,7 +283,7 @@ export default function Page() {
     } catch {
       // ignore
     }
-  }, [inputKind, url, text, uploaded, pasted, schoolClass, stage, titleHint, textType, purpose, supports, allowLocalNames, pilotMode, notes]);
+  }, [inputKind, url, text, uploaded, pasted, schoolClass, cefrLevel, titleHint, textType, purpose, supports, allowLocalNames, pilotMode, notes]);
 
   const material: MaterialInput | null = useMemo(() => {
     if (inputKind === "link") {
@@ -338,7 +344,9 @@ export default function Page() {
     const req: TeacherRequest = {
       meta: {
         schoolClass,
-        stage,
+        cefrLevel,
+
+        stage: cefrToStageBand(cefrLevel),
         titleHint: titleHint.trim() || undefined,
         allowLocalNames,
         pilotMode,
@@ -376,7 +384,7 @@ setPack(returnedPack);
     } catch (e: any) {
       setErr(
         String(e?.message || e || "Unknown error") +
-          "\n\nIf you haven’t created the API route yet, make /api/reading/generate-pack return { pack: ... }."
+          "\n\nIf you havenâ€™t created the API route yet, make /api/reading/generate-pack return { pack: ... }."
       );
     } finally {
       setBusy(false);
@@ -417,9 +425,9 @@ setPack(returnedPack);
   return (
     <div style={{ padding: 18, maxWidth: 1100, margin: "0 auto" }}>
       <div style={heroStyle}>
-        <div style={{ fontWeight: 950, fontSize: 20 }}>Aontas 10 — Teacher Input → Reading Pack</div>
+        <div style={{ fontWeight: 950, fontSize: 20 }}>Aontas 10 â€” Teacher Input â†’ Reading Pack</div>
         <div style={{ color: "#475569", marginTop: 8, lineHeight: 1.45 }}>
-          Paste a link, text, or a screenshot — or upload a photo/doc. Then generate a pack.
+          Paste a link, text, or a screenshot â€” or upload a photo/doc. Then generate a pack.
           <span style={{ display: "block", marginTop: 6, color: "#64748b" }}>
             Interactive output is separate from printables (HTML/PDF/DOCX) to keep things stable.
           </span>
@@ -432,7 +440,7 @@ setPack(returnedPack);
           <div>
             <div style={{ fontWeight: 900 }}>1) Add your material</div>
             <div style={{ color: "#64748b", fontSize: 12, marginTop: 4 }}>
-              Link • Text • Pasted screenshot • Upload
+              Link â€¢ Text â€¢ Pasted screenshot â€¢ Upload
             </div>
           </div>
 
@@ -460,7 +468,7 @@ setPack(returnedPack);
                 placeholder="https://..."
                 style={inputStyle}
               />
-              <div style={hintStyle}>We’ll send the URL to the generator (your API decides how to fetch/handle it).</div>
+              <div style={hintStyle}>Weâ€™ll send the URL to the generator (your API decides how to fetch/handle it).</div>
             </div>
           )}
 
@@ -473,7 +481,7 @@ setPack(returnedPack);
                 placeholder="Paste an extract or full text here..."
                 style={{ ...inputStyle, minHeight: 160, fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" }}
               />
-              <div style={hintStyle}>Tip: you can also Ctrl+V text into the paste area — it’ll land here.</div>
+              <div style={hintStyle}>Tip: you can also Ctrl+V text into the paste area â€” itâ€™ll land here.</div>
             </div>
           )}
 
@@ -500,7 +508,7 @@ setPack(returnedPack);
                   </button>
                 </div>
               )}
-              <div style={hintStyle}>Uploads are sent as data URLs to your API (so the generator can “see” them).</div>
+              <div style={hintStyle}>Uploads are sent as data URLs to your API (so the generator can â€œseeâ€ them).</div>
             </div>
           )}
 
@@ -536,7 +544,7 @@ setPack(returnedPack);
                   </div>
                 ) : (
                   <div style={{ color: "#64748b", fontSize: 13 }}>
-                    Click in this box and paste an image. (You can also paste text — it will switch to the Text tab.)
+                    Click in this box and paste an image. (You can also paste text â€” it will switch to the Text tab.)
                   </div>
                 )}
               </div>
@@ -551,7 +559,7 @@ setPack(returnedPack);
           <div>
             <div style={{ fontWeight: 900 }}>2) Curriculum alignment + outputs</div>
             <div style={{ color: "#64748b", fontSize: 12, marginTop: 4 }}>
-              Class/Stage • Text type • Purpose • Supports • Pilot mode
+              Class/CEFR â€¢ Text type â€¢ Purpose â€¢ Supports â€¢ Pilot mode
             </div>
           </div>
         </div>
@@ -574,16 +582,19 @@ setPack(returnedPack);
 
 
             <label style={fieldStyle}>
-              <div style={labelStyle}>Stage</div>
-              <input
-                type="number"
-                min={1}
-                max={4}
-                value={stage}
-                onChange={(e) => setStage(clamp(Number(e.target.value || 1), 1, 4))}
-                style={inputStyle}
-              />
-            </label>
+  <div style={labelStyle}>CEFR level</div>
+  <select
+    value={cefrLevel}
+    onChange={(e) => setCefrLevel(parseCefrLevel(e.target.value, "B1"))}
+    style={inputStyle}
+  >
+    {CEFR_LEVELS.map((lvl) => (
+      <option key={lvl} value={lvl}>
+        {lvl}
+      </option>
+    ))}
+  </select>
+</label>
 
             <label style={fieldStyle}>
               <div style={labelStyle}>Title hint (optional)</div>
@@ -655,7 +666,7 @@ setPack(returnedPack);
                 Pilot mode (warn about possible copyright / internal use only)
               </label>
               <div style={hintStyle}>
-                These flags simply travel with the request — your API can enforce/label outputs.
+                These flags simply travel with the request â€” your API can enforce/label outputs.
               </div>
             </div>
           </div>
@@ -697,7 +708,7 @@ setPack(returnedPack);
             </button>
 
             <div style={{ color: material ? "#16a34a" : "#b45309", fontSize: 12, fontWeight: 800 }}>
-              {material ? "Material ready ✓" : "Add material to generate"}
+              {material ? "Material ready âœ“" : "Add material to generate"}
             </div>
           </div>
 
@@ -727,7 +738,7 @@ setPack(returnedPack);
 
       <div style={{ marginTop: 18, color: "#64748b", fontSize: 12, lineHeight: 1.5 }}>
         Nerdy sanity check: this page only collects inputs and asks your API to generate a pack. ReadingPackApp then handles exports.
-        That separation is the whole “keep it stable” plan.
+        That separation is the whole â€œkeep it stableâ€ plan.
       </div>
     </div>
   );
@@ -851,3 +862,4 @@ const checkStyle: React.CSSProperties = {
   fontSize: 13,
   color: "#0f172a",
 };
+
