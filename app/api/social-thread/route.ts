@@ -241,8 +241,9 @@ export async function POST(req: Request) {
         properties: {
           model: { type: "string" },
           source: { type: "string" },
+          cefrLevel: { type: "string" },
         },
-        required: ["model", "source"],
+        required: ["model","source","cefrLevel"],
       },
 
       // Force at least 8 concept pills
@@ -347,7 +348,7 @@ export async function POST(req: Request) {
     "Constraints:",
     `1) Produce exactly ${MESSAGE_COUNT} messages per variant.`,
     `2) Include at least ${MIN_CONCEPTS} vocabulary concepts. Concepts must be useful, age-appropriate, and appear naturally in the messages.`,
-    "3) Keep Supported as access support (clearer language / shorter sentences / scaffolds) without changing the learning target.",
+    "3) Keep Supported as access support (clearer structure / shorter sentences / scaffolds) WITHOUT changing the learning target AND WITHOUT downgrading the CEFR level.
     `4) Make message #${MESSAGE_COUNT} a class discussion-starter question (ends with '?') that encourages pupils to explain their opinion and listen/respond.`,
     "",
     "INPUT TEXT:",
