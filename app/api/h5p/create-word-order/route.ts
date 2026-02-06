@@ -1,4 +1,5 @@
 ﻿import { NextResponse } from "next/server";
+import { parseCefrLevel, cefrToStageBand } from "../../../../lib/cefr";
 import path from "path";
 import fs from "fs/promises";
 import { existsSync } from "fs";
@@ -171,7 +172,8 @@ export async function POST(req: Request) {
     }
 
     const baseTitle = String(body.title || "Word order").trim() || "Word order";
-    const stage = Number(body.stage ?? 3);
+    const level = parseCefrLevel(body.cefrLevel ?? body.level ?? "B1");
+const stage = Number.isFinite(Number(body.stage)) ? Number(body.stage) : cefrToStageBand(level);
 
     const id =
       safeId(body.id || `${baseTitle}-word-order-${Date.now().toString(36)}`);
@@ -247,5 +249,6 @@ export async function POST(req: Request) {
     );
   }
 }
+
 
 
