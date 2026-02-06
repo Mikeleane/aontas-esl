@@ -1,49 +1,51 @@
-﻿const fs = require("fs");
+﻿/**
+ * Patch: social export + /social page
+ * Fix: adapted vs supported mismatch -> empty thread
+ */
+const fs = require("fs");
 const path = require("path");
 
 const targets = [
-  "app/_features/social/exports/socialThreadExport.ts",
-  "app/social/page.tsx",
+  path.join(process.cwd(), "app", "_features", "social", "exports", "socialThreadExport.ts"),
+  path.join(process.cwd(), "app", "social", "page.tsx"),
 ];
 
-function patchOne(rel) {
-  const file = path.join(process.cwd(), rel);
-  if (!fs.existsSync(file)) return { file: rel, changed: false, why: "missing" };
-
+function patchFile(file) {
+  if (!fs.existsSync(file)) return { file, changed: false, reason: "missing" };
   let s = fs.readFileSync(file, "utf8");
   const before = s;
-  const notes = [];
 
-  // 1) UI label/value: adapted -> supported (safe)
-  s = s.replace(/value="adapted">Adapted<\/option>/g, 'value="supported">Supported</option>');
-  if (s !== before) notes.push("option adapted->supported");
+  // 1) Option label/value
+  s = s.replace(/<option value="adapted">Adapted<\/option>/g, '<option value="supported">Supported</option>');
+  s = s.replace(/value="adapted"\s*>Adapted</g, 'value="supported">Supported');
 
-  // 2) Runtime alias (so old exports still work): adapted => supported
-  // Try to patch the common pattern where variant is read from a select:
-  const reVariant = /const\s+variant\s*=\s*([a-zA-Z0-9_.]+\.value)\s*;/g;
-  if (reVariant.test(s)) {
-    s = s.replace(reVariant, (m, v) =>
-      `const variant0 = ${v};\n    const variant = (variant0 === "adapted") ? "supported" : variant0;`
-    );
-    notes.push("variant alias adapted=>supported");
-  }
+  // 2) Variant mapping: adapted -> supported
+  // Common pattern in export html builder code:
+  s = s.replace(
+    /const\s+variant\s*=\s*([a-zA-Z0-9_.]+\.value)\s*;/g,
+    'const variant0 = $1;\n    const variant = (variant0 === "adapted") ? "supported" : variant0;'
+  );
 
-  // 3) If literal strings "adapted" are used for routing/keys, swap to supported
-  // (keeps backward compat because we alias at runtime too)
-  if (s.includes('"adapted"') || s.includes("'adapted'")) {
-    s = s.replace(/"adapted"/g, '"supported"').replace(/'adapted'/g, "'supported'");
-    notes.push("string adapted->supported");
-  }
+  // 3) If code grabs pack.adapted directly, make it prefer supported
+  s = s.replace(/\bpack\?\.\s*adapted\b/g, "pack?.supported ?? pack?.adapted");
+
+  // 4) mojibake quick clean
+  s = s
+    .replace(/â€™/g, "’")
+    .replace(/â€“/g, "–");
 
   if (s !== before) {
     fs.writeFileSync(file, s, "utf8");
-    return { file: rel, changed: true, notes };
+    return { file, changed: true };
   }
-  return { file: rel, changed: false, notes: ["no changes"] };
+  return { file, changed: false };
 }
 
-const results = targets.map(patchOne);
-for (const r of results) {
-  if (r.changed) console.log("✅ Patched:", r.file, "-", r.notes.join(", "));
-  else console.log("ℹ️", r.file, "-", (r.why || r.notes.join(", ")));
+const results = targets.map(patchFile);
+const changed = results.filter(r => r.changed).map(r => r.file);
+
+if (changed.length) {
+  console.log("✅ Patched:\n- " + changed.join("\n- "));
+} else {
+  console.log("ℹ️ No changes needed.");
 }
