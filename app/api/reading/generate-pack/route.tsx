@@ -552,7 +552,8 @@ async function callOpenAIResponses(payload: any) {
     const rawBody = await req.json();
     const body = normalizeTeacherRequest(rawBody);
 
-    // Determine primary material / primary input
+      const cefrLevel = parseCefrLevel((body as any)?.meta?.cefrLevel ?? (body as any)?.cefrLevel ?? (body as any)?.level ?? "B1");
+// Determine primary material / primary input
     const primaryMat = pickPrimaryMaterial(body);
 
     let primaryText = String(body.primaryText || "").trim();
