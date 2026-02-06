@@ -498,8 +498,7 @@ function buildSystemPrompt(body: GeneratePackBody) {    // stage is computed ea
     .join("\n");
 }
 
-function buildUserInstruction(body: GeneratePackBody, primaryTextHint: string) {
-  const stage = body.stage ?? 3;
+function buildUserInstruction(body: GeneratePackBody, primaryTextHint: string) {    // legacy `stage = body.stage ?? 3` removed; stage computed from CEFR/stage-band above
   const targets = stageTargets(stage);
 
   return [
