@@ -33,9 +33,9 @@ function downloadTextFile(filename: string, text: string, mime = "text/html;char
 
 export default function SocialPage() {
   const [text, setText] = useState(
-  const [cefrLevel, setCefrLevel] = useState<string>("B1");
     "Create a school-appropriate class chat about staying organised and doing homework. Include 10–14 messages."
   );
+  const [cefrLevel, setCefrLevel] = useState<string>("B1");
   const [tongueInCheek, setTongueInCheek] = useState(false);
 
   const [pack, setPack] = useState<any | null>(null);
