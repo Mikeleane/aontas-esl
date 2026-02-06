@@ -1,5 +1,6 @@
 // app/api/social-thread/route.ts
 import { NextResponse } from "next/server";
+import { parseCefrLevel } from "../../../lib/cefr";
 
 const API_KEY = process.env.OPENAI_API_KEY;
 
@@ -205,6 +206,7 @@ export async function POST(req: Request) {
 
   const text = (body?.text ?? "").toString().trim();
   const tongueInCheek = !!body?.tongueInCheek;
+  const cefrLevel = parseCefrLevel(body?.cefrLevel ?? body?.level ?? "B1");
 
   if (!text) return jsonError("Missing 'text' in JSON body.", 400);
 
@@ -324,6 +326,7 @@ export async function POST(req: Request) {
 
   const system = [
     "You generate a Social Thread Pack for language learning.",
+    "Requested CEFR level (A1-C2): " + String(cefrLevel),
     "Return STRICT JSON only, matching the provided JSON Schema.",
     "No markdown. No extra keys.",
     "Standard and Supported must stay aligned to the same learning target and shared check answers.",
@@ -344,11 +347,12 @@ export async function POST(req: Request) {
   const userPrompt = [
     "Create a short social-media-style message thread based on the input text.",
     styleNote,
+    "CEFR LEVEL: " + String(cefrLevel),
     "",
     "Constraints:",
     `1) Produce exactly ${MESSAGE_COUNT} messages per variant.`,
     `2) Include at least ${MIN_CONCEPTS} vocabulary concepts. Concepts must be useful, age-appropriate, and appear naturally in the messages.`,
-    "3) Keep Supported as access support (clearer structure / shorter sentences / scaffolds) WITHOUT changing the learning target AND WITHOUT downgrading the CEFR level.
+    "3) Keep Supported as access support (clearer language / shorter sentences / scaffolds) WITHOUT changing the learning target AND WITHOUT downgrading the CEFR level.
     `4) Make message #${MESSAGE_COUNT} a class discussion-starter question (ends with '?') that encourages pupils to explain their opinion and listen/respond.`,
     "",
     "INPUT TEXT:",
@@ -414,6 +418,12 @@ export async function POST(req: Request) {
   // Post-process: fun names + emoji fields + guaranteed final discussion starter
   pack = applyRoster(pack);
   pack = forceFinalStarter(pack, text);
+  pack.meta = {
+    ...(pack.meta || {}),
+    model: String(pack?.meta?.model || payload.model),
+    source: String(pack?.meta?.source || "user_text"),
+    cefrLevel: String(pack?.meta?.cefrLevel || cefrLevel),
+  };
 
   return NextResponse.json({ pack }, { status: 200 });
 }
