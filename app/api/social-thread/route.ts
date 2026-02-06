@@ -68,6 +68,15 @@ function uniqStrings(arr: any[]) {
     seen.add(s);
     out.push(s);
   }
+
+function cleanEmoji(e) {
+  const t = String(e ?? "").trim();
+  if (!t) return null;
+  // Kill classic mojibake markers (Ã â ð) and long garbage sequences
+  if (/[Ãâð]/.test(t) || t.length > 10) return null;
+  return t;
+}
+
   return out;
 }
 
@@ -153,8 +162,9 @@ function applyRoster(pack: any) {
       const mapped = isPlaceholderSpeaker(sp) ? map.get(sp) : null;
 
       const speaker = mapped ? mapped.name : (sp || "Someone");
-      const emoji = (m?.emoji != null && String(m.emoji).trim() !== "")
-        ? String(m.emoji)
+      const emojiFromModel = cleanEmoji(m?.emoji);
+      const emoji = (emojiFromModel != null && String(emojiFromModel).trim() !== "")
+        ? String(emojiFromModel)
         : (mapped ? mapped.emoji : null);
 
       return {
