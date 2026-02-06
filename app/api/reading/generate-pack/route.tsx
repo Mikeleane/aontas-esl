@@ -441,8 +441,7 @@ function buildJsonSchema() {
 
 /* ---------------- Prompts ---------------- */
 
-function buildSystemPrompt(body: GeneratePackBody) {
-  const stage = body.stage ?? 3;
+function buildSystemPrompt(body: GeneratePackBody) {    // stage is computed earlier (CEFR/stage-band); legacy duplicate removed
   const klass = body.schoolClass ?? 3;
   const targets = stageTargets(stage);
 
@@ -548,12 +547,15 @@ async function callOpenAIResponses(payload: any) {
   return res.json();
 }
 
-/* ---------------- Route ---------------- */export async function POST(req: Request) {
+/* ---------------- Route ---------------- */
+export async function POST(req: Request) {
   try {
     const rawBody = await req.json();
     const body = normalizeTeacherRequest(rawBody);
 
-      const cefrLevel = parseCefrLevel((body as any)?.meta?.cefrLevel ?? (body as any)?.cefrLevel ?? (body as any)?.level ?? "B1");
+     const cefrLevel = parseCefrLevel(body.cefrLevel ?? body.level ?? "B1");
+const stage = Number.isFinite(Number(body.stage)) ? Number(body.stage) : cefrToStageBand(cefrLevel);
+
 // Determine primary material / primary input
     const primaryMat = pickPrimaryMaterial(body);
 
@@ -576,7 +578,7 @@ async function callOpenAIResponses(payload: any) {
       primaryText = await fetchUrlText(primaryMat.url);
     }
 
-    const stage = body.stage ?? 3;
+    const stageLegacy = body.stage ?? 3;
     const schoolClass = body.schoolClass ?? 3;
 
     if (!primaryText && !primaryImageDataUrl) {
