@@ -208,8 +208,7 @@ function normalizeTeacherRequest(body: any): GeneratePackBody {
 
   // Otherwise treat it as TeacherRequest (page.tsx format)
   const tr = body as TeacherRequest;
-
-  const stage = clamp(Number(tr?.meta?.stage ?? 3), 1, 4);
+const stage = Number.isFinite(Number((body as any)?.stage)) ? Number((body as any)?.stage) : cefrToStageBand(cefrLevel);
   const schoolClass = clamp(Number(tr?.meta?.schoolClass ?? 3), 1, 6);
 
   const title = (tr?.meta?.titleHint || "").trim() || "Reading Pack";
@@ -694,5 +693,6 @@ import { parseCefrLevel, cefrToStageBand } from "../../../../lib/cefr";
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
+
 
 
