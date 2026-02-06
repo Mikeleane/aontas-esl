@@ -135,7 +135,7 @@ function clamp(n: number, lo: number, hi: number) {
 }
 
 function stageTargets(stage: number) {
-  // You can tweak these later; this is a solid â€œnot too shortâ€ baseline.
+  // You can tweak these later; this is a solid “not too short” baseline.
   if (stage <= 1) return { min: 120, max: 220 };
   if (stage === 2) return { min: 220, max: 360 };
   if (stage === 3) return { min: 360, max: 600 };
@@ -262,9 +262,9 @@ function normalizeTeacherRequest(body: any): GeneratePackBody {
     schoolClass,
     pilotMode,
 
-    // Curriculum â€œhintsâ€
+    // Curriculum “hints”
     genre: textType || undefined,
-    purpose: [purpose, supports].filter(Boolean).join(" â€¢ ") || undefined,
+    purpose: [purpose, supports].filter(Boolean).join(" ”¢ ") || undefined,
 
     teacherContext,
 
@@ -450,9 +450,9 @@ function buildSystemPrompt(body: GeneratePackBody) {    // stage is computed ea
     "Teacher agency first: do not replace local placenames or organisations.",
     "Do not invent local facts. If something is not provided, omit it or keep it generic.",
     "STANDARD and SUPPORTED must share ONE answer key (same correct answers).",
-    "SUPPORTED is not 'easier content'â€”it is access supports: chunking, clearer layout, word banks, sentence frames, etc.",
+    "SUPPORTED is not 'easier content'””it is access supports: chunking, clearer layout, word banks, sentence frames, etc.",
     "Keep learning target the same for the whole class.",
-    `Reading length target (Stage ${stage}): about ${targets.min}â€“${targets.max} words for STANDARD. SUPPORTED should be similar length (not a tiny summary) but with access supports.`,
+    `Reading length target (Stage ${stage}): about ${targets.min}”“${targets.max} words for STANDARD. SUPPORTED should be similar length (not a tiny summary) but with access supports.`,
     "Return ONLY valid JSON matching the schema. No commentary, no markdown, no code fences.",
   ];
 
@@ -509,12 +509,12 @@ function buildUserInstruction(body: GeneratePackBody, primaryTextHint: string) {
     `\nPrimary material:\n${primaryTextHint}`,
 
     `\nReading requirements:`,
-    `- Write/produce a coherent STANDARD reading text that is roughly ${targets.min}â€“${targets.max} words (not a short snippet).`,
+    `- Write/produce a coherent STANDARD reading text that is roughly ${targets.min}”“${targets.max} words (not a short snippet).`,
     `- SUPPORTED should cover the same content and be similar length, but with access supports (chunking, clearer sentences, occasional word bank/glossary cues).`,
     `- If the provided excerpt is short, expand with original writing on the same theme rather than staying tiny.`,
 
     `\nExercises:`,
-    `- Make ~10â€“12 exercises.`,
+    `- Make ~10”“12 exercises.`,
     `- Ensure the answer key is shared between STANDARD and SUPPORTED.`,
     `- Use a mix: literal + inferential, vocab in context, sequencing, author craft, short response.`,
   ].join("\n");
@@ -629,7 +629,7 @@ export async function POST(req: Request) {
         },
       },
       max_output_tokens: 3600,
-      // Helps reduce â€œcreative formattingâ€
+      // Helps reduce “creative formatting”
       temperature: 0.4,
     });
 
