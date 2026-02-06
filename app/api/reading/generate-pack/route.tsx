@@ -1,3 +1,4 @@
+import { parseCefrLevel, cefrToStageBand } from "../../../../lib/cefr";
 ﻿import { NextResponse } from "next/server";
 
 // Ensure Node runtime (safer if you later add PDF/DOCX parsing server-side)
@@ -546,9 +547,7 @@ async function callOpenAIResponses(payload: any) {
   return res.json();
 }
 
-/* ---------------- Route ---------------- */
-import { parseCefrLevel, cefrToStageBand } from "../../../../lib/cefr";
-(req: Request) {
+/* ---------------- Route ---------------- */export async function POST(req: Request) {
   try {
     const rawBody = await req.json();
     const body = normalizeTeacherRequest(rawBody);
