@@ -1,4 +1,5 @@
 import { parseCefrLevel, cefrToStageBand } from "../../../../lib/cefr";
+const DEFAULT_CEFR = "B1";
 ﻿import { NextResponse } from "next/server";
 
 // Ensure Node runtime (safer if you later add PDF/DOCX parsing server-side)
@@ -209,7 +210,7 @@ function normalizeTeacherRequest(body: any): GeneratePackBody {
 
   // Otherwise treat it as TeacherRequest (page.tsx format)
   const tr = body as TeacherRequest;
-const stage = Number.isFinite(Number((body as any)?.stage)) ? Number((body as any)?.stage) : cefrToStageBand(cefrLevel);
+const stage = Number.isFinite(Number((body as any)?.stage)) ? Number((body as any)?.stage) : cefrToStageBand(DEFAULT_CEFR);
   const schoolClass = clamp(Number(tr?.meta?.schoolClass ?? 3), 1, 6);
 
   const title = (tr?.meta?.titleHint || "").trim() || "Reading Pack";
@@ -488,7 +489,7 @@ function buildSystemPrompt(body: GeneratePackBody) {
 
   return [
     `You generate Irish primary school reading packs.`,
-    `CEFR: ${cefrLevel} (legacy stage band ${stage}). Class: ${klass}.`,
+    `CEFR: ${DEFAULT_CEFR} (legacy stage band ${stage}). Class: ${klass}.`,
     guards.map((g) => `- ${g}`).join("\n"),
     plcBits.length ? `\nCurriculum target:\n${plcBits.map((p) => `- ${p}`).join("\n")}` : "",
     contextBits.length ? `\nTeacher context:\n${contextBits.map((c) => `- ${c}`).join("\n")}` : "",
@@ -505,7 +506,7 @@ function buildUserInstruction(body: GeneratePackBody, primaryTextHint: string) {
   return [
     `Create a reading pack.`,
     `Title: ${body.title || "Reading Pack"}`,
-    `CEFR: ${cefrLevel} (legacy stage band ${stage})`,
+    `CEFR: ${DEFAULT_CEFR} (legacy stage band ${stage})`,
     `Class: ${body.schoolClass ?? 3}`,
 
     `\nPrimary material:\n${primaryTextHint}`,
