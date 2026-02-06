@@ -33,6 +33,7 @@ function downloadTextFile(filename: string, text: string, mime = "text/html;char
 
 export default function SocialPage() {
   const [text, setText] = useState(
+  const [cefrLevel, setCefrLevel] = useState<string>("B1");
     "Create a school-appropriate class chat about staying organised and doing homework. Include 10–14 messages."
   );
   const [tongueInCheek, setTongueInCheek] = useState(false);
@@ -140,6 +141,18 @@ export default function SocialPage() {
         />
 
         <label style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 10, fontSize: 13 }}>
+            <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <span style={{ fontWeight: 800 }}>CEFR</span>
+              <select
+                value={cefrLevel}
+                onChange={(e) => setCefrLevel(e.target.value)}
+                style={{ padding: "6px 8px", borderRadius: 10, border: "1px solid rgba(15,23,42,.18)" }}
+              >
+                {["A1","A2","B1","B2","C1","C2"].map((L) => (
+                  <option key={L} value={L}>{L}</option>
+                ))}
+              </select>
+            </label>
           <input type="checkbox" checked={tongueInCheek} onChange={(e) => setTongueInCheek(e.target.checked)} />
           Light tongue-in-cheek tone (still school-appropriate)
         </label>
