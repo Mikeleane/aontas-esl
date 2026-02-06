@@ -7,20 +7,18 @@ dist/
 .vercel/
 coverage/
 *.log
-.DS_Store
 
-# --- Env files ---
+# --- Env ---
 .env.local
 .env.*.local
 
-# --- Local backups / patches / zips ---
-*.zip
+# --- Backups / patch artefacts ---
+.wordiness_backups/
+.wordiness_backups/**
 _patch/
 _patch_backups/
 _ui_backup_*/
-.wordiness_backups/
+*.zip
 PATCH_NOTES.txt
-
-# --- Temporary / backup configs ---
-*.bak_*
 tsconfig.json.bak*
+*.bak_*
