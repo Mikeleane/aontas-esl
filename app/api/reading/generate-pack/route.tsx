@@ -210,7 +210,6 @@ function normalizeTeacherRequest(body: any): GeneratePackBody {
 
   // Otherwise treat it as TeacherRequest (page.tsx format)
   const tr = body as TeacherRequest;
-const stage = Number.isFinite(Number((body as any)?.stage)) ? Number((body as any)?.stage) : cefrToStageBand(DEFAULT_CEFR);
   const schoolClass = clamp(Number(tr?.meta?.schoolClass ?? 3), 1, 6);
 
   const title = (tr?.meta?.titleHint || "").trim() || "Reading Pack";
@@ -552,9 +551,11 @@ export async function POST(req: Request) {
     const rawBody = await req.json();
     const body = normalizeTeacherRequest(rawBody);
 
-     const cefrLevel = parseCefrLevel(body.cefrLevel ?? body.level ?? "B1");
-const stage = Number.isFinite(Number(body.stage)) ? Number(body.stage) : cefrToStageBand(cefrLevel);
-
+    // --- CEFR-first (fallback to B1), with legacy stage-band compatibility ---
+    const cefrLevel = parseCefrLevel((body as any)?.cefrLevel ?? (body as any)?.level ?? "B1");
+    const stage = Number.isFinite(Number((body as any)?.stage))
+      ? Number((body as any)?.stage)
+      : cefrToStageBand(cefrLevel);
 // Determine primary material / primary input
     const primaryMat = pickPrimaryMaterial(body);
 

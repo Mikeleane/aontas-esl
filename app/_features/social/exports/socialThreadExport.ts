@@ -661,7 +661,8 @@ export async function exportSocialThreadHtml(opts: ExportOpts): Promise<void> {
   function render(){
     stopSpeak();
 
-    const variant = els.variantSel.value;
+    const variant0 = els.variantSel.value;
+    const variant = (variant0 === "supported") ? "supported" : variant0;
     const pace = els.paceSel.value;
     const showEmojis = !!els.chkEmojis.checked;
     const mysteryN = parseInt(els.mysterySel.value || "0", 10);
@@ -835,7 +836,8 @@ export async function exportSocialThreadHtml(opts: ExportOpts): Promise<void> {
 
   // Controls
   els.btnNext.addEventListener("click", () => {
-    const variant = els.variantSel.value;
+    const variant0 = els.variantSel.value;
+    const variant = (variant0 === "supported") ? "supported" : variant0;
     const vp = (pack.variants && pack.variants[variant]) ? pack.variants[variant] : (pack[variant] ? pack[variant] : pack);
     const msgs = (vp && (vp.messages || vp.thread || vp.chat || vp.items)) ? (vp.messages || vp.thread || vp.chat || vp.items) : [];
 
