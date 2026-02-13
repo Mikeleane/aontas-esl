@@ -18,3 +18,6 @@ _ui_backup_*/
 PATCH_NOTES.txt
 tsconfig.json.bak*
 *.bak_*
+
+repo-files.txt
+

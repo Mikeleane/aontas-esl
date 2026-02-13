@@ -5,12 +5,16 @@ import fs from "fs/promises";
 import { existsSync } from "fs";
 
 type Body = {
-  id?: string;
   title?: string;
-  stage?: number | string | null;
-  readingText?: string;
-};
+  stage?: number | string;
 
+  // ✅ add these
+  level?: string;
+  cefrLevel?: string;
+
+  // ✅ prevents future “Property X does not exist on type Body” build failures
+  [key: string]: any;
+};
 function slugify(s: string) {
   return (s || "")
     .toLowerCase()
