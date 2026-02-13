@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
+import { parseCefrLevel, parseTextType, buildCambridgeConstraints } from "../../../lib/cefrCambridge";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -51,8 +52,8 @@ function sentences(text: string): string[] {
 
 function tokens(text: string): string[] {
   const t = String(text || "").toLowerCase();
-  const m = t.match(/[a-záéíóúüñ]+(?:'[a-z]+)?/gi);
-  return (m || []).map((w) => w.toLowerCase());
+    const m = t.match(/[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)?/gu);
+return (m || []).map((w) => w.toLowerCase());
 }
 
 const STOPWORDS = new Set(
@@ -205,11 +206,11 @@ function fallbackExercises(args: {
       type: "gist",
       skill: "Main idea",
       standard: {
-        prompt: "In 1–2 sentences, what is the main idea of the text?",
+        prompt: "In 1-2 sentences, what is the main idea of the text?",
       },
       adapted: {
         prompt:
-          "In 1 sentence, what is the text mostly about? Tip: start with ‘This text is about…’.",
+          "In 1 sentence, what is the text mostly about? Tip: start with 'This text is about...'.",
       },
       answer: ans,
     });
@@ -230,7 +231,7 @@ function fallbackExercises(args: {
       },
       adapted: {
         prompt:
-          "Find 3 key details. Use starters: ‘One detail is…’, ‘Another detail is…’, ‘A third detail is…’.",
+          "Find 3 key details. Use starters: 'One detail is...', 'Another detail is...', 'A third detail is...'.",
       },
       answer: ans,
     });
@@ -267,11 +268,11 @@ function fallbackExercises(args: {
       type: "trueFalse",
       skill: "True / False",
       standard: {
-        prompt: `Decide if each statement is True or False:\n1) The text mentions “${w1}”.\n2) The text mentions “unicorns” as a key detail.`,
+        prompt: `Decide if each statement is True or False:\n1) The text mentions "${w1}".\n2) The text mentions "unicorns" as a key detail.`,
         options: ["True", "False"],
       },
       adapted: {
-        prompt: `True or False?\n1) I can find “${w1}” in the text.\n2) I can find “unicorns” in the text.`,
+        prompt: `True or False?\n1) I can find "${w1}" in the text.\n2) I can find "unicorns" in the text.`,
         options: ["True", "False"],
       },
       answer: ["True", "False"],
@@ -314,7 +315,7 @@ function fallbackExercises(args: {
 
   if (wants.has("ordering")) {
     const pick = clamp(sents.slice(0, 6), 4);
-    const correct = pick.length ? pick : ["First…", "Then…", "Next…", "Finally…"];
+    const correct = pick.length ? pick : ["First...", "Then...", "Next...", "Finally..."];
     const shuffled = shuffle(correct);
     items.push({
       id: id++,
@@ -322,12 +323,12 @@ function fallbackExercises(args: {
       skill: "Ordering",
       standard: {
         prompt:
-          "Put these events/ideas in the correct order (1–4):\n" +
+          "Put these events/ideas in the correct order (1-4):\n" +
           shuffled.map((x, i) => `${i + 1}) ${x}`).join("\n"),
       },
       adapted: {
         prompt:
-          "Number the sentences in the correct order (1–4):\n" +
+          "Number the sentences in the correct order (1-4):\n" +
           shuffled.map((x, i) => `${i + 1}) ${x}`).join("\n"),
       },
       answer: correct,
@@ -337,7 +338,7 @@ function fallbackExercises(args: {
   if (wants.has("word_study")) {
     const words = clamp(sharedWords.filter((w) => w.length >= 5), 6);
     const picks = clamp(words, 4);
-    const breakdowns = picks.map((w) => `${w} → ${syllableChunks(w)}`);
+    const breakdowns = picks.map((w) => `${w} -> ${syllableChunks(w)}`);
     items.push({
       id: id++,
       type: "wordStudy",
@@ -363,8 +364,49 @@ function fallbackExercises(args: {
 }
 
 export async function POST(req: Request) {
+  let cambridgeBlock = "";
   try {
     const body = await req.json();
+  {
+    const _cefr = parseCefrLevel((body as any).cefrLevel ?? (body as any).level ?? "B1");
+    const _type = parseTextType((body as any).textType ?? (body as any).text_type ?? (body as any).genre ?? "article");
+    const _constraints = buildCambridgeConstraints(_cefr, _type);
+
+    cambridgeBlock = `
+You are generating ESL materials for Aontas.
+
+${_constraints}
+
+IMPORTANT:
+- Produce STANDARD and SUPPORTED variants that share ONE answer key.
+- Text type must be unmistakable (emails need subject + greeting + sign-off; reports need headings; etc.).
+- Keep the reading text inside the target word range.
+- Do not generate meta questions about CEFR, word counts, text type requirements, or the task instructions.
+- Do not ask questions like 'What type of text is this?' or 'How many words should it be?'
+- Every question MUST be answerable ONLY from the SOURCE TEXT (if provided). If it isn't stated, don't ask it.
+`.trim();
+  
+const providedText = String(
+  (body as any).inputText ??
+  (body as any).text ??
+  (body as any).sourceText ??
+  (body as any).passage ??
+  ""
+).trim();
+
+if (providedText) {
+  cambridgeBlock += `
+
+SOURCE TEXT (use exactly; do not invent):
+${providedText}
+
+Rules:
+- Base ALL questions and answers ONLY on the SOURCE TEXT above.
+- If a detail is not stated, do not assume it.
+- Do not replace the text with a different topic.
+`;
+}
+}
 
     const standardText: string =
       body.standardText || body.standardOutput || body.standard || "";
@@ -450,13 +492,13 @@ Return valid JSON ONLY (no markdown) in this exact shape:
 }
 
 BLOCK GUIDANCE:
-- gist_main_idea: 1–2 items on main idea / headline / summary.
-- detail_questions: 3–5 items that require evidence from the text.
-- vocabulary: 2–4 items, in-context meaning, matching, or using words in sentences.
-- true_false: 3–5 statements; keep the Supported version simpler (shorter statements, fewer distractors) BUT SAME T/F answers.
-- cloze_gapfill: 1–2 cloze tasks. Use the SAME missing words/answers in both versions; Supported can include a word bank.
+- gist_main_idea: 1-2 items on main idea / headline / summary.
+- detail_questions: 3-5 items that require evidence from the text.
+- vocabulary: 2-4 items, in-context meaning, matching, or using words in sentences.
+- true_false: 3-5 statements; keep the Supported version simpler (shorter statements, fewer distractors) BUT SAME T/F answers.
+- cloze_gapfill: 1-2 cloze tasks. Use the SAME missing words/answers in both versions; Supported can include a word bank.
 - ordering: 1 item ordering events/steps. Supported can provide numbered boxes.
-- word_study: 2–3 items that help students break down words (syllables, prefixes/suffixes, word families, phoneme-grapheme patterns).
+- word_study: 2-3 items that help students break down words (syllables, prefixes/suffixes, word families, phoneme-grapheme patterns).
   * Only use words that appear in BOTH texts.
   * Keep answers objective (e.g., syllable splits with hyphens, prefix/root/suffix labels, or grapheme highlights).
 
@@ -468,7 +510,8 @@ QUALITY CONTROL:
 
     const completion = await client.chat.completions.create({
       model: "gpt-4.1-mini",
-      messages: [{ role: "user", content: prompt }],
+      messages: [
+        { role: "system", content: cambridgeBlock },{ role: "user", content: prompt }],
       temperature: 0.6,
     });
 

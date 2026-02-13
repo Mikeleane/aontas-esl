@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>H5P Embed</title>
+
+    <!-- H5P frame styling -->
+    <link rel="stylesheet" href="/h5p-player/styles/h5p.css" />
+    <link rel="stylesheet" href="/h5p-player/styles/font-open-sans.css" />
+
+    <style>
+      html, body { height: 100%; margin: 0; background: #f8fafc; }
+      .wrap { max-width: 1100px; margin: 0 auto; padding: 14px; }
+      .card {
+        background: #fff;
+        border: 1px solid rgba(15,23,42,.14);
+        border-radius: 16px;
+        padding: 12px;
+        box-shadow: 0 10px 30px rgba(2,6,23,.07);
+      }
+      .top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 10px;
+      }
+      .title { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; font-weight: 900; color: #0f172a; }
+      .muted { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; color: #64748b; font-size: 12px; }
+      #err {
+        margin-top: 10px;
+        background: #fff7ed;
+        border: 1px solid rgba(180,83,9,.25);
+        color: #7c2d12;
+        padding: 10px;
+        border-radius: 12px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 12px;
+        white-space: pre-wrap;
+        display: none;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="wrap">
+      <div class="top">
+        <div>
+          <div class="title">H5P Embed</div>
+          <div class="muted" id="subtitle">Loading…</div>
+        </div>
+        <div class="muted">Source: <code>/public/h5p/&lt;id&gt;/</code></div>
+      </div>
+
+      <div class="card">
+        <div id="h5p-root"></div>
+        <div id="err"></div>
+      </div>
+    </div>
+
+    <!-- The H5PStandalone runtime (your existing file) -->
+    <script src="/h5p-player/main.bundle.js"></script>
+
+    <script>
+      (function () {
+        const errBox = document.getElementById("err");
+        const subtitle = document.getElementById("subtitle");
+        const root = document.getElementById("h5p-root");
+
+        function showError(msg, extra) {
+          errBox.style.display = "block";
+          errBox.textContent = msg + (extra ? "\n\n" + extra : "");
+          console.error(msg, extra || "");
+        }
+
+        const params = new URLSearchParams(window.location.search);
+        const id = (params.get("id") || "").trim();
+        if (!id) {
+          subtitle.textContent = "Missing ?id=...";
+          showError("Missing query param: ?id=your-h5p-folder-name");
+          return;
+        }
+
+        subtitle.textContent = "Game: " + id;
+
+        // Where your unzipped H5P lives:
+        // public/h5p/<id>/h5p.json
+        // public/h5p/<id>/content/
+        // public/h5p/<id>/libraries/
+        const h5pJsonPath = "/h5p/" + encodeURIComponent(id);
+
+        // H5PStandalone global shape varies slightly by build,
+        // so we try a couple of safe options.
+        const Standalone = window.H5PStandalone || window.H5PStandaloneLoader || null;
+
+        if (!Standalone) {
+          showError(
+            "H5PStandalone global not found.",
+            "Check that /h5p-player/main.bundle.js is loading (Network tab, no 404)."
+          );
+          return;
+        }
+
+        const H5PClass = Standalone.H5P || Standalone;
+        if (typeof H5PClass !== "function") {
+          showError(
+            "H5PStandalone loaded, but constructor not found.",
+            "Expected H5PStandalone.H5P (function) or H5PStandalone (function)."
+          );
+          return;
+        }
+
+        try {
+          // Instantiate the player
+          new H5PClass(root, {
+            h5pJsonPath,
+            frameJs: "/h5p-player/frame.bundle.js",
+            frameCss: "/h5p-player/styles/h5p.css",
+          });
+        } catch (e) {
+          showError("Failed to initialise H5P.", String(e && e.stack ? e.stack : e));
+        }
+      })();
+    </script>
+  </body>
+</html>

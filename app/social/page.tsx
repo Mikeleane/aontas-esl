@@ -33,8 +33,10 @@ function downloadTextFile(filename: string, text: string, mime = "text/html;char
 
 export default function SocialPage() {
   const [text, setText] = useState(
-    "Create a school-appropriate class chat about staying organised and doing homework. Include 10–14 messages."
+    "Create a school-appropriate class chat about staying organised and doing homework. Include 10-14 messages."
   );
+
+  // ESL: A2-C2
   const [cefrLevel, setCefrLevel] = useState<string>("B1");
   const [tongueInCheek, setTongueInCheek] = useState(false);
 
@@ -67,7 +69,12 @@ export default function SocialPage() {
     try {
       const res = await postJson<ApiResponse>(
         "/api/social-thread",
-        { text: cleaned, tongueInCheek },
+        {
+          text: cleaned,
+          cefrLevel,
+          level: cefrLevel, // back-compat
+          tongueInCheek,
+        },
         abortRef.current.signal
       );
       if (!res?.pack) throw new Error("No pack returned.");
@@ -88,9 +95,6 @@ export default function SocialPage() {
 
     setBusy("export");
     try {
-      // Call your exporter. It might:
-      // - return an HTML string, OR
-      // - download internally and return void.
       const maybeHtml = await (exportSocialThreadHtml as any)({
         pack,
         precomputeUnpacks: true,
@@ -106,9 +110,10 @@ export default function SocialPage() {
         },
       });
 
-      // If it returned HTML, download it here.
       if (typeof maybeHtml === "string" && maybeHtml.trim().startsWith("<")) {
-        const title = String(pack?.title || "social-thread").toLowerCase().replace(/[^a-z0-9]+/g, "-");
+        const title = String(pack?.title || "social-thread")
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-");
         downloadTextFile(`aontas-social-${title}.html`, maybeHtml, "text/html;charset=utf-8");
       }
     } catch (e: any) {
@@ -125,8 +130,18 @@ export default function SocialPage() {
         Generates a Standard + Supported social-media-style chat pack, then exports an offline HTML file.
       </div>
 
-      <div style={{ marginTop: 14, background: "white", border: "1px solid rgba(15,23,42,.12)", borderRadius: 18, padding: 14 }}>
-        <div style={{ fontSize: 12, fontWeight: 900, color: "#475569", marginBottom: 6 }}>Prompt / source text</div>
+      <div
+        style={{
+          marginTop: 14,
+          background: "white",
+          border: "1px solid rgba(15,23,42,.12)",
+          borderRadius: 18,
+          padding: 14,
+        }}
+      >
+        <div style={{ fontSize: 12, fontWeight: 900, color: "#475569", marginBottom: 6 }}>
+          Prompt / source text
+        </div>
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
@@ -140,22 +155,27 @@ export default function SocialPage() {
           }}
         />
 
-        <label style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 10, fontSize: 13 }}>
-            <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <span style={{ fontWeight: 800 }}>CEFR</span>
-              <select
-                value={cefrLevel}
-                onChange={(e) => setCefrLevel(e.target.value)}
-                style={{ padding: "6px 8px", borderRadius: 10, border: "1px solid rgba(15,23,42,.18)" }}
-              >
-                {["A1","A2","B1","B2","C1","C2"].map((L) => (
-                  <option key={L} value={L}>{L}</option>
-                ))}
-              </select>
-            </label>
-          <input type="checkbox" checked={tongueInCheek} onChange={(e) => setTongueInCheek(e.target.checked)} />
-          Light tongue-in-cheek tone (still school-appropriate)
-        </label>
+        <div style={{ display: "flex", gap: 14, alignItems: "center", marginTop: 10, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <span style={{ fontWeight: 800 }}>CEFR</span>
+            <select
+              value={cefrLevel}
+              onChange={(e) => setCefrLevel(e.target.value)}
+              style={{ padding: "6px 8px", borderRadius: 10, border: "1px solid rgba(15,23,42,.18)" }}
+            >
+              {["A2", "B1", "B2", "C1", "C2"].map((L) => (
+                <option key={L} value={L}>
+                  {L}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <label style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 13 }}>
+            <input type="checkbox" checked={tongueInCheek} onChange={(e) => setTongueInCheek(e.target.checked)} />
+            Light tongue-in-cheek tone (still school-appropriate)
+          </label>
+        </div>
 
         <div style={{ display: "flex", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
           <button
@@ -173,7 +193,7 @@ export default function SocialPage() {
               opacity: busy ? 0.7 : 1,
             }}
           >
-            {busy === "generate" ? "Generating…" : "Generate Pack"}
+            {busy === "generate" ? "Generating..." : "Generate Pack"}
           </button>
 
           <button
@@ -191,7 +211,7 @@ export default function SocialPage() {
               opacity: busy || !pack ? 0.6 : 1,
             }}
           >
-            {busy === "export" ? "Exporting…" : "Export Social HTML"}
+            {busy === "export" ? "Exporting..." : "Export Social HTML"}
           </button>
 
           <button
@@ -232,14 +252,23 @@ export default function SocialPage() {
         )}
       </div>
 
-      <div style={{ marginTop: 14, background: "white", border: "1px solid rgba(15,23,42,.12)", borderRadius: 18, padding: 14 }}>
+      <div
+        style={{
+          marginTop: 14,
+          background: "white",
+          border: "1px solid rgba(15,23,42,.12)",
+          borderRadius: 18,
+          padding: 14,
+        }}
+      >
         <div style={{ fontWeight: 950 }}>Preview</div>
         {!pack ? (
           <div style={{ color: "#64748b", marginTop: 8 }}>No pack yet.</div>
         ) : (
           <div style={{ marginTop: 10 }}>
             <div style={{ color: "#64748b", fontSize: 12, marginBottom: 8 }}>
-              {pack?.title || "Untitled"} • {Array.isArray(pack?.standard?.messages) ? pack.standard.messages.length : 0} messages
+              {pack?.title || "Untitled"} {" - "}
+              {Array.isArray(pack?.standard?.messages) ? pack.standard.messages.length : 0} messages
             </div>
             {preview.map((m: any, i: number) => (
               <div key={i} style={{ padding: "8px 0", borderTop: i === 0 ? "none" : "1px solid rgba(15,23,42,.08)" }}>

@@ -1,0 +1,705 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Aontas 10 — Word Order (Wordwall-style) Demo</title>
+  <style>
+    :root{
+      --ink:#0f172a;--muted:#475569;--muted2:#64748b;--line:rgba(15,23,42,.14);
+      --bg1:rgba(79,179,217,.18);--bg2:rgba(244,197,66,.18);
+      --panel:rgba(255,255,255,.9);--panel2:rgba(255,255,255,.72);
+      --accent:#2d7d4f;--danger:#dc2626;
+      --fontSize:18px;--lineHeight:1.55;--letterSpacing:0px;
+    }
+    html,body{height:100%;}
+    body{
+      margin:0; font-family: system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;
+      color:var(--ink);
+      background:
+        radial-gradient(900px 420px at 10% 10%, var(--bg1), transparent 60%),
+        radial-gradient(900px 420px at 90% 10%, var(--bg2), transparent 60%),
+        linear-gradient(180deg, rgba(248,250,252,1), rgba(248,250,252,.85));
+    }
+    .wrap{max-width:1100px;margin:0 auto;padding:18px;}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:16px;box-shadow:0 10px 30px rgba(2,6,23,.07);backdrop-filter: blur(6px);}
+    .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between;}
+    .title{font-weight:1000;font-size:20px;}
+    .sub{margin-top:6px;color:var(--muted);font-size:13px;line-height:1.45;}
+    .pill{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:white;border-radius:999px;padding:8px 10px;font-weight:900;font-size:12px;cursor:pointer;user-select:none;}
+    .pill.active{background:var(--ink);color:white;}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:14px;padding:10px 12px;font-weight:900;font-size:13px;border:1px solid var(--line);background:white;color:var(--ink);cursor:pointer;user-select:none;}
+    .btn.primary{background:var(--accent);color:white;border-color:rgba(45,125,79,.35);}
+    .btn.danger{background:var(--danger);color:white;border-color:rgba(220,38,38,.35);}
+    .btn:disabled{opacity:.45;cursor:not-allowed;}
+
+    .grid{display:grid;grid-template-columns:1.1fr .9fr;gap:12px;margin-top:14px;}
+    @media (max-width:920px){.grid{grid-template-columns:1fr;}}
+
+    .box{background:white;border:1px solid var(--line);border-radius:18px;padding:12px;}
+    .label{font-size:12px;color:var(--muted);font-weight:900;margin-bottom:6px;}
+    textarea,input,select{width:100%;box-sizing:border-box;padding:10px 12px;border-radius:12px;border:1px solid var(--line);outline:none;background:white;color:var(--ink);}
+    textarea{min-height:160px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size:12px; line-height:1.4;}
+
+    .sentencePrompt{font-weight:950;font-size:14px;}
+    .hint{color:var(--muted2);font-size:12px;margin-top:8px;line-height:1.45;}
+
+    .stage{
+      font-size:var(--fontSize);
+      line-height:var(--lineHeight);
+      letter-spacing:var(--letterSpacing);
+    }
+
+    .bank,.build{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start;padding:12px;border-radius:16px;border:1px dashed rgba(15,23,42,.18);background:#f8fafc;min-height:64px;}
+    .token{
+      background:white;border:1px solid var(--line);border-radius:999px;padding:10px 12px;
+      font-weight:900;cursor:grab;user-select:none;box-shadow:0 6px 16px rgba(2,6,23,.06);
+    }
+    .token:active{cursor:grabbing;}
+    .token.dragging{opacity:.6;}
+
+    .status{margin-top:10px;font-size:12px;color:var(--muted);}
+    .status.good{color:#166534;font-weight:900;}
+    .status.bad{color:#7c2d12;font-weight:900;}
+
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px;}
+
+    .kpi{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+    .tag{border:1px solid var(--line);background:#f1f5f9;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:900;color:var(--ink);}
+
+    .sliders{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px;}
+    @media (max-width:920px){.sliders{grid-template-columns:1fr;}}
+    .sliderRow{border:1px solid var(--line);border-radius:14px;padding:10px;background:var(--panel2);} 
+    .sliderRow input{padding:0;border:none;}
+
+    .crest{width:46px;height:46px;border-radius:12px;border:1px solid rgba(15,23,42,.14);object-fit:cover;background:white;}
+
+    .small{font-size:12px;color:var(--muted2);}
+    .hr{height:1px;background:rgba(15,23,42,.10);margin:12px 0;}
+
+    .list{margin:0;padding-left:18px;}
+    .list li{margin:6px 0;}
+
+    .wordLab{font-size:22px;} /* requested: larger fonts in word lab */
+    .wordCard{border:1px solid var(--line);border-radius:16px;padding:12px;background:white;}
+    .wordTop{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;}
+    .wordTitle{font-weight:1000;font-size:16px;}
+    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;}
+
+    .chip{border:1px solid var(--line);background:#ffffff;border-radius:999px;padding:8px 10px;font-size:12px;font-weight:900;cursor:pointer;}
+    .chip.active{background:var(--ink);color:white;}
+
+    .kbd{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size:12px; padding:2px 6px; border:1px solid var(--line); border-radius:8px; background:#f8fafc;}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="row">
+        <div style="display:flex; gap:12px; align-items:flex-start;">
+          <img class="crest" id="crest" alt="Crest" src="./kns-crest.jpg" onerror="this.style.display='none'" />
+          <div>
+            <div class="title">Aontas 10 — Word Order (Wordwall-style) Demo</div>
+            <div class="sub">
+              Drag the words into the correct order. Built as a self-contained HTML game so you can test locally now; later we can wrap the same generator logic into H5P.
+              <span class="small" style="display:block; margin-top:6px;">Tip: If your browser blocks speech, click anywhere once to “wake” audio.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="kpi">
+          <span class="tag" id="kpiStage">Class 5 • Stage 4</span>
+          <span class="tag" id="kpiProgress">1 / 8</span>
+          <span class="tag" id="kpiScore">Score: 0</span>
+        </div>
+      </div>
+
+      <div class="sliders">
+        <div class="sliderRow">
+          <div class="label">Font size</div>
+          <input id="fontSize" type="range" min="14" max="28" value="18" />
+          <div class="small"><span id="fontSizeVal">18</span>px</div>
+        </div>
+        <div class="sliderRow">
+          <div class="label">Line spacing</div>
+          <input id="lineHeight" type="range" min="1.2" max="2.2" step="0.05" value="1.55" />
+          <div class="small"><span id="lineHeightVal">1.55</span></div>
+        </div>
+        <div class="sliderRow">
+          <div class="label">Letter spacing</div>
+          <input id="letterSpacing" type="range" min="-0.5" max="2" step="0.1" value="0" />
+          <div class="small"><span id="letterSpacingVal">0</span>px</div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <!-- GAME -->
+        <div class="box stage">
+          <div class="row">
+            <div>
+              <div class="sentencePrompt" id="prompt">Reorder the words to make the sentence.</div>
+              <div class="hint" id="hint">Drag from the word bank into the build area.</div>
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button class="btn" id="btnPrev">◀ Prev</button>
+              <button class="btn" id="btnNext">Next ▶</button>
+            </div>
+          </div>
+
+          <div class="hr"></div>
+
+          <div class="label">Word bank</div>
+          <div class="bank" id="bank" aria-label="Word bank"></div>
+
+          <div style="height:10px"></div>
+
+          <div class="label">Build your sentence</div>
+          <div class="build" id="build" aria-label="Build area"></div>
+
+          <div class="toolbar">
+            <button class="btn primary" id="btnCheck">Check</button>
+            <button class="btn" id="btnReset">Reset</button>
+            <button class="btn" id="btnReveal">Reveal</button>
+            <button class="btn" id="btnShuffle">Shuffle</button>
+          </div>
+
+          <div class="toolbar">
+            <label class="label" style="margin:0;">Read aloud:</label>
+            <button class="btn" id="btnSpeakM">Male voice</button>
+            <button class="btn" id="btnSpeakF">Female voice</button>
+            <button class="btn" id="btnSpeakOne">One-at-a-time</button>
+            <button class="btn danger" id="btnStop">Stop</button>
+          </div>
+
+          <div class="status" id="status"></div>
+        </div>
+
+        <!-- WORD LAB -->
+        <div class="box stage wordLab">
+          <div class="row">
+            <div>
+              <div class="sentencePrompt">Word Lab (teacher helper)</div>
+              <div class="hint">Click a word in your built sentence to see quick supports: syllable claps, prefix/suffix, root hints. (No internet; this is “good-enough” heuristics.)</div>
+            </div>
+            <div class="small">Shortcut: <span class="kbd">Alt</span> + click a word = read that word.</div>
+          </div>
+
+          <div class="hr"></div>
+
+          <div class="label">Words in your built sentence</div>
+          <div class="bank" id="wordChips" style="background:#fff; border-style:solid;"></div>
+
+          <div style="height:10px"></div>
+          <div class="wordCard" id="wordCard" style="display:none;">
+            <div class="wordTop">
+              <div>
+                <div class="wordTitle" id="wlWord">word</div>
+                <div class="small mono" id="wlIpa">/…/ (optional)</div>
+              </div>
+              <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button class="btn" id="wlSpeak">Speak</button>
+                <button class="btn" id="wlSpell">Spell</button>
+              </div>
+            </div>
+
+            <div class="hr"></div>
+
+            <div class="label">Clap the syllables</div>
+            <div id="wlSyllables" class="mono"></div>
+
+            <div style="height:10px"></div>
+
+            <div class="label">Word parts</div>
+            <ul class="list" id="wlParts"></ul>
+
+            <div style="height:10px"></div>
+
+            <div class="label">Teacher moves</div>
+            <ul class="list">
+              <li>Ask for 2 synonyms and 1 antonym.</li>
+              <li>Use it in a sentence with a connective (because, although, however).</li>
+              <li>Change the tense (past ↔ present ↔ future) or swap modal verbs (might/should/must).</li>
+            </ul>
+          </div>
+
+          <div class="hint" id="wlEmpty">Build at least one word, then click a chip.</div>
+        </div>
+      </div>
+
+      <div class="hr"></div>
+
+      <!-- TEACHER MODE -->
+      <div class="box" style="background:var(--panel2);">
+        <div class="row">
+          <div>
+            <div class="sentencePrompt">Teacher mode (quick generator)</div>
+            <div class="hint">Paste sentences (one per line). This simulates the future “generate H5P / game” pipeline from your Reading Pack input.</div>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn" id="btnLoadDemo">Load demo set</button>
+            <button class="btn primary" id="btnApply">Apply to game</button>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px;">
+          <div>
+            <div class="label">Sentences (one per line)</div>
+            <textarea id="teacherSentences"></textarea>
+          </div>
+          <div>
+            <div class="label">Generation rules (preview)</div>
+            <div class="small">
+              For Class 5/6, Stage 4, the generator should prefer:
+              <ul class="list">
+                <li>Sentences 8–16 words with 1–2 clauses.</li>
+                <li>Connectives (although, because, however) and adverbs of frequency.</li>
+                <li>Modal verbs (should, might, must) and reported speech occasionally.</li>
+                <li>Vocabulary tier-2: persuade, compare, decide, manage, respond…</li>
+              </ul>
+              For younger stages, reduce clause count and keep punctuation simpler, but don’t dumb down the learning target—just add supports (word banks, chunking, read-aloud).
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // ------------------
+    //   Data + helpers
+    // ------------------
+    const DEMO_SENTENCES = [
+      "Although it was raining, we decided to play outside for ten minutes.",
+      "You should check the instructions carefully before you start the experiment.",
+      "My brother always finishes his homework first, so he can relax later.",
+      "If we recycle more plastic, we might reduce pollution in our local area.",
+      "The coach explained the rules clearly; however, some players still forgot them.",
+      "Because the bus was late, the class arrived at the museum after eleven o’clock.",
+      "She said that she had practised every day, and her confidence grew quickly.",
+      "We must listen respectfully, even when we disagree with someone’s opinion."
+    ];
+
+    function normalizeSpace(s){
+      return String(s||"").replace(/\s+/g," ").trim();
+    }
+
+    function tokenize(sentence){
+      // Keep punctuation stuck to the word before it (simple but effective for primary).
+      // Also keeps apostrophes inside words.
+      const raw = normalizeSpace(sentence);
+      if(!raw) return [];
+      // Split by spaces, but keep punctuation. We'll treat punctuation-only tokens as separate if spaced.
+      return raw.split(" ").filter(Boolean);
+    }
+
+    function shuffle(arr){
+      const a = arr.slice();
+      for(let i=a.length-1;i>0;i--){
+        const j = Math.floor(Math.random()*(i+1));
+        [a[i],a[j]]=[a[j],a[i]];
+      }
+      return a;
+    }
+
+    function escapeHtml(s){
+      return String(s||"")
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;")
+        .replace(/\"/g,"&quot;")
+        .replace(/'/g,"&#039;");
+    }
+
+    // crude syllable heuristic: splits by vowel groups
+    function syllableClaps(word){
+      const w = String(word||"").toLowerCase().replace(/[^a-z']/g,"");
+      if(!w) return [];
+      const parts = w.split(/(?=[aeiouy]+)|(?<=[aeiouy]+)(?=[^aeiouy])/g).filter(Boolean);
+      // merge tiny fragments
+      const merged=[];
+      for(const p of parts){
+        if(!merged.length) merged.push(p);
+        else {
+          const last = merged[merged.length-1];
+          if(last.length===1 && !/[aeiouy]/.test(last)) merged[merged.length-1]=last+p;
+          else merged.push(p);
+        }
+      }
+      // reduce duplicates
+      return merged.filter(Boolean);
+    }
+
+    function wordParts(word){
+      const w = String(word||"").toLowerCase().replace(/[^a-z']/g,"");
+      const parts=[];
+      if(!w) return parts;
+
+      const PREFIXES = ["un","re","dis","mis","pre","sub","inter","over","under","non","im","in","il","ir"];
+      const SUFFIXES = ["ing","ed","ly","ness","ment","tion","sion","able","ible","ous","ful","less","er","est","ies","s"];
+
+      let root=w;
+      const pref = PREFIXES.find(p => root.startsWith(p) && root.length>p.length+2);
+      if(pref){ parts.push(`Prefix: ${pref}- (often changes meaning)`); root = root.slice(pref.length); }
+
+      const suf = SUFFIXES.find(s => root.endsWith(s) && root.length>s.length+2);
+      if(suf){ parts.push(`Suffix: -${suf} (often changes word class/tense)`); root = root.slice(0, -suf.length); }
+
+      if(root && root!==w) parts.push(`Root: ${root} (the main meaning chunk)`);
+      if(!parts.length) parts.push("No obvious prefix/suffix found — still clap it, swap it, and use it in a sentence.");
+
+      // tiny etymology “sparkler”: NOT authoritative—just teacher-friendly nudges.
+      if(root.endsWith("port")) parts.push("Etymology hint: *port* often relates to carrying (transport, import).");
+      if(root.endsWith("spect")) parts.push("Etymology hint: *spect* often relates to seeing (inspect, spectacle).");
+      if(root.endsWith("dict")) parts.push("Etymology hint: *dict* often relates to saying (predict, dictionary).");
+
+      return parts;
+    }
+
+    // ------------------
+    //   Speech (Web API)
+    // ------------------
+    function pickVoice(preferFemale){
+      const voices = speechSynthesis.getVoices?.() || [];
+      if(!voices.length) return null;
+      const en = voices.filter(v => /^en(-|_)?/i.test(v.lang||""))
+        .concat(voices);
+
+      const femaleHints = [/female/i,/zira/i,/susan/i,/samantha/i,/karen/i,/victoria/i,/tessa/i,/serena/i,/amy/i];
+      const maleHints = [/male/i,/david/i,/mark/i,/daniel/i,/george/i,/fred/i,/thomas/i,/alex/i];
+
+      const hintList = preferFemale ? femaleHints : maleHints;
+      const v = en.find(v => hintList.some(r => r.test(v.name||""))) || en[0];
+      return v || null;
+    }
+
+    function speak(text, opts={}){
+      try{ speechSynthesis.cancel(); }catch{}
+      const u = new SpeechSynthesisUtterance(String(text||""));
+      const v = pickVoice(!!opts.female);
+      if(v) u.voice = v;
+      u.rate = opts.rate ?? 1;
+      u.pitch = opts.pitch ?? (opts.female ? 1.1 : 1);
+      speechSynthesis.speak(u);
+      return u;
+    }
+
+    function speakOneAtATime(words, opts={}){
+      try{ speechSynthesis.cancel(); }catch{}
+      let i=0;
+      function next(){
+        if(i>=words.length) return;
+        const w = words[i++];
+        const u = new SpeechSynthesisUtterance(String(w));
+        const v = pickVoice(!!opts.female);
+        if(v) u.voice = v;
+        u.rate = opts.rate ?? 0.95;
+        u.pitch = opts.pitch ?? (opts.female ? 1.1 : 1);
+        u.onend = () => setTimeout(next, 120);
+        speechSynthesis.speak(u);
+      }
+      next();
+    }
+
+    // ------------------
+    //   Drag & drop
+    // ------------------
+    let dragToken = null;
+
+    function makeToken(word){
+      const el = document.createElement('div');
+      el.className='token';
+      el.draggable=true;
+      el.textContent = word;
+
+      el.addEventListener('dragstart', (e)=>{
+        dragToken = el;
+        el.classList.add('dragging');
+        e.dataTransfer.effectAllowed='move';
+        e.dataTransfer.setData('text/plain', word);
+      });
+
+      el.addEventListener('dragend', ()=>{
+        dragToken = null;
+        el.classList.remove('dragging');
+      });
+
+      // click to move quickly
+      el.addEventListener('click', ()=>{
+        if(el.parentElement && el.parentElement.id==='bank') build.appendChild(el);
+        else bank.appendChild(el);
+        refreshWordChips();
+        clearStatus();
+      });
+
+      return el;
+    }
+
+    function enableDropZone(zone){
+      zone.addEventListener('dragover', (e)=>{
+        e.preventDefault();
+        e.dataTransfer.dropEffect='move';
+      });
+      zone.addEventListener('drop', (e)=>{
+        e.preventDefault();
+        if(!dragToken) return;
+        zone.appendChild(dragToken);
+        refreshWordChips();
+        clearStatus();
+      });
+    }
+
+    // ------------------
+    //   Game state
+    // ------------------
+    const bank = document.getElementById('bank');
+    const build = document.getElementById('build');
+    const statusEl = document.getElementById('status');
+
+    const btnPrev = document.getElementById('btnPrev');
+    const btnNext = document.getElementById('btnNext');
+    const btnCheck = document.getElementById('btnCheck');
+    const btnReset = document.getElementById('btnReset');
+    const btnReveal = document.getElementById('btnReveal');
+    const btnShuffle = document.getElementById('btnShuffle');
+
+    const btnSpeakM = document.getElementById('btnSpeakM');
+    const btnSpeakF = document.getElementById('btnSpeakF');
+    const btnSpeakOne = document.getElementById('btnSpeakOne');
+    const btnStop = document.getElementById('btnStop');
+
+    const promptEl = document.getElementById('prompt');
+
+    const kpiProgress = document.getElementById('kpiProgress');
+    const kpiScore = document.getElementById('kpiScore');
+
+    const teacherSentences = document.getElementById('teacherSentences');
+    const btnLoadDemo = document.getElementById('btnLoadDemo');
+    const btnApply = document.getElementById('btnApply');
+
+    const wordChips = document.getElementById('wordChips');
+    const wordCard = document.getElementById('wordCard');
+    const wlEmpty = document.getElementById('wlEmpty');
+    const wlWord = document.getElementById('wlWord');
+    const wlIpa = document.getElementById('wlIpa');
+    const wlSyllables = document.getElementById('wlSyllables');
+    const wlParts = document.getElementById('wlParts');
+    const wlSpeak = document.getElementById('wlSpeak');
+    const wlSpell = document.getElementById('wlSpell');
+
+    enableDropZone(bank);
+    enableDropZone(build);
+
+    let sentences = DEMO_SENTENCES.slice();
+    let idx = 0;
+    let score = 0;
+
+    function getCurrent(){
+      const s = sentences[idx] || "";
+      const target = tokenize(s);
+      return { sentence: s, target };
+    }
+
+    function setStatus(msg, kind){
+      statusEl.textContent = msg;
+      statusEl.className = 'status' + (kind ? (' '+kind) : '');
+    }
+
+    function clearStatus(){
+      statusEl.textContent='';
+      statusEl.className='status';
+    }
+
+    function render(){
+      clearStatus();
+      bank.innerHTML='';
+      build.innerHTML='';
+
+      const cur = getCurrent();
+      promptEl.textContent = "Reorder the words to make the sentence.";
+
+      const scrambled = shuffle(cur.target);
+      scrambled.forEach(w => bank.appendChild(makeToken(w)));
+
+      kpiProgress.textContent = `${idx+1} / ${sentences.length}`;
+      kpiScore.textContent = `Score: ${score}`;
+
+      btnPrev.disabled = idx<=0;
+      btnNext.disabled = idx>=sentences.length-1;
+
+      refreshWordChips();
+    }
+
+    function builtWords(){
+      return Array.from(build.querySelectorAll('.token')).map(el => el.textContent);
+    }
+
+    function refreshWordChips(){
+      const words = builtWords();
+      wordChips.innerHTML='';
+      if(!words.length){
+        wlEmpty.style.display='block';
+        wordCard.style.display='none';
+        return;
+      }
+      wlEmpty.style.display='none';
+
+      words.forEach((w) => {
+        const chip = document.createElement('button');
+        chip.className='chip';
+        chip.type='button';
+        chip.textContent = w;
+        chip.addEventListener('click', (e)=>{
+          const alt = e.altKey;
+          showWordLab(w);
+          if(alt) speak(w, { female:false, rate: 0.9 });
+        });
+        wordChips.appendChild(chip);
+      });
+    }
+
+    let currentWord = '';
+    function showWordLab(word){
+      currentWord = String(word||'');
+      const clean = currentWord.replace(/[^A-Za-z']/g,'');
+      wlWord.textContent = currentWord;
+      wlIpa.textContent = clean ? `/ ${clean.toLowerCase()} /` : '/…/';
+
+      const syl = syllableClaps(currentWord);
+      wlSyllables.innerHTML = syl.length ? syl.map(s=>`<span class="tag" style="margin-right:6px;">${escapeHtml(s)}</span>`).join('') : '<span class="small">(no syllable hint)</span>';
+
+      const parts = wordParts(currentWord);
+      wlParts.innerHTML = parts.map(p=>`<li class="small">${escapeHtml(p)}</li>`).join('');
+
+      wlEmpty.style.display='none';
+      wordCard.style.display='block';
+    }
+
+    wlSpeak.addEventListener('click', ()=>{
+      if(!currentWord) return;
+      speak(currentWord, { female:false, rate: 0.9 });
+    });
+
+    wlSpell.addEventListener('click', ()=>{
+      if(!currentWord) return;
+      const letters = currentWord.replace(/[^A-Za-z]/g,'').split('');
+      if(!letters.length) return;
+      speak(letters.join(' '), { female:false, rate: 0.85 });
+    });
+
+    btnCheck.addEventListener('click', ()=>{
+      const cur = getCurrent();
+      const bw = builtWords();
+      if(bw.length !== cur.target.length){
+        setStatus(`You have ${bw.length} words placed. This sentence needs ${cur.target.length}.`, 'bad');
+        return;
+      }
+      const ok = bw.join(' ') === cur.target.join(' ');
+      if(ok){
+        score += 1;
+        setStatus('Correct ✓ Nice work.', 'good');
+        kpiScore.textContent = `Score: ${score}`;
+      } else {
+        setStatus('Not quite — try again. Tip: look at punctuation and connectives.', 'bad');
+      }
+    });
+
+    btnReset.addEventListener('click', ()=>{
+      const tokens = Array.from(build.querySelectorAll('.token'));
+      tokens.forEach(t => bank.appendChild(t));
+      refreshWordChips();
+      clearStatus();
+    });
+
+    btnReveal.addEventListener('click', ()=>{
+      const cur = getCurrent();
+      bank.innerHTML='';
+      build.innerHTML='';
+      cur.target.forEach(w => build.appendChild(makeToken(w)));
+      refreshWordChips();
+      clearStatus();
+    });
+
+    btnShuffle.addEventListener('click', ()=>{
+      const all = Array.from(bank.querySelectorAll('.token')).concat(Array.from(build.querySelectorAll('.token')));
+      bank.innerHTML='';
+      build.innerHTML='';
+      shuffle(all).forEach(t => bank.appendChild(t));
+      refreshWordChips();
+      clearStatus();
+    });
+
+    btnPrev.addEventListener('click', ()=>{ idx = Math.max(0, idx-1); render(); });
+    btnNext.addEventListener('click', ()=>{ idx = Math.min(sentences.length-1, idx+1); render(); });
+
+    btnSpeakM.addEventListener('click', ()=>{
+      const cur = getCurrent();
+      speak(cur.sentence, { female:false, rate: 1 });
+    });
+
+    btnSpeakF.addEventListener('click', ()=>{
+      const cur = getCurrent();
+      speak(cur.sentence, { female:true, rate: 1 });
+    });
+
+    btnSpeakOne.addEventListener('click', ()=>{
+      const words = builtWords();
+      if(words.length) speakOneAtATime(words, { female:false });
+      else speakOneAtATime(tokenize(getCurrent().sentence), { female:false });
+    });
+
+    btnStop.addEventListener('click', ()=>{ try{ speechSynthesis.cancel(); }catch{} });
+
+    btnLoadDemo.addEventListener('click', ()=>{
+      teacherSentences.value = DEMO_SENTENCES.join('\n');
+    });
+
+    btnApply.addEventListener('click', ()=>{
+      const lines = (teacherSentences.value || '').split(/\r?\n/).map(s=>normalizeSpace(s)).filter(Boolean);
+      if(!lines.length){
+        alert('Paste at least one sentence (one per line).');
+        return;
+      }
+      sentences = lines;
+      idx = 0;
+      score = 0;
+      render();
+    });
+
+    // sliders
+    const fontSize = document.getElementById('fontSize');
+    const lineHeight = document.getElementById('lineHeight');
+    const letterSpacing = document.getElementById('letterSpacing');
+    const fontSizeVal = document.getElementById('fontSizeVal');
+    const lineHeightVal = document.getElementById('lineHeightVal');
+    const letterSpacingVal = document.getElementById('letterSpacingVal');
+
+    function setCssVar(k,v){ document.documentElement.style.setProperty(k,v); }
+
+    function applySliders(){
+      const fs = Number(fontSize.value||18);
+      const lh = Number(lineHeight.value||1.55);
+      const ls = Number(letterSpacing.value||0);
+      fontSizeVal.textContent = String(fs);
+      lineHeightVal.textContent = String(lh.toFixed(2));
+      letterSpacingVal.textContent = String(ls.toFixed(1).replace(/\.0$/,''));
+      setCssVar('--fontSize', fs+'px');
+      setCssVar('--lineHeight', String(lh));
+      setCssVar('--letterSpacing', ls+'px');
+    }
+
+    [fontSize,lineHeight,letterSpacing].forEach(el => el.addEventListener('input', applySliders));
+    applySliders();
+
+    // initialize
+    teacherSentences.value = DEMO_SENTENCES.join('\n');
+
+    // Voice list may load async
+    if (speechSynthesis && speechSynthesis.onvoiceschanged !== undefined) {
+      speechSynthesis.onvoiceschanged = () => {};
+    }
+
+    render();
+  </script>
+</body>
+</html>

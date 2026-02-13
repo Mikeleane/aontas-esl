@@ -22,7 +22,7 @@ export type ExerciseItem = {
 };
 
 // --- Materials ingestion + teacher context (future wiring) ---
-// This matches the “Materials → Curriculum/Context → Generate/Export” workflow spec. :contentReference[oaicite:0]{index=0}
+// This matches the "Materials → Curriculum/Context → Generate/Export" workflow spec. :contentReference[oaicite:0]{index=0}
 export type MaterialType = "link" | "text" | "image" | "pdf" | "docx" | "other";
 
 export type Material = {

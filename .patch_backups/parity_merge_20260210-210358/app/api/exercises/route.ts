@@ -1,0 +1,537 @@
+import { NextResponse } from "next/server";
+import OpenAI from "openai";
+import { parseCefrLevel, parseTextType, buildCambridgeConstraints } from "../../../lib/cefrCambridge";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+type ExerciseSide = {
+  prompt: string;
+  options?: string[];
+};
+
+type ExerciseItem = {
+  id: number;
+  type: string;
+  skill: string;
+  standard: ExerciseSide;
+  adapted: ExerciseSide;
+  answer: string | string[];
+};
+
+type ExercisesResponse = {
+  items: ExerciseItem[];
+  error?: string;
+  warning?: string;
+};
+
+type ErrorResponse = { error: string };
+type ExercisesApiResponse = ExercisesResponse | ErrorResponse;
+
+
+function safeJsonParse<T>(raw: string): T | null {
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
+  }
+}
+
+function clamp<T>(arr: T[], n: number) {
+  return arr.slice(0, Math.max(0, n));
+}
+
+function sentences(text: string): string[] {
+  const cleaned = String(text || "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!cleaned) return [];
+  const parts = cleaned.match(/[^.!?]+[.!?]+|[^.!?]+$/g);
+  return (parts || []).map((s) => s.trim()).filter(Boolean);
+}
+
+function tokens(text: string): string[] {
+  const t = String(text || "").toLowerCase();
+  const m = t.match(/[a-zÃƒÂ¡ÃƒÂ©ÃƒÂ­ÃƒÂ³ÃƒÂºÃƒÂ¼ÃƒÂ±]+(?:'[a-z]+)?/gi);
+  return (m || []).map((w) => w.toLowerCase());
+}
+
+const STOPWORDS = new Set(
+  [
+    "the",
+    "and",
+    "a",
+    "an",
+    "to",
+    "of",
+    "in",
+    "on",
+    "for",
+    "with",
+    "is",
+    "are",
+    "was",
+    "were",
+    "be",
+    "been",
+    "being",
+    "as",
+    "at",
+    "by",
+    "from",
+    "that",
+    "this",
+    "it",
+    "they",
+    "their",
+    "them",
+    "he",
+    "she",
+    "we",
+    "you",
+    "i",
+    "or",
+    "but",
+    "not",
+    "can",
+    "could",
+    "would",
+    "should",
+    "will",
+    "just",
+    "so",
+    "if",
+    "than",
+    "then",
+    "about",
+    "into",
+    "over",
+    "after",
+    "before",
+    "more",
+    "most",
+    "some",
+    "any",
+    "all",
+    "many",
+    "much",
+    "very",
+    "also",
+  ].map((s) => s.toLowerCase())
+);
+
+function topSharedWords(standardText: string, adaptedText: string, n = 8): string[] {
+  const a = tokens(standardText);
+  const b = new Set(tokens(adaptedText));
+  const freq = new Map<string, number>();
+  for (const w of a) {
+    if (!b.has(w)) continue;
+    if (w.length < 4) continue;
+    if (STOPWORDS.has(w)) continue;
+    freq.set(w, (freq.get(w) || 0) + 1);
+  }
+  return clamp(
+    [...freq.entries()]
+      .sort((x, y) => y[1] - x[1])
+      .map(([w]) => w),
+    n
+  );
+}
+
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function simpleSummary(standardText: string): string {
+  const s = sentences(standardText);
+  if (!s.length) return "Sample answer: The text explains the topic and gives key details.";
+  const first = s[0];
+  const second = s[1] ? " " + s[1] : "";
+  return `Sample answer: ${first}${second}`.slice(0, 280);
+}
+
+// Very lightweight syllable-ish chunking (heuristic, not a phonics oracle)
+function syllableChunks(word: string): string {
+  const w = word.toLowerCase().replace(/[^a-z]/g, "");
+  if (!w) return word;
+  const vowels = new Set(["a", "e", "i", "o", "u", "y"]);
+  const chunks: string[] = [];
+  let buf = "";
+  for (let i = 0; i < w.length; i++) {
+    const ch = w[i];
+    buf += ch;
+    const next = w[i + 1];
+    const isV = vowels.has(ch);
+    const nextIsV = next ? vowels.has(next) : false;
+    if (isV && !nextIsV) {
+      // cut after vowel when next is consonant cluster
+      if (buf.length) {
+        chunks.push(buf);
+        buf = "";
+      }
+    }
+  }
+  if (buf) chunks.push(buf);
+  // merge tiny leading chunk
+  if (chunks.length > 2 && chunks[0].length === 1) {
+    chunks[1] = chunks[0] + chunks[1];
+    chunks.shift();
+  }
+  return chunks.join("-");
+}
+
+function fallbackExercises(args: {
+  standardText: string;
+  adaptedText: string;
+  blocks: string[];
+  questionFocus?: string;
+}): ExercisesResponse {
+  const { standardText, adaptedText, blocks } = args;
+  const wants = new Set(blocks.map((b) => String(b)));
+  const sharedWords = topSharedWords(standardText, adaptedText, 10);
+  const sents = sentences(standardText);
+
+  let id = 1;
+  const items: ExerciseItem[] = [];
+
+  if (wants.has("gist_main_idea")) {
+    const ans = simpleSummary(standardText);
+    items.push({
+      id: id++,
+      type: "gist",
+      skill: "Main idea",
+      standard: {
+        prompt: "In 1Ã¢â‚¬â€œ2 sentences, what is the main idea of the text?",
+      },
+      adapted: {
+        prompt:
+          "In 1 sentence, what is the text mostly about? Tip: start with Ã¢â‚¬ËœThis text is aboutÃ¢â‚¬Â¦Ã¢â‚¬â„¢.",
+      },
+      answer: ans,
+    });
+  }
+
+  if (wants.has("detail_questions")) {
+    const pick = clamp(sents, 3);
+    const ans = pick.length
+      ? `Sample answers (from the text):\n- ${pick.join("\n- ")}`
+      : "Sample answers: Use details from the text.";
+    items.push({
+      id: id++,
+      type: "detail",
+      skill: "Key details",
+      standard: {
+        prompt:
+          "Find 3 key details from the text. Write them as short bullet points.",
+      },
+      adapted: {
+        prompt:
+          "Find 3 key details. Use starters: Ã¢â‚¬ËœOne detail isÃ¢â‚¬Â¦Ã¢â‚¬â„¢, Ã¢â‚¬ËœAnother detail isÃ¢â‚¬Â¦Ã¢â‚¬â„¢, Ã¢â‚¬ËœA third detail isÃ¢â‚¬Â¦Ã¢â‚¬â„¢.",
+      },
+      answer: ans,
+    });
+  }
+
+  if (wants.has("vocabulary")) {
+    const words = clamp(sharedWords, 6);
+    const ans = words.length
+      ? `Words (from the text): ${words.join(", ")}`
+      : "Words: (choose 6 interesting words from the text).";
+    items.push({
+      id: id++,
+      type: "vocab",
+      skill: "Vocabulary (in-context)",
+      standard: {
+        prompt:
+          "Choose 6 words from the text. For each word: (1) copy the sentence it appears in, and (2) write a short meaning in your own words.",
+      },
+      adapted: {
+        prompt:
+          "Find these words in the text and write a short meaning (or draw a quick symbol): " +
+          (words.length ? words.join(", ") : "(teacher chooses)") +
+          ".",
+      },
+      answer: ans,
+    });
+  }
+
+  if (wants.has("true_false")) {
+    const w1 = sharedWords[0] || "the topic";
+    const w2 = sharedWords[1] || "a detail";
+    items.push({
+      id: id++,
+      type: "trueFalse",
+      skill: "True / False",
+      standard: {
+        prompt: `Decide if each statement is True or False:\n1) The text mentions Ã¢â‚¬Å“${w1}Ã¢â‚¬Â.\n2) The text mentions Ã¢â‚¬Å“unicornsÃ¢â‚¬Â as a key detail.`,
+        options: ["True", "False"],
+      },
+      adapted: {
+        prompt: `True or False?\n1) I can find Ã¢â‚¬Å“${w1}Ã¢â‚¬Â in the text.\n2) I can find Ã¢â‚¬Å“unicornsÃ¢â‚¬Â in the text.`,
+        options: ["True", "False"],
+      },
+      answer: ["True", "False"],
+    });
+  }
+
+  if (wants.has("cloze_gapfill")) {
+    const base = sents.length ? sents[Math.min(2, sents.length - 1)] : standardText;
+    const blanks = clamp(sharedWords, 5);
+    let cloze = base;
+    const answers: string[] = [];
+    for (const w of blanks) {
+      const re = new RegExp(`\\b${w}\\b`, "i");
+      if (re.test(cloze)) {
+        cloze = cloze.replace(re, "_____");
+        answers.push(w);
+      }
+    }
+    items.push({
+      id: id++,
+      type: "cloze",
+      skill: "Cloze / gap-fill",
+      standard: {
+        prompt:
+          "Complete the sentence by filling the gaps. Use the word bank.\n\n" +
+          cloze +
+          "\n\nWord bank: " +
+          answers.join(", "),
+      },
+      adapted: {
+        prompt:
+          "Fill in the gaps using the word bank.\n\n" +
+          cloze +
+          "\n\nWord bank: " +
+          answers.join(", "),
+      },
+      answer: answers,
+    });
+  }
+
+  if (wants.has("ordering")) {
+    const pick = clamp(sents.slice(0, 6), 4);
+    const correct = pick.length ? pick : ["FirstÃ¢â‚¬Â¦", "ThenÃ¢â‚¬Â¦", "NextÃ¢â‚¬Â¦", "FinallyÃ¢â‚¬Â¦"];
+    const shuffled = shuffle(correct);
+    items.push({
+      id: id++,
+      type: "ordering",
+      skill: "Ordering",
+      standard: {
+        prompt:
+          "Put these events/ideas in the correct order (1Ã¢â‚¬â€œ4):\n" +
+          shuffled.map((x, i) => `${i + 1}) ${x}`).join("\n"),
+      },
+      adapted: {
+        prompt:
+          "Number the sentences in the correct order (1Ã¢â‚¬â€œ4):\n" +
+          shuffled.map((x, i) => `${i + 1}) ${x}`).join("\n"),
+      },
+      answer: correct,
+    });
+  }
+
+  if (wants.has("word_study")) {
+    const words = clamp(sharedWords.filter((w) => w.length >= 5), 6);
+    const picks = clamp(words, 4);
+    const breakdowns = picks.map((w) => `${w} Ã¢â€ â€™ ${syllableChunks(w)}`);
+    items.push({
+      id: id++,
+      type: "wordStudy",
+      skill: "Word study (break down words)",
+      standard: {
+        prompt:
+          "Break down each word. Add hyphens for syllable-like chunks, and circle any prefix/suffix you notice.\n\nWords: " +
+          (picks.length ? picks.join(", ") : "(choose 4 words from the text)"),
+      },
+      adapted: {
+        prompt:
+          "Break down each word using hyphens. Tip: clap the parts as you say the word.\n\nWords: " +
+          (picks.length ? picks.join(", ") : "(teacher chooses)"),
+      },
+      answer: breakdowns.length ? breakdowns : "Sample answers: add hyphens to show the parts.",
+    });
+  }
+
+  return {
+    items,
+    warning: "NO_API_KEY_CONFIGURED",
+  };
+}
+
+export async function POST(req: Request) {
+  let cambridgeBlock = "";
+  try {
+    const body = await req.json();
+  {
+    const _cefr = parseCefrLevel((body as any).cefrLevel ?? (body as any).level ?? "B1");
+    const _type = parseTextType((body as any).textType ?? (body as any).text_type ?? (body as any).genre ?? "article");
+    const _constraints = buildCambridgeConstraints(_cefr, _type);
+
+    cambridgeBlock = `
+You are generating ESL materials for Aontas.
+
+${_constraints}
+
+IMPORTANT:
+- Produce STANDARD and SUPPORTED variants that share ONE answer key.
+- Text type must be unmistakable (emails need subject + greeting + sign-off; reports need headings; etc.).
+- Keep the reading text inside the target word range.
+- Do not generate meta questions about CEFR, word counts, text type requirements, or the task instructions.
+- Do not ask questions like 'What type of text is this?' or 'How many words should it be?'
+- Every question MUST be answerable ONLY from the SOURCE TEXT (if provided). If it isn't stated, don't ask it.
+`.trim();
+  
+const providedText = String(
+  (body as any).inputText ??
+  (body as any).text ??
+  (body as any).sourceText ??
+  (body as any).passage ??
+  ""
+).trim();
+
+if (providedText) {
+  cambridgeBlock += `
+
+SOURCE TEXT (use exactly; do not invent):
+${providedText}
+
+Rules:
+- Base ALL questions and answers ONLY on the SOURCE TEXT above.
+- If a detail is not stated, do not assume it.
+- Do not replace the text with a different topic.
+`;
+}
+}
+
+    const standardText: string =
+      body.standardText || body.standardOutput || body.standard || "";
+    const adaptedText: string =
+      body.adaptedText || body.adaptedOutput || body.adapted || "";
+
+    const outputLanguage: string = body.outputLanguage || body.language || "English";
+    const level: string = body.level || body.cefrLevel || "B1";
+    const outputType: string = body.textType || body.outputType || "Article";
+    const questionFocus: string = body.questionFocus || "Balanced comprehension";
+
+    const rawBlocks =
+      (Array.isArray(body.blocks) && body.blocks) ||
+      (Array.isArray(body.selectedBlocks) && body.selectedBlocks) ||
+      [];
+
+    const enabledBlocks: string[] =
+      rawBlocks.length > 0
+        ? rawBlocks.map((b: any) => String(b))
+        : ["gist_main_idea", "detail_questions", "vocabulary"]; // sensible default
+
+    // Fallback mode (lets you test the full pipeline without keys)
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json(
+        fallbackExercises({
+          standardText,
+          adaptedText,
+          blocks: enabledBlocks,
+          questionFocus,
+        })
+      );
+    }
+
+    const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+    const wants = new Set(enabledBlocks);
+
+    const prompt = `
+You are an expert primary-school ELA teacher.
+
+TASK:
+Generate an EXERCISES PACK for a whole-class lesson using TWO versions of the same text:
+1) STANDARD text (grade-level)
+2) SUPPORTED text (same learning target, more accessible)
+
+CRITICAL RULES:
+- The class works together: every exercise MUST share ONE single answer key.
+- Standard and Supported versions can have different scaffolds, but answers must match.
+- Do not oversimplify the Supported version: keep the same learning target.
+- Keep wording age-appropriate and classroom-friendly.
+- Output language: ${outputLanguage}
+- Reading level: ${level}
+- Text type: ${outputType}
+- Question focus: ${questionFocus}
+
+TEXTS:
+STANDARD:
+"""
+${standardText}
+"""
+
+SUPPORTED:
+"""
+${adaptedText}
+"""
+
+EXERCISE BLOCKS TO GENERATE:
+${enabledBlocks.map((b) => `- ${b}`).join("\n")}
+
+WHAT TO RETURN:
+Return valid JSON ONLY (no markdown) in this exact shape:
+{
+  "items": [
+    {
+      "id": 1,
+      "type": "gist|detail|vocab|trueFalse|cloze|ordering|wordStudy",
+      "skill": "...",
+      "standard": { "prompt": "...", "options": ["..."]? },
+      "adapted": { "prompt": "...", "options": ["..."]? },
+      "answer": "..." OR ["...", "..."]
+    }
+  ]
+}
+
+BLOCK GUIDANCE:
+- gist_main_idea: 1Ã¢â‚¬â€œ2 items on main idea / headline / summary.
+- detail_questions: 3Ã¢â‚¬â€œ5 items that require evidence from the text.
+- vocabulary: 2Ã¢â‚¬â€œ4 items, in-context meaning, matching, or using words in sentences.
+- true_false: 3Ã¢â‚¬â€œ5 statements; keep the Supported version simpler (shorter statements, fewer distractors) BUT SAME T/F answers.
+- cloze_gapfill: 1Ã¢â‚¬â€œ2 cloze tasks. Use the SAME missing words/answers in both versions; Supported can include a word bank.
+- ordering: 1 item ordering events/steps. Supported can provide numbered boxes.
+- word_study: 2Ã¢â‚¬â€œ3 items that help students break down words (syllables, prefixes/suffixes, word families, phoneme-grapheme patterns).
+  * Only use words that appear in BOTH texts.
+  * Keep answers objective (e.g., syllable splits with hyphens, prefix/root/suffix labels, or grapheme highlights).
+
+QUALITY CONTROL:
+- Do not invent facts.
+- Keep it printable.
+- Ensure every item has a clear answer.
+`;
+
+    const completion = await client.chat.completions.create({
+      model: "gpt-4.1-mini",
+      messages: [
+        { role: "system", content: cambridgeBlock },{ role: "user", content: prompt }],
+      temperature: 0.6,
+    });
+
+    const content = completion.choices[0]?.message?.content?.trim() || "";
+    const parsed = safeJsonParse<ExercisesResponse>(content);
+
+    if (!parsed || !Array.isArray(parsed.items)) {
+      return NextResponse.json(
+        { error: "Failed to parse exercises JSON." } satisfies ErrorResponse,
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json(parsed);
+  } catch (err: any) {
+    return NextResponse.json(
+      { error: err?.message || "Exercises generation failed." } satisfies ErrorResponse,
+      { status: 500 }
+    );
+  }
+}
+
+

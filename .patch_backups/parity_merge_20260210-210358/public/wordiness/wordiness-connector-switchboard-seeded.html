@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>Wordiness — Connector Switchboard (Seeded)</title>
+<style>
+  :root { --bg:#07151b; --card:#0b1f27; --ink:#eaf2f7; --mut:#a9c0cc; --acc:#19c37d; --warn:#ffcc66; }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial; background:radial-gradient(1200px 700px at 20% 10%, #0d2b33, var(--bg)); color:var(--ink)}
+  .wrap{max-width:1100px;margin:0 auto;padding:18px}
+  .top{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+  .brand{display:flex;gap:10px;align-items:center}
+  .brand img{width:38px;height:38px;border-radius:10px;object-fit:cover;border:1px solid rgba(255,255,255,.14)}
+  h1{margin:0;font-size:20px;letter-spacing:.2px}
+  .sub{margin:2px 0 0;color:var(--mut);font-size:13px}
+  .grid{display:grid;grid-template-columns:1.2fr .8fr;gap:14px;margin-top:14px}
+  @media (max-width:900px){.grid{grid-template-columns:1fr}}
+  .card{background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03)); border:1px solid rgba(255,255,255,.12); border-radius:16px; padding:14px}
+  .goal{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+  .goal .label{font-size:12px;color:var(--mut)}
+  .goal .text{font-size:16px;font-weight:650;margin-top:2px}
+  .pill{display:inline-flex;gap:8px;align-items:center;border:1px solid rgba(255,255,255,.14); padding:8px 10px;border-radius:999px;background:rgba(0,0,0,.22); color:var(--ink); font-weight:600}
+  .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+  button{cursor:pointer;border-radius:14px;border:1px solid rgba(255,255,255,.14); background:rgba(0,0,0,.25); color:var(--ink); padding:10px 14px; font-weight:650}
+  button.primary{background:rgba(25,195,125,.16); border-color:rgba(25,195,125,.35)}
+  button:active{transform:translateY(1px)}
+  .sentence{margin-top:12px; font-size:20px; line-height:1.25; padding:14px; border-radius:14px; background:rgba(0,0,0,.22); border:1px solid rgba(255,255,255,.12)}
+  .blank{display:inline-block;min-width:90px;text-align:center;padding:6px 10px;margin:0 6px;border-radius:12px;border:2px dashed rgba(255,255,255,.25); color:rgba(255,255,255,.75)}
+  .choices{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+  .choice{padding:12px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.25); font-weight:700}
+  .choice.good{outline:2px solid rgba(25,195,125,.65)}
+  .choice.bad{outline:2px solid rgba(255,90,90,.65)}
+  .status{margin-top:10px;color:var(--mut);font-size:13px}
+  .bigStart{font-size:16px;padding:12px 16px}
+</style>
+</head>
+<body>
+<script src="wordiness-seed-bridge.js"></script>
+<div class="wrap">
+  <div class="top">
+    <div class="brand">
+      <img src="crest.png" onerror="this.style.display='none'"/>
+      <div>
+        <h1>Connector Switchboard (Seeded)</h1>
+        <div class="sub">Pick the connector that best links the two parts. Seeded games use your Reading Pack text.</div>
+      </div>
+    </div>
+    <div class="row" style="margin-top:0">
+      <span class="pill">Score <b id="score">0</b></span>
+      <span class="pill">Round <b id="round">0</b></span>
+      <button id="ttsBtn">TTS: On</button>
+      <button id="stopBtn">Stop</button>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="goal">
+        <div>
+          <div class="label">Goal</div>
+          <div class="text" id="goalText">Press <b>Start Round</b>. Choose the best connector.</div>
+        </div>
+        <button class="primary bigStart" id="startBtn">Start Round</button>
+      </div>
+
+      <div class="sentence" id="sentenceBox" style="margin-top:12px">
+        <span id="partA">—</span>
+        <span class="blank" id="blank">____</span>
+        <span id="partB">—</span>
+      </div>
+
+      <div class="row">
+        <button id="hearBtn">Hear full sentence</button>
+        <button id="nextBtn">Next</button>
+      </div>
+
+      <div class="status" id="status">Tip: scan left-to-right like reading. Big button = less panic.</div>
+    </div>
+
+    <div class="card">
+      <div class="label" style="color:var(--mut);font-size:12px">Choices (tap one)</div>
+      <div class="choices" id="choices"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var api = window.__WORDINESS__ || {};
+  var seed = (api.getSeed && api.getSeed()) || null;
+
+  var CONNECTORS = ["because","but","so","when","if","although","then","and","or"];
+  var score = 0, round = 0, ttsOn = true;
+
+  var elScore = document.getElementById("score");
+  var elRound = document.getElementById("round");
+  var elGoal  = document.getElementById("goalText");
+  var elA     = document.getElementById("partA");
+  var elB     = document.getElementById("partB");
+  var elBlank = document.getElementById("blank");
+  var elChoices = document.getElementById("choices");
+  var elStatus  = document.getElementById("status");
+  var current = null;
+  var chosen = null;
+
+  function speak(t, opts){
+    if (!ttsOn) return;
+    if (api.speak) return api.speak(t, opts||{});
+    try {
+      if (!("speechSynthesis" in window)) return;
+      speechSynthesis.cancel();
+      var u = new SpeechSynthesisUtterance(String(t||""));
+      speechSynthesis.speak(u);
+    } catch(e){}
+  }
+
+  function stopSpeak(){ try{ speechSynthesis.cancel(); }catch(e){} }
+
+  function cleanSentences(text){
+    text = String(text||"").replace(/\s+/g," ").trim();
+    if (!text) return [];
+    // rough sentence split
+    var parts = text.split(/(?<=[.!?])\s+/);
+    return parts.map(function(s){return s.trim();}).filter(Boolean);
+  }
+
+  function escapeRe(s){ return String(s).replace(/[.*+?^${}()|[\]\\]/g,"\\$&"); }
+
+  function splitOnConnector(sentence, connector){
+    var re = new RegExp("\\b"+escapeRe(connector)+"\\b","i");
+    var m = re.exec(sentence);
+    if (!m) return null;
+
+    // remove FULL connector token (fixes leftover last letter)
+    var before = sentence.slice(0, m.index);
+    var after  = sentence.slice(m.index + m[0].length);
+
+    before = before.replace(/\s+/g," ").trim().replace(/[,\s]+$/,"").trim();
+    after  = after.replace(/\s+/g," ").trim().replace(/^[,\s]+/,"").trim();
+
+    if (!before || !after) return null;
+    return { before: before, after: after, correct: connector.toLowerCase(), full: (before+" "+connector+" "+after).replace(/\s+/g," ").trim() };
+  }
+
+  function buildRounds(){
+    var base = [];
+    if (seed && seed.text) base = cleanSentences(seed.text);
+    if (!base.length) {
+      base = [
+        "We wore coats because it was cold.",
+        "I like football but my sister prefers music.",
+        "Wash your hands so you don’t spread germs.",
+        "When the bell rings, we line up quietly.",
+        "If you finish early, you can help a friend.",
+        "Although it rained, we still went outside."
+      ];
+    }
+
+    // find sentences that actually contain connectors
+    var rounds = [];
+    for (var i=0;i<base.length;i++){
+      var s = base[i];
+      for (var j=0;j<CONNECTORS.length;j++){
+        var c = CONNECTORS[j];
+        var sp = splitOnConnector(s, c);
+        if (sp) { rounds.push(sp); break; }
+      }
+      if (rounds.length >= 25) break;
+    }
+    if (!rounds.length) {
+      // fallback: make artificial splits from any sentence
+      rounds = base.slice(0,10).map(function(s){
+        return {before:s, after:"", correct:"", full:s};
+      });
+    }
+    return rounds;
+  }
+
+  var rounds = buildRounds();
+  var idx = -1;
+
+  function shuffle(a){
+    a = a.slice();
+    for (var i=a.length-1;i>0;i--){
+      var r = Math.floor(Math.random()*(i+1));
+      var t=a[i]; a[i]=a[r]; a[r]=t;
+    }
+    return a;
+  }
+
+  function nextRound(){
+    chosen = null;
+    idx = (idx + 1) % rounds.length;
+    current = rounds[idx];
+
+    round++;
+    elRound.textContent = String(round);
+    elScore.textContent = String(score);
+
+    elA.textContent = current.before || "—";
+    elB.textContent = current.after  || "—";
+    elBlank.textContent = "____";
+    elBlank.style.borderColor = "rgba(255,255,255,.25)";
+
+    elGoal.innerHTML = 'Pick the best connector (because / but / so / when / if / although / then / and / or).';
+    elStatus.textContent = "Tap a connector, then press Next (or Hear full sentence).";
+
+    renderChoices();
+  }
+
+  function renderChoices(){
+    elChoices.innerHTML = "";
+    var correct = (current && current.correct) ? current.correct : "because";
+    var pool = shuffle(CONNECTORS.filter(function(x){return x!==correct;})).slice(0,2);
+    var choices = shuffle([correct].concat(pool));
+
+    choices.forEach(function(c){
+      var b = document.createElement("button");
+      b.className = "choice";
+      b.textContent = c;
+      b.addEventListener("click", function(){
+        onChoose(c, b);
+      });
+      elChoices.appendChild(b);
+    });
+  }
+
+  function onChoose(c, btn){
+    if (!current) return;
+    chosen = c;
+
+    // lock UI feedback
+    var correct = current.correct;
+    var buttons = Array.prototype.slice.call(elChoices.querySelectorAll("button"));
+    buttons.forEach(function(b){
+      b.disabled = true;
+      if (b.textContent === correct) b.classList.add("good");
+    });
+
+    if (c === correct){
+      score += 10;
+      elBlank.textContent = correct;
+      elBlank.style.borderColor = "rgba(25,195,125,.65)";
+      elStatus.textContent = "Nice. That’s the connector that fits best.";
+      speak(current.full);
+    } else {
+      score -= 3;
+      btn.classList.add("bad");
+      elBlank.textContent = c;
+      elBlank.style.borderColor = "rgba(255,90,90,.65)";
+      elStatus.textContent = "Close — try noticing the meaning link. Correct was: " + correct;
+      speak("Correct answer: " + correct + ". " + current.full);
+    }
+
+    elScore.textContent = String(score);
+    setTimeout(function(){
+      // unlock for replay if teacher wants
+      buttons.forEach(function(b){ b.disabled = false; b.classList.remove("bad","good"); });
+      renderChoices();
+    }, 900);
+  }
+
+  // controls
+  document.getElementById("startBtn").addEventListener("click", function(){ nextRound(); });
+  document.getElementById("nextBtn").addEventListener("click", function(){ nextRound(); });
+  document.getElementById("hearBtn").addEventListener("click", function(){
+    if (!current) return;
+    speak(current.full);
+  });
+  document.getElementById("ttsBtn").addEventListener("click", function(){
+    ttsOn = !ttsOn;
+    this.textContent = "TTS: " + (ttsOn ? "On" : "Off");
+    if (!ttsOn) stopSpeak();
+  });
+  document.getElementById("stopBtn").addEventListener("click", function(){ stopSpeak(); });
+
+})();
+</script>
+</body>
+</html>

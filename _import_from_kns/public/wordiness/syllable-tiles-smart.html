@@ -1,0 +1,797 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Wordiness — Syllable Tiles (Smart + Failsafes)</title>
+<style>
+  :root{
+    --bg:#070b16; --line:rgba(255,255,255,.14);
+    --text:#eef2ff; --muted:rgba(238,242,255,.70);
+    --acc:#38bdf8; --ok:#22c55e; --bad:#ef4444; --warn:#f59e0b;
+    --r:18px; --fs:18px; --lh:1.65; --ls:0px; --ws:0px;
+  }
+  body.supported{ --fs:20px; --lh:1.95; --ls:.2px; --ws:.8px; }
+  body{ margin:0; color:var(--text);
+        background:
+          radial-gradient(900px 500px at 20% -10%, rgba(56,189,248,.14), transparent 60%),
+          radial-gradient(900px 500px at 90% 10%, rgba(34,197,94,.12), transparent 55%),
+          linear-gradient(180deg,#050816,var(--bg));
+        font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+        font-size:var(--fs); line-height:var(--lh); letter-spacing:var(--ls); word-spacing:var(--ws); }
+  .wrap{ max-width:1120px; margin:0 auto; padding:16px; }
+  header{ position:sticky; top:10px; z-index:5; backdrop-filter: blur(10px);
+          border:1px solid var(--line); border-radius:var(--r); padding:12px 14px;
+          background:linear-gradient(180deg, rgba(20,30,55,.85), rgba(10,18,38,.78));
+          display:flex; gap:12px; flex-wrap:wrap; justify-content:space-between; align-items:center; }
+  h1{ margin:0; font-size:18px; }
+  .sub{ color:var(--muted); font-size:13px; margin-top:3px; max-width:720px;}
+  .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  select,button,textarea{ font:inherit; }
+  select{ background:rgba(0,0,0,.25); color:var(--text); border:1px solid var(--line); padding:8px 10px; border-radius:12px; }
+  button{ cursor:pointer; color:var(--text); border:1px solid rgba(56,189,248,.32);
+          background:linear-gradient(180deg, rgba(56,189,248,.14), rgba(56,189,248,.06));
+          padding:10px 12px; border-radius:12px; }
+  button.ghost{ border:1px solid var(--line); background:rgba(255,255,255,.04); }
+  .card{ margin-top:14px; border:1px solid var(--line); border-radius:var(--r);
+         background:linear-gradient(180deg, rgba(16,27,51,.78), rgba(11,20,40,.72)); overflow:hidden; }
+  .hd{ padding:12px 14px; border-bottom:1px solid var(--line); display:flex; gap:10px; flex-wrap:wrap; justify-content:space-between; align-items:flex-start; }
+  .bd{ padding:14px; }
+  textarea{ width:100%; min-height:130px; resize:vertical; border-radius:14px; padding:12px;
+            border:1px solid var(--line); background:rgba(0,0,0,.18); color:var(--text); }
+  .hint{ margin:10px 0 0; color:var(--muted); font-size:13px; }
+  .status{ margin-top:12px; border:1px solid var(--line); border-radius:14px; padding:10px 12px; background:rgba(255,255,255,.03);
+           font-size:13px; color:rgba(238,242,255,.88); }
+  .ok{ color:var(--ok); font-weight:950; }
+  .bad{ color:var(--bad); font-weight:950; }
+  .warn{ color:var(--warn); font-weight:950; }
+  .tiles{ margin-top:14px; display:grid; gap:12px; }
+  .wordRow{ border:1px solid var(--line); border-radius:16px; padding:12px; background:rgba(0,0,0,.10); }
+  .topline{ display:flex; gap:10px; flex-wrap:wrap; align-items:flex-start; justify-content:space-between; }
+  .w{ font-weight:1000; font-size:24px; }
+  .meta{ color:rgba(238,242,255,.74); font-size:13px; margin-top:6px; }
+  .sy{ display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
+  .tile{ border:1px solid rgba(255,255,255,.16); background:rgba(255,255,255,.04); color:rgba(238,242,255,.92);
+         border-radius:999px; padding:10px 12px; font-weight:950; cursor:pointer; user-select:none; }
+  body.supported .tile{ padding:12px 14px; }
+  .pill{ display:inline-flex; align-items:center; gap:6px;
+         border:1px solid rgba(255,255,255,.14); background:rgba(255,255,255,.04);
+         padding:6px 10px; border-radius:999px; font-size:12px; color:rgba(238,242,255,.85); }
+  .suggest{ margin-top:10px; display:flex; gap:8px; flex-wrap:wrap; }
+  .suggest button{ padding:8px 10px; border-radius:999px; }
+  details{ margin-top:10px; border:1px solid rgba(255,255,255,.10); border-radius:14px; background:rgba(0,0,0,.10); padding:10px 12px; }
+  summary{ cursor:pointer; font-weight:950; list-style:none; }
+  summary::-webkit-details-marker{ display:none; }
+  code{ background:rgba(0,0,0,.25); border:1px solid rgba(255,255,255,.10); padding:1px 6px; border-radius:10px; }
+  .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size:12px; color:rgba(238,242,255,.78); white-space:pre-wrap;}
+</style>
+<style>
+/* wordiness-ui-polish-v4 */
+:root{
+  --tapMin: 44px;
+  --safeBottom: env(safe-area-inset-bottom, 0px);
+}
+html, body{ height: 100%; }
+body{
+  min-height: 100dvh;
+  padding-bottom: var(--safeBottom);
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior: contain;
+}
+@supports (height: 100svh){ body{ min-height: 100svh; } }
+
+*{ -webkit-tap-highlight-color: transparent; }
+
+button, [role="button"], a, input, select, textarea,
+.tile, .wordCard, .slot, .badge{
+  min-height: var(--tapMin);
+}
+
+button, [role="button"], a, .tile, .wordCard, .slot{
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+input, textarea, select{
+  font-size: 16px !important; /* prevent iOS zoom */
+}
+
+[draggable="true"], .wordiness-draggable{
+  touch-action: none; /* reduce scroll-vs-drag fighting */
+}
+
+.wordiness-drag-selected{
+  outline: 3px solid rgba(56,189,248,.55) !important;
+}
+
+@media (prefers-reduced-motion: reduce){
+  *{ scroll-behavior: auto !important; transition: none !important; animation: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div style="display:flex; gap:12px; align-items:flex-start;">
+      <img src="/wordiness/crest.png" alt="KNS crest" style="width:42px;height:42px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);object-fit:contain;" />
+      <div>
+        <h1>Wordiness — Syllable Tiles (Smart + Failsafes)</h1>
+        <div class="sub">
+          Failsafe checks warn about chunks with <b>no vowel letters</b>. Also provides <b>spelling vs spoken</b> chunk suggestions for “disappearing vowel” words (different, vegetable, factory…).
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <label class="row" style="gap:6px;color:rgba(238,242,255,.70);font-size:13px">View
+        <select id="variant">
+          <option value="standard">Standard</option>
+          <option value="supported">Supported</option>
+        </select>
+      </label>
+      <label class="row" style="gap:6px;color:rgba(238,242,255,.70);font-size:13px">Voice
+        <select id="voice"></select>
+      </label>
+      <button class="ghost" id="stop" type="button">Stop</button>
+      <button class="ghost" id="render" type="button">Render</button>
+    </div>
+  </header>
+
+  <section class="card">
+    <div class="hd">
+      <div style="width:100%">
+        <div class="sub">Input</div>
+        <div class="hint">
+          One word per line. Either marked <code>re-spon-si-bi-li-ty</code> (use <b>-</b> or <b>·</b>)
+          or plain <code>responsibility</code> (then click <b>Smart mark</b>).
+        </div>
+        <div class="row" style="justify-content:flex-end; margin-top:10px;">
+          <button class="ghost" id="demo" type="button">Load demo</button>
+          <button class="ghost" id="smart" type="button">Smart mark</button>
+          <button id="speakAll" type="button">Speak all (slow)</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="bd">
+      <textarea id="input" spellcheck="false" placeholder="re-spon-si-bi-li-ty&#10;different&#10;vegetable&#10;factory"></textarea>
+      <div class="status" id="status">Tip: try <b>different</b>, <b>vegetable</b>, <b>factory</b> and use “Use spoken”.</div>
+
+      <details>
+        <summary>Diagnostics (debug)</summary>
+        <div class="mono" id="diag"></div>
+      </details>
+
+      <div class="tiles" id="tiles"></div>
+    </div>
+  </section>
+</div>
+
+<script>
+const $ = (s,r=document)=>r.querySelector(s);
+
+/* ---------- Voice / TTS ---------- */
+let voices=[];
+function refreshVoices(){
+  if(!window.speechSynthesis) return;
+  voices = speechSynthesis.getVoices()||[];
+  const sel=$("#voice"); sel.innerHTML="";
+  const d=document.createElement("option");
+  d.value=""; d.textContent=voices.length?"Default":"No voices";
+  sel.appendChild(d);
+  voices.forEach((v,i)=>{
+    const o=document.createElement("option");
+    o.value=String(i);
+    o.textContent=`${v.name} (${v.lang})`;
+    sel.appendChild(o);
+  });
+}
+function speakNow(text, rate=0.9){
+  if(!window.speechSynthesis) return;
+  const t = String(text||"").trim();
+  if(!t) return;
+  const synth = window.speechSynthesis;
+  const u=new SpeechSynthesisUtterance(t);
+  const idx=parseInt($("#voice").value,10);
+  if(Number.isFinite(idx) && voices[idx]) u.voice=voices[idx];
+  u.rate=Math.max(0.7, Math.min(1.05, rate));
+  try{ synth.cancel(); }catch{}
+  setTimeout(()=>{ try{ synth.speak(u); }catch{} }, 60);
+}
+async function speakChunks(chunks, rate=0.86){
+  if(!window.speechSynthesis) return;
+  const synth = window.speechSynthesis;
+  try{ synth.cancel(); }catch{}
+  for(const ch of chunks){
+    const t = String(ch||"").trim();
+    if(!t) continue;
+    const u=new SpeechSynthesisUtterance(t);
+    const idx=parseInt($("#voice").value,10);
+    if(Number.isFinite(idx) && voices[idx]) u.voice=voices[idx];
+    u.rate=Math.max(0.7, Math.min(1.05, rate));
+    synth.speak(u);
+    await new Promise(res=>{
+      u.onend=()=>setTimeout(res,140);
+      u.onerror=()=>setTimeout(res,140);
+    });
+  }
+}
+
+/* ---------- Seed from URL hash: #seed=... ---------- */
+function applySeedFromHash(){
+  try{
+    const h = String(location.hash||"");
+    const m = h.match(/(?:^#|&)seed=([^&]+)/);
+    if(!m) return;
+    const seed = decodeURIComponent(m[1]||"").replace(/\r/g,"");
+    const ta = document.querySelector('#input');
+    if(ta && seed.trim()){
+      ta.value = seed;
+      render();
+    }
+  }catch(e){}
+}
+window.addEventListener('hashchange', applySeedFromHash);
+
+/* ---------- Parsing & failsafes ---------- */
+const DASHES = /[\u2010\u2011\u2012\u2013\u2014\u2212]/g; // ‐ - ‒ – — −
+const VOWEL = /[aeiouy]/i;
+
+function normalizeLine(s){
+  return String(s||"").replace(DASHES, "-").replace(/\u00B7/g, "·").trim();
+}
+function parseLines(raw){
+  return String(raw||"").split(/\r?\n/).map(s=>normalizeLine(s)).filter(Boolean);
+}
+function onlyLetters(s){
+  return String(s||"").toLowerCase().replace(/[^a-z']/g,"");
+}
+function splitMarked(line){
+  const norm = normalizeLine(line);
+  const hasSplitter = /[-·]/.test(norm);
+  const parts = hasSplitter ? norm.split(/[-·]+/).map(s=>s.trim()).filter(Boolean) : [norm];
+  const whole = parts.join("").replace(/\s+/g,"");
+  const spacedWhole = parts.join(" ");
+  return { marked:norm, parts, whole, spacedWhole, hasSplitter };
+}
+
+/* Spelling vs spoken chunk suggestions (common reduction patterns; not strict “rules”) */
+const EXCEPTIONS = {
+  "different":   { spelling:["dif","fer","ent"], spoken:[["dif","frent"],["dif","rent"]] },
+  "vegetable":   { spelling:["ve","ge","ta","ble"], spoken:[["veg","ta","ble"],["vej","ta","bul"]] },
+  "factory":     { spelling:["fac","to","ry"], spoken:[["fac","tuh","ree"],["fac","tri"]] },
+  "family":      { spelling:["fam","i","ly"], spoken:[["fam","ly"]] },
+  "chocolate":   { spelling:["choc","o","late"], spoken:[["choc","late"]] },
+  "camera":      { spelling:["cam","er","a"], spoken:[["cam","ra"]] },
+  "interesting": { spelling:["in","ter","est","ing"], spoken:[["in","tres","ting"]] },
+  "probably":    { spelling:["prob","a","bly"], spoken:[["prob","ly"]] }
+};
+
+/* Simple heuristic syllabifier for spelling chunks (best-effort; warnings catch nonsense) */
+function smartSyllabify(word){
+  const w0 = onlyLetters(word);
+  if(!w0) return [word];
+  const ex = EXCEPTIONS[w0];
+  if(ex?.spelling) return ex.spelling.slice();
+
+  const w = w0.replace(/'/g,"");
+  const vowels = "aeiouy";
+  const parts = [];
+  let i=0;
+  while(i < w.length){
+    let start=i;
+    while(i < w.length && !vowels.includes(w[i])) i++; // onset
+    let vStart=i;
+    while(i < w.length && vowels.includes(w[i])) i++;  // nucleus
+    let vEnd=i;
+    if(vStart === start && vStart === vEnd) return [word];
+
+    let cStart=i;
+    while(i < w.length && !vowels.includes(w[i])) i++; // consonant run
+    let cEnd=i;
+
+    let chunkEnd = cEnd;
+    if(cEnd > cStart && i < w.length){
+      const consonantCount = cEnd - cStart;
+      const leave = consonantCount >= 2 ? 1 : 0;
+      chunkEnd = cEnd - leave;
+      i = chunkEnd;
+    }
+    parts.push(w.slice(start, chunkEnd));
+    if(i === start) break;
+  }
+  if(parts.some(p=>!p)) return [word];
+  return parts;
+}
+
+function vowelFails(part){ return !VOWEL.test(part); }
+function wordFails(whole){ return whole.length > 0 && !VOWEL.test(whole); }
+
+function esc(s){
+  return String(s??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+}
+function toCodePoints(s){
+  const arr = [];
+  for (const ch of String(s||"")) {
+    const cp = ch.codePointAt(0).toString(16).toUpperCase().padStart(4,"0");
+    arr.push(`U+${cp} '${ch === " " ? "␠" : ch}'`);
+  }
+  return arr.join(", ");
+}
+
+function applySuggestion(lineIndex, parts){
+  const lines = parseLines($("#input").value);
+  if(lineIndex < 0 || lineIndex >= lines.length) return;
+  const whole = parts.join("");
+  lines[lineIndex] = parts.join("-");
+  $("#input").value = lines.join("\n");
+  render();
+  speakNow(whole, document.body.classList.contains("supported") ? 0.86 : 0.95);
+}
+
+function render(){
+  const raw = $("#input").value;
+  const lines = parseLines(raw);
+  const holder=$("#tiles"); holder.innerHTML="";
+  const diagLines = [];
+  if(!lines.length){
+    $("#status").innerHTML = '<span class="bad">No input yet.</span> Add a word, or press <b>Load demo</b>.';
+    $("#diag").textContent = "No lines.";
+    return;
+  }
+
+  let warnings=0;
+
+  lines.forEach((ln, idx)=>{
+    let {marked, parts, whole, spacedWhole, hasSplitter} = splitMarked(ln);
+
+    const looksLikePhrase = /\s/.test(marked);
+    const tooLong = marked.length > 28;
+
+    const wordKey = onlyLetters(whole);
+    const ex = EXCEPTIONS[wordKey];
+
+    const badWord = wordFails(whole);
+    const badParts = parts.filter(vowelFails);
+    const warn = [];
+    if(looksLikePhrase){ warn.push("Contains spaces (phrase). Use one word per line."); }
+    if(tooLong){ warn.push("Long line — might not be a single word."); }
+    if(badWord){ warn.push("No vowel letters detected in whole word."); }
+    if(badParts.length){ warn.push("One or more chunks have no vowel letters."); }
+    if(!hasSplitter && !looksLikePhrase && !tooLong){ warn.push("Unmarked word — click Smart mark if you want syllable tiles."); }
+
+    if(warn.length) warnings += warn.length;
+
+    diagLines.push(`Line ${idx+1} marked: ${marked}`);
+    diagLines.push(`Line ${idx+1} codepoints: ${toCodePoints(marked)}`);
+    diagLines.push(`Line ${idx+1} parts: [${parts.map(p=>`"${p}"`).join(", ")}]`);
+    diagLines.push(`Line ${idx+1} whole: "${whole}"`);
+    diagLines.push("");
+
+    const row=document.createElement("div");
+    row.className="wordRow";
+
+    const chips = [];
+    if(ex?.spoken) chips.push(`<span class="pill">common reduction</span>`);
+    if(badParts.length || badWord) chips.push(`<span class="pill"><span style="color:#ef4444;font-weight:950;">failsafe</span></span>`);
+    if(!hasSplitter) chips.push(`<span class="pill">unmarked</span>`);
+
+    row.innerHTML = `
+      <div class="topline">
+        <div>
+          <div class="w">${esc(whole || marked)}</div>
+          <div class="meta">Input: <code>${esc(marked)}</code> ${chips.join(" ")}</div>
+          ${warn.length ? `<div class="meta"><span style="color:#f59e0b;font-weight:950;">Warnings:</span> ${warn.map(esc).join(" • ")}</div>` : ``}
+        </div>
+        <div class="row">
+          <button class="ghost" data-act="chunks" type="button">Speak chunks</button>
+          <button class="ghost" data-act="blendSlow" type="button">Blend (slow)</button>
+          <button data-act="blend" type="button">Blend</button>
+        </div>
+      </div>
+      <div class="sy"></div>
+      <div class="suggest"></div>
+    `;
+
+    const sy=row.querySelector(".sy");
+    parts.forEach(p=>{
+      const t=document.createElement("button");
+      t.className="tile";
+      t.type="button";
+      t.textContent=p;
+      t.onclick=()=>speakNow(p, 0.9);
+      if(vowelFails(p)) t.style.borderColor = "rgba(239,68,68,.45)";
+      sy.appendChild(t);
+    });
+
+    const isSupported = ()=>document.body.classList.contains("supported");
+    row.querySelector('[data-act="blend"]').onclick=()=>speakNow(whole, isSupported()?0.86:0.95);
+    row.querySelector('[data-act="blendSlow"]').onclick=()=>speakNow(spacedWhole, isSupported()?0.82:0.9);
+    row.querySelector('[data-act="chunks"]').onclick=()=>speakChunks(parts, isSupported()?0.82:0.9);
+
+    const sug=row.querySelector(".suggest");
+    if(ex){
+      if(ex.spelling){
+        const b=document.createElement("button");
+        b.className="ghost";
+        b.type="button";
+        b.textContent = `Use spelling: ${ex.spelling.join("-")}`;
+        b.onclick=()=>applySuggestion(idx, ex.spelling);
+        sug.appendChild(b);
+      }
+      if(Array.isArray(ex.spoken)){
+        ex.spoken.forEach(opt=>{
+          const b=document.createElement("button");
+          b.className="ghost";
+          b.type="button";
+          b.textContent = `Use spoken: ${opt.join("-")}`;
+          b.onclick=()=>applySuggestion(idx, opt);
+          sug.appendChild(b);
+        });
+      }
+    }
+
+    holder.appendChild(row);
+  });
+
+  $("#diag").textContent = diagLines.join("\n");
+  const wtxt = warnings ? `<span style="color:#f59e0b;font-weight:950;">${warnings} warning(s)</span>` : `<span style="color:#22c55e;font-weight:950;">No warnings</span>`;
+  $("#status").innerHTML = `Rendered <b>${lines.length}</b> line(s). ${wtxt}. (Warnings don’t block — teacher stays in control.)`;
+}
+
+function smartMarkAll(){
+  const lines = parseLines($("#input").value);
+  const out = lines.map(ln=>{
+    const { marked, hasSplitter } = splitMarked(ln);
+    if(hasSplitter) return marked;
+    if(/\s/.test(marked)) return marked;
+    const parts = smartSyllabify(marked);
+    if(parts.length <= 1) return marked;
+    return parts.join("-");
+  });
+  $("#input").value = out.join("\n");
+  render();
+}
+
+$("#variant").onchange=(e)=>document.body.classList.toggle("supported", e.target.value==="supported");
+$("#render").onclick=render;
+$("#stop").onclick=()=>{ try{ speechSynthesis.cancel(); }catch{} };
+$("#demo").onclick=()=>{
+  $("#input").value =
+`re-spon-si-bi-li-ty
+different
+vegetable
+factory
+family
+chocolate
+camera
+interesting
+probably`;
+  render();
+};
+$("#smart").onclick=smartMarkAll;
+
+$("#speakAll").onclick=async ()=>{
+  const lines = parseLines($("#input").value);
+  const isSupported = ()=>document.body.classList.contains("supported");
+  for(const ln of lines){
+    const {parts, whole} = splitMarked(ln);
+    await speakChunks(parts, isSupported()?0.82:0.9);
+    speakNow(whole, isSupported()?0.86:0.95);
+    await new Promise(res=>setTimeout(res, 520));
+  }
+};
+
+refreshVoices();
+if(window.speechSynthesis) speechSynthesis.onvoiceschanged = refreshVoices;
+
+let t=null;
+$("#input").addEventListener("input", ()=>{
+  clearTimeout(t);
+  t=setTimeout(render, 200);
+});
+
+setTimeout(()=>{ applySeedFromHash(); render(); }, 80);
+</script>
+<!-- WORDINESS_FAILSAFE_PATCH v1 -->
+<script id="wordiness-failsafe-patch">
+(function(){
+  if (window.__wordinessFailsafePatch) return;
+  window.__wordinessFailsafePatch = true;
+
+  const VOWEL = /[aeiouy]/i;
+
+  const EXCEPTIONS = {
+    different:   { spelling:["dif","fer","ent"], spoken:[["dif","frent"],["dif","rent"]] },
+    vegetable:   { spelling:["ve","ge","ta","ble"], spoken:[["veg","ta","ble"],["vej","ta","bul"]] },
+    factory:     { spelling:["fac","to","ry"], spoken:[["fac","tuh","ree"],["fac","tri"]] },
+    family:      { spelling:["fam","i","ly"], spoken:[["fam","ly"]] },
+    chocolate:   { spelling:["choc","o","late"], spoken:[["choc","late"]] },
+    camera:      { spelling:["cam","er","a"], spoken:[["cam","ra"]] },
+    interesting: { spelling:["in","ter","est","ing"], spoken:[["in","tres","ting"]] },
+    probably:    { spelling:["prob","a","bly"], spoken:[["prob","ly"]] }
+  };
+
+  function hasVowelLetters(s){ return VOWEL.test(String(s||"")); }
+  function lettersSpaced(s){ return String(s||"").split("").join(" "); }
+  function onlyLetters(s){ return String(s||"").toLowerCase().replace(/[^a-z']/g,""); }
+
+  function normalizeLine(s){
+    return String(s||"")
+      .replace(/[\u2010\u2011\u2012\u2013\u2014\u2212]/g, "-") // fancy dashes
+      .replace(/\u00B7/g, "·") // middle dot
+      .trim();
+  }
+
+  // Extract sensible words from pasted text, but preserve already-marked syllable lines
+  function sanitizeSeedText(raw){
+    raw = String(raw||"").replace(/\r/g,"");
+    const out = [];
+    for (const line0 of raw.split("\n")) {
+      const line = normalizeLine(line0);
+      if (!line) continue;
+
+      // Keep marked syllable lines like dif-fer-ent (no spaces)
+      if (/[-·]/.test(line) && !/\s/.test(line)) {
+        out.push(line);
+        continue;
+      }
+
+      // Otherwise extract word tokens from the line
+      const toks = line.match(/[A-Za-z]+(?:'[A-Za-z]+)?/g);
+      if (!toks) continue;
+      for (const w of toks) {
+        if (w.length > 28) continue;
+        if (!hasVowelLetters(w)) continue;
+        out.push(w);
+      }
+    }
+
+    // de-dupe, preserve order
+    const seen = new Set();
+    const final = [];
+    for (const w of out) {
+      const k = w.toLowerCase();
+      if (seen.has(k)) continue;
+      seen.add(k);
+      final.push(w);
+    }
+    return final.join("\n");
+  }
+
+  // Replace a specific line (by index) with chunked form, joined by '-'
+  function replaceLine(text, lineIndex, newChunks){
+    const lines = String(text||"").replace(/\r/g,"").split("\n");
+    if (lineIndex < 0 || lineIndex >= lines.length) return text;
+    lines[lineIndex] = newChunks.join("-");
+    return lines.join("\n");
+  }
+
+  // Find a textarea likely used for word lists
+  function findSeedTextarea(){
+    return document.querySelector("textarea#input, textarea#seed, textarea[data-seed], textarea");
+  }
+
+  // Build helper UI under textarea: reduction suggestions + failsafe warnings + sanitize button
+  function attachHelperUI(ta){
+    if (!ta || ta.__wordinessHelperAttached) return;
+    ta.__wordinessHelperAttached = true;
+
+    const host = document.createElement("div");
+    host.style.cssText = [
+      "margin-top:10px",
+      "border:1px solid rgba(255,255,255,.14)",
+      "border-radius:14px",
+      "padding:10px 12px",
+      "background:rgba(0,0,0,.10)",
+      "color:rgba(238,242,255,.85)",
+      "font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial",
+      "font-size:13px"
+    ].join(";");
+
+    const hdr = document.createElement("div");
+    hdr.style.cssText = "display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;";
+    hdr.innerHTML = `<b>Wordiness helpers</b>
+      <span style="opacity:.8">failsafes + disappearing-vowel options</span>`;
+    host.appendChild(hdr);
+
+    const btnRow = document.createElement("div");
+    btnRow.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;";
+    const sanitizeBtn = document.createElement("button");
+    sanitizeBtn.type = "button";
+    sanitizeBtn.textContent = "Sanitize pasted text → words";
+    sanitizeBtn.style.cssText =
+      "cursor:pointer;border-radius:999px;padding:8px 10px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);color:rgba(238,242,255,.92);font-weight:700;";
+    btnRow.appendChild(sanitizeBtn);
+    host.appendChild(btnRow);
+
+    const msg = document.createElement("div");
+    msg.style.cssText = "margin-top:10px;opacity:.9;";
+    host.appendChild(msg);
+
+    const sug = document.createElement("div");
+    sug.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;";
+    host.appendChild(sug);
+
+    function refresh(){
+      const raw = String(ta.value||"");
+      const lines = raw.replace(/\r/g,"").split("\n").map(normalizeLine);
+      sug.innerHTML = "";
+
+      // Warnings: chunks with no vowel letters (only checks marked chunk lines)
+      let warnCount = 0;
+      for (const ln of lines) {
+        if (!ln) continue;
+        if (/[-·]/.test(ln) && !/\s/.test(ln)) {
+          const parts = ln.split(/[-·]+/).map(s=>s.trim()).filter(Boolean);
+          const bad = parts.filter(p=>!hasVowelLetters(p));
+          if (bad.length) warnCount++;
+        }
+      }
+
+      // Suggestions for disappearing vowels
+      const found = [];
+      lines.forEach((ln, i)=>{
+        if (!ln) return;
+        const key = onlyLetters(ln.replace(/[-·]/g,""));
+        if (EXCEPTIONS[key]) found.push({ key, i });
+      });
+
+      msg.innerHTML =
+        `${warnCount ? `<span style="color:#f59e0b;font-weight:800">${warnCount} warning(s)</span> (chunk has no vowel letters). ` : `<span style="color:#22c55e;font-weight:800">No failsafe warnings</span>. `}
+         ${found.length ? `Found <b>${found.length}</b> reduction word(s).` : `No reduction words detected in list.`}`;
+
+      // Make buttons for each found word
+      found.slice(0, 12).forEach(({key, i})=>{
+        const ex = EXCEPTIONS[key];
+        const label = key;
+        const makeBtn = (text, chunks) => {
+          const b = document.createElement("button");
+          b.type = "button";
+          b.textContent = `${label}: ${text}`;
+          b.style.cssText =
+            "cursor:pointer;border-radius:999px;padding:8px 10px;border:1px solid rgba(56,189,248,.28);background:rgba(56,189,248,.08);color:rgba(238,242,255,.92);font-weight:800;";
+          b.onclick = ()=>{
+            ta.value = replaceLine(ta.value, i, chunks);
+            ta.dispatchEvent(new Event("input", { bubbles:true }));
+          };
+          return b;
+        };
+
+        if (ex.spelling) sug.appendChild(makeBtn("Use spelling", ex.spelling));
+        if (Array.isArray(ex.spoken)) {
+          ex.spoken.forEach(opt => sug.appendChild(makeBtn("Use spoken", opt)));
+        }
+      });
+    }
+
+    sanitizeBtn.onclick = ()=>{
+      const before = ta.value;
+      const after = sanitizeSeedText(before);
+      if (after && after !== before) {
+        ta.value = after;
+        ta.dispatchEvent(new Event("input", { bubbles:true }));
+      }
+    };
+
+    // Insert right after textarea
+    ta.insertAdjacentElement("afterend", host);
+
+    // Live update
+    let t = null;
+    ta.addEventListener("input", ()=>{
+      clearTimeout(t);
+      t = setTimeout(refresh, 120);
+    });
+    refresh();
+  }
+
+  // TTS fail-safe wrapper: if no vowel letters and short, speak letters spaced
+  function wrapSpeak(fnName){
+    const old = window[fnName];
+    if (typeof old !== "function") return;
+    if (old.__wordinessWrapped) return;
+
+    function wrapped(text, ...rest){
+      const t = String(text||"").trim();
+      if (t && !hasVowelLetters(t) && t.length <= 8) {
+        return old.call(this, lettersSpaced(t), ...rest);
+      }
+      return old.call(this, text, ...rest);
+    }
+    wrapped.__wordinessWrapped = true;
+    window[fnName] = wrapped;
+  }
+
+  // Try common TTS function names used across your games
+  ["speakNow","speak","speakText","say"].forEach(wrapSpeak);
+
+  // Seed sanitiser if game uses #seed=
+  function patchSeedFromHash(){
+    const h = String(location.hash||"");
+    if (!/seed=/.test(h)) return;
+    const ta = findSeedTextarea();
+    if (!ta) return;
+    const before = ta.value;
+    const after = sanitizeSeedText(before);
+    if (after && after !== before) {
+      ta.value = after;
+      ta.dispatchEvent(new Event("input", { bubbles:true }));
+    }
+  }
+
+  // Attach helpers on load
+  function boot(){
+    const ta = findSeedTextarea();
+    if (ta) attachHelperUI(ta);
+    patchSeedFromHash();
+  }
+
+  window.addEventListener("hashchange", ()=>setTimeout(patchSeedFromHash, 0));
+  setTimeout(boot, 80);
+
+})();
+</script>
+<!-- /WORDINESS_FAILSAFE_PATCH v1 -->
+<script>
+// wordiness-touch-helpers-v4
+(function(){
+  try{
+    var isCoarse=false;
+    try{ isCoarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches; }catch(e){}
+    var isTouch = isCoarse || ("ontouchstart" in window) || (navigator.maxTouchPoints && navigator.maxTouchPoints>0);
+
+    // Crest fallback (works for /wordiness and file:// exports)
+    var crest = document.getElementById("crest");
+    if (crest && crest.tagName === "IMG") {
+      crest.addEventListener("error", function(){ crest.src="/wordiness/crest.png"; }, { once:true });
+    }
+
+    if(!isTouch) return;
+
+    var drags = Array.prototype.slice.call(document.querySelectorAll('[draggable="true"]'));
+    if(!drags.length) return;
+
+    drags.forEach(function(el){
+      el.classList.add("wordiness-draggable");
+      el.addEventListener("click", function(){
+        drags.forEach(function(x){ x.classList.remove("wordiness-drag-selected"); });
+        el.classList.add("wordiness-drag-selected");
+      }, { passive:true });
+    });
+
+    var btn = document.createElement("button");
+    btn.id="wordinessTouchToggle";
+    btn.type="button";
+    btn.style.position="fixed";
+    btn.style.right="12px";
+    btn.style.bottom="calc(12px + env(safe-area-inset-bottom, 0px))";
+    btn.style.zIndex="9999";
+    btn.style.border="1px solid rgba(255,255,255,.18)";
+    btn.style.background="rgba(0,0,0,.45)";
+    btn.style.color="rgba(238,242,255,.95)";
+    btn.style.backdropFilter="blur(10px)";
+    btn.style.borderRadius="999px";
+    btn.style.padding="10px 12px";
+    btn.style.font="600 13px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+    btn.style.touchAction="manipulation";
+
+    var dragEnabled=true;
+    function applyState(){
+      drags.forEach(function(el){ el.setAttribute("draggable", dragEnabled ? "true" : "false"); });
+      btn.textContent = dragEnabled ? "Touch: Drag ON" : "Touch: Drag OFF";
+    }
+    btn.addEventListener("click", function(){ dragEnabled=!dragEnabled; applyState(); });
+
+    document.body.appendChild(btn);
+    applyState();
+  }catch(e){}
+})();
+</script>
+
+<!-- wordiness-seed-bridge-v1 -->
+<script src="wordiness-seed-bridge.js"></script>
+</body>
+</html>

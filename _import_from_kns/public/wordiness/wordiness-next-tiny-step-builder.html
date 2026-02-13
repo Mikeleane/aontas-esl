@@ -1,0 +1,720 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Wordiness â€” Next Tiny Step Builder</title>
+<style>
+  :root{
+    --bg:#070b16; --line:rgba(255,255,255,.14);
+    --text:#eef2ff; --muted:rgba(238,242,255,.72);
+    --acc:#38bdf8; --ok:#22c55e; --bad:#ef4444; --warn:#f59e0b;
+    --r:18px;
+    --fs:18px; --lh:1.6; --ls:0px; --ws:0px;
+  }
+  body.supported{ --fs:20px; --lh:1.95; --ls:.2px; --ws:.8px; }
+  body{
+    margin:0; color:var(--text);
+    background:
+      radial-gradient(900px 500px at 18% -10%, rgba(56,189,248,.14), transparent 60%),
+      radial-gradient(900px 500px at 92% 10%, rgba(34,197,94,.12), transparent 55%),
+      linear-gradient(180deg,#050816,var(--bg));
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+    font-size:var(--fs); line-height:var(--lh); letter-spacing:var(--ls); word-spacing:var(--ws);
+  }
+  .wrap{ max-width:1180px; margin:0 auto; padding:16px; }
+  header{
+    position:sticky; top:10px; z-index:5; backdrop-filter: blur(10px);
+    border:1px solid var(--line); border-radius:var(--r); padding:12px 14px;
+    background:linear-gradient(180deg, rgba(20,30,55,.85), rgba(10,18,38,.78));
+    display:flex; gap:12px; flex-wrap:wrap; justify-content:space-between; align-items:center;
+  }
+  h1{ margin:0; font-size:18px; }
+  .sub{ color:var(--muted); font-size:13px; margin-top:3px; max-width:820px;}
+  .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  button,select,textarea,input{ font:inherit; }
+  button{
+    cursor:pointer; color:var(--text);
+    border:1px solid rgba(56,189,248,.32);
+    background:linear-gradient(180deg, rgba(56,189,248,.14), rgba(56,189,248,.06));
+    padding:10px 12px; border-radius:12px;
+  }
+  button.ghost{ border:1px solid var(--line); background:rgba(255,255,255,.04); }
+  button.good{ border:1px solid rgba(34,197,94,.40); background:rgba(34,197,94,.12); }
+  button.warn{ border:1px solid rgba(245,158,11,.45); background:rgba(245,158,11,.12); }
+  select,input{
+    background:rgba(0,0,0,.25); color:var(--text);
+    border:1px solid var(--line); padding:8px 10px; border-radius:12px;
+  }
+  textarea{
+    width:100%; min-height:90px; resize:vertical;
+    border-radius:14px; padding:12px;
+    border:1px solid var(--line); background:rgba(0,0,0,.18); color:var(--text);
+  }
+  .card{
+    margin-top:14px; border:1px solid var(--line); border-radius:var(--r);
+    background:linear-gradient(180deg, rgba(16,27,51,.78), rgba(11,20,40,.72));
+    overflow:hidden;
+  }
+  .hd{ padding:12px 14px; border-bottom:1px solid var(--line); display:flex; gap:10px; flex-wrap:wrap; justify-content:space-between; align-items:flex-start; }
+  .bd{ padding:14px; }
+  .status{
+    margin-top:12px; border:1px solid var(--line); border-radius:14px; padding:10px 12px;
+    background:rgba(255,255,255,.03);
+    font-size:13px; color:rgba(238,242,255,.88);
+  }
+  .badge{
+    display:inline-flex; gap:8px; align-items:center;
+    border:1px solid rgba(255,255,255,.14);
+    background:rgba(255,255,255,.04);
+    padding:6px 10px; border-radius:999px;
+    font-size:12px; color:rgba(238,242,255,.85);
+  }
+  .tiny{ font-size:12px; color:var(--muted); }
+  .ok{ color:var(--ok); font-weight:950; }
+  .bad{ color:var(--bad); font-weight:950; }
+  .warnTxt{ color:var(--warn); font-weight:950; }
+
+  .grid{ display:grid; gap:12px; grid-template-columns: 1fr; }
+  @media (min-width: 1040px){
+    .grid{ grid-template-columns: 1fr 1fr; }
+  }
+
+  .panel{
+    border:1px solid rgba(255,255,255,.14);
+    border-radius:16px; padding:12px;
+    background:rgba(0,0,0,.10);
+  }
+
+  .cols{ display:grid; gap:12px; grid-template-columns:1fr; }
+  @media (min-width: 780px){
+    .cols{ grid-template-columns: 1fr 1fr 1fr; }
+  }
+  .col{
+    border:1px solid rgba(255,255,255,.14);
+    border-radius:16px;
+    background:rgba(0,0,0,.10);
+    padding:10px;
+    min-height:220px;
+  }
+  .col h3{ margin:0 0 8px 0; font-size:14px; }
+  .col.locked{ filter: blur(1px) brightness(.9); opacity:.55; pointer-events:none; }
+
+  .tile{
+    border:1px solid rgba(255,255,255,.16);
+    background:rgba(255,255,255,.04);
+    border-radius:16px;
+    padding:10px 12px;
+    margin:10px 0;
+  }
+  .tile.sel{ outline:2px solid rgba(56,189,248,.55); }
+  .tile .t{ font-weight:950; }
+  .tile .meta{ margin-top:8px; display:flex; gap:8px; flex-wrap:wrap; }
+  .tile .meta button{ padding:8px 10px; border-radius:999px; font-size:13px; }
+  body.supported .tile .meta button{ padding:10px 12px; }
+
+  .bankRow{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+
+  .crest{
+    width:42px; height:42px; border-radius:12px;
+    border:1px solid rgba(255,255,255,.14);
+    background:rgba(255,255,255,.04);
+    object-fit:contain;
+  }
+</style>
+<style>
+/* wordiness-ui-polish-v4 */
+:root{
+  --tapMin: 44px;
+  --safeBottom: env(safe-area-inset-bottom, 0px);
+}
+html, body{ height: 100%; }
+body{
+  min-height: 100dvh;
+  padding-bottom: var(--safeBottom);
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior: contain;
+}
+@supports (height: 100svh){ body{ min-height: 100svh; } }
+
+*{ -webkit-tap-highlight-color: transparent; }
+
+button, [role="button"], a, input, select, textarea,
+.tile, .wordCard, .slot, .badge{
+  min-height: var(--tapMin);
+}
+
+button, [role="button"], a, .tile, .wordCard, .slot{
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+input, textarea, select{
+  font-size: 16px !important; /* prevent iOS zoom */
+}
+
+[draggable="true"], .wordiness-draggable{
+  touch-action: none; /* reduce scroll-vs-drag fighting */
+}
+
+.wordiness-drag-selected{
+  outline: 3px solid rgba(56,189,248,.55) !important;
+}
+
+@media (prefers-reduced-motion: reduce){
+  *{ scroll-behavior: auto !important; transition: none !important; animation: none !important; }
+}
+</style>
+</head>
+<body>
+<!-- wordiness-failsafe-patch (marker so your global patch tools can detect this file) -->
+<div class="wrap">
+  <header>
+    <div style="display:flex; gap:12px; align-items:flex-start;">
+      <img class="crest" id="crest" src="crest.png" alt="KNS crest" />
+      <div>
+        <h1>Wordiness â€” Next Tiny Step Builder</h1>
+        <div class="sub">
+          Turn a big task into <b>Now / Next / Later</b> micro-steps.
+          This supports initiation, planning, and working memory. Use <b>Focus mode</b> to reveal one column at a time.
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <label class="row" style="gap:6px;color:var(--muted);font-size:13px">View
+        <select id="variant">
+          <option value="standard">Standard</option>
+          <option value="supported">Supported</option>
+        </select>
+      </label>
+      <label class="row" style="gap:6px;color:var(--muted);font-size:13px">Voice
+        <select id="voice"></select>
+      </label>
+      <button class="ghost" id="stop" type="button">Stop</button>
+      <button class="ghost" id="reset" type="button">Reset</button>
+    </div>
+  </header>
+
+  <section class="card">
+    <div class="hd">
+      <div style="max-width:820px;">
+        <div class="sub">Big task</div>
+        <div class="tiny">Type a task, then generate step tiles. Click any tile to select it, then use â€œMake smallerâ€.</div>
+      </div>
+      <div class="row">
+        <button class="ghost" id="demo" type="button">Load demo</button>
+        <button class="ghost" id="generate" type="button">Generate steps</button>
+        <button class="warn" id="makeSmaller" type="button" title="Split the selected tile into smaller steps">Make smaller</button>
+        <button class="good" id="speakPlan" type="button">Speak plan</button>
+      </div>
+    </div>
+
+    <div class="bd">
+      <textarea id="task" spellcheck="false" placeholder="Example: Write a short paragraph about Spanish football using modal verbs."></textarea>
+
+      <div class="row" style="margin-top:12px;">
+        <span class="badge">Tiles: <b id="tileCount">0</b></span>
+        <span class="badge">Now: <b id="nowCount">0</b></span>
+        <span class="badge">Next: <b id="nextCount">0</b></span>
+        <span class="badge">Later: <b id="laterCount">0</b></span>
+
+        <label class="row" style="gap:6px;color:var(--muted);font-size:13px;margin-left:auto">Focus mode
+          <select id="focus">
+            <option value="off">Off</option>
+            <option value="now">Show Now only</option>
+            <option value="nowNext">Show Now + Next</option>
+          </select>
+        </label>
+      </div>
+
+      <div id="status" class="status">Tip: keep the first â€œNowâ€ step tiny (30 seconds or less).</div>
+
+      <div class="grid" style="margin-top:12px;">
+        <div class="panel">
+          <div class="row" style="justify-content:space-between;">
+            <div>
+              <div class="sub">Step bank</div>
+              <div class="tiny">Tap a tileâ€™s button to send it to Now/Next/Later. Tap the tile text to hear it.</div>
+            </div>
+            <div class="bankRow">
+              <button class="ghost" id="addCustom" type="button">+ Add step</button>
+              <button class="ghost" id="clearPlan" type="button">Clear plan</button>
+            </div>
+          </div>
+          <div id="bank"></div>
+        </div>
+
+        <div class="panel">
+          <div class="row" style="justify-content:space-between;">
+            <div>
+              <div class="sub">Your plan</div>
+              <div class="tiny">Now = start. Next = continue. Later = finish/check.</div>
+            </div>
+            <div class="row">
+              <button class="ghost" id="speakNow" type="button">Speak Now</button>
+              <button class="ghost" id="copyPlan" type="button">Copy plan</button>
+            </div>
+          </div>
+
+          <div class="cols" style="margin-top:10px;">
+            <div class="col" id="colNow">
+              <h3>NOW</h3>
+              <div id="now"></div>
+            </div>
+            <div class="col" id="colNext">
+              <h3>NEXT</h3>
+              <div id="next"></div>
+            </div>
+            <div class="col" id="colLater">
+              <h3>LATER</h3>
+              <div id="later"></div>
+            </div>
+          </div>
+
+          <div class="status" style="margin-top:12px;">
+            Micro-step rule: if a step feels hard, it is still too big. Press <b>Make smaller</b>.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+const $ = (s,r=document)=>r.querySelector(s);
+
+(() => {
+  const img = $("#crest");
+  img.addEventListener("error", () => { img.src = "/wordiness/crest.png"; }, { once:true });
+})();
+
+let voices=[];
+function refreshVoices(){
+  if(!window.speechSynthesis) return;
+  voices = speechSynthesis.getVoices()||[];
+  const sel=$("#voice"); sel.innerHTML="";
+  const d=document.createElement("option");
+  d.value=""; d.textContent=voices.length?"Default":"No voices";
+  sel.appendChild(d);
+  voices.forEach((v,i)=>{
+    const o=document.createElement("option");
+    o.value=String(i);
+    o.textContent=`${v.name} (${v.lang})`;
+    sel.appendChild(o);
+  });
+}
+function speakNow(text, rate=0.92){
+  if(!window.speechSynthesis) return;
+  const t = String(text||"").trim();
+  if(!t) return;
+  const synth = window.speechSynthesis;
+  const u=new SpeechSynthesisUtterance(t);
+  const idx=parseInt($("#voice").value,10);
+  if(Number.isFinite(idx) && voices[idx]) u.voice=voices[idx];
+  u.rate = document.body.classList.contains("supported") ? 0.86 : Math.max(0.8, Math.min(1.05, rate));
+  try{ synth.cancel(); }catch{}
+  setTimeout(()=>{ try{ synth.speak(u); }catch{} }, 40);
+}
+
+let idCounter = 1;
+function mkId(){ return "s"+(idCounter++); }
+
+let selectedId = null;
+
+const state = {
+  tiles: [], // {id,text}
+  plan: { now: [], next: [], later: [] } // arrays of ids
+};
+
+function setStatus(html, tone){
+  const el=$("#status");
+  el.innerHTML = html;
+  el.classList.remove("ok","bad","warnTxt");
+  if(tone) el.classList.add(tone);
+}
+
+function normalizeStep(t){
+  return String(t||"")
+    .replace(/\s+/g," ")
+    .replace(/^\s+|\s+$/g,"")
+    .replace(/\.$/,"")
+    .trim();
+}
+
+function addTile(text){
+  const t = normalizeStep(text);
+  if(!t) return;
+  // de-dupe (case-insensitive)
+  const k = t.toLowerCase();
+  if(state.tiles.some(x => x.text.toLowerCase() === k)) return;
+  state.tiles.push({ id: mkId(), text: t });
+}
+
+function removeFromPlan(id){
+  ["now","next","later"].forEach(k=>{
+    state.plan[k] = state.plan[k].filter(x=>x!==id);
+  });
+}
+
+function sendTo(col, id){
+  removeFromPlan(id);
+  state.plan[col].push(id);
+  renderAll();
+}
+
+function moveWithin(col, id, dir){
+  const arr = state.plan[col];
+  const i = arr.indexOf(id);
+  if(i<0) return;
+  const j = i + dir;
+  if(j<0 || j>=arr.length) return;
+  const tmp = arr[i]; arr[i]=arr[j]; arr[j]=tmp;
+  renderAll();
+}
+
+function moveToOther(id, fromCol, toCol){
+  state.plan[fromCol] = state.plan[fromCol].filter(x=>x!==id);
+  state.plan[toCol].push(id);
+  renderAll();
+}
+
+function tileById(id){ return state.tiles.find(t=>t.id===id) || null; }
+
+function renderTile(t, where, colName){
+  const div=document.createElement("div");
+  div.className="tile" + (t.id===selectedId ? " sel" : "");
+  div.tabIndex = 0;
+
+  const top=document.createElement("div");
+  top.className="t";
+  top.textContent=t.text;
+  top.style.cursor="pointer";
+  top.onclick = ()=>{
+    selectedId = t.id;
+    renderAll();
+    speakNow(t.text);
+  };
+  div.appendChild(top);
+
+  const meta=document.createElement("div");
+  meta.className="meta";
+
+  function btn(label, cls, onClick){
+    const b=document.createElement("button");
+    b.type="button";
+    if(cls) b.className=cls;
+    b.textContent=label;
+    b.onclick=onClick;
+    meta.appendChild(b);
+  }
+
+  if(where==="bank"){
+    btn("Now", "ghost", ()=>sendTo("now", t.id));
+    btn("Next", "ghost", ()=>sendTo("next", t.id));
+    btn("Later", "ghost", ()=>sendTo("later", t.id));
+  } else {
+    btn("Up", "ghost", ()=>moveWithin(colName, t.id, -1));
+    btn("Down", "ghost", ()=>moveWithin(colName, t.id, +1));
+
+    if(colName!=="now") btn("To Now", "ghost", ()=>moveToOther(t.id, colName, "now"));
+    if(colName!=="next") btn("To Next", "ghost", ()=>moveToOther(t.id, colName, "next"));
+    if(colName!=="later") btn("To Later", "ghost", ()=>moveToOther(t.id, colName, "later"));
+
+    btn("Back to bank", "ghost", ()=>{
+      removeFromPlan(t.id);
+      renderAll();
+    });
+  }
+
+  div.appendChild(meta);
+  return div;
+}
+
+function renderAll(){
+  const bank=$("#bank"); bank.innerHTML="";
+  const now=$("#now"); now.innerHTML="";
+  const next=$("#next"); next.innerHTML="";
+  const later=$("#later"); later.innerHTML="";
+
+  // bank = tiles not currently in plan
+  const inPlan = new Set([...state.plan.now, ...state.plan.next, ...state.plan.later]);
+  const bankTiles = state.tiles.filter(t=>!inPlan.has(t.id));
+
+  bankTiles.forEach(t=>bank.appendChild(renderTile(t,"bank","")));
+  state.plan.now.map(tileById).filter(Boolean).forEach(t=>now.appendChild(renderTile(t,"col","now")));
+  state.plan.next.map(tileById).filter(Boolean).forEach(t=>next.appendChild(renderTile(t,"col","next")));
+  state.plan.later.map(tileById).filter(Boolean).forEach(t=>later.appendChild(renderTile(t,"col","later")));
+
+  $("#tileCount").textContent = String(state.tiles.length);
+  $("#nowCount").textContent = String(state.plan.now.length);
+  $("#nextCount").textContent = String(state.plan.next.length);
+  $("#laterCount").textContent = String(state.plan.later.length);
+
+  // Focus mode locking
+  const f=$("#focus").value;
+  $("#colNext").classList.toggle("locked", f==="now");
+  $("#colLater").classList.toggle("locked", f==="now" || f==="nowNext");
+
+  // gentle guidance
+  if(state.plan.now.length===0){
+    setStatus('Pick one tiny step for <b>NOW</b>. Aim for 30 seconds or less.', "warnTxt");
+  } else if(state.plan.later.length===0){
+    setStatus('Nice. Add a <b>LATER</b> step for checking / finishing.', null);
+  } else {
+    setStatus('<span class="ok">Plan ready.</span> Try Focus mode and do only the Now step first.', "ok");
+  }
+}
+
+function splitSmaller(text){
+  const t = normalizeStep(text);
+  if(!t) return [];
+  // Heuristics: split on " and ", ",", " then "
+  const lower = t.toLowerCase();
+
+  if(lower.includes(" and ")){
+    const parts = t.split(/ and /i).map(normalizeStep).filter(Boolean);
+    if(parts.length>=2) return [parts[0], parts.slice(1).join(" and ")];
+  }
+  if(t.includes(",")){
+    const parts = t.split(",").map(normalizeStep).filter(Boolean);
+    if(parts.length>=2) return [parts[0], parts[1]];
+  }
+  if(lower.includes(" then ")){
+    const parts = t.split(/ then /i).map(normalizeStep).filter(Boolean);
+    if(parts.length>=2) return [parts[0], parts[1]];
+  }
+
+  // Default: add a setup step + the original step
+  // Example: "Write your first sentence" => "Get ready (pen/page)" + "Write your first sentence"
+  const setup = "Get ready for this step (materials / place / focus)";
+  return [setup, t];
+}
+
+function makeSelectedSmaller(){
+  if(!selectedId){
+    setStatus('<span class="warnTxt">Select a tile first</span> (click its text).', "warnTxt");
+    return;
+  }
+  const t = tileById(selectedId);
+  if(!t) return;
+
+  const parts = splitSmaller(t.text);
+  if(parts.length<2){
+    setStatus('Could not split that one. Try a different step.', "warnTxt");
+    return;
+  }
+
+  // Replace tile text with first part + create new tile for second part.
+  t.text = normalizeStep(parts[0]);
+  addTile(parts[1]);
+
+  setStatus('Split into two smaller steps. Put the first in <b>Now</b> if possible.', "ok");
+  renderAll();
+}
+
+function generateFromTask(task){
+  const t = String(task||"").toLowerCase();
+  const tiles = [];
+
+  function add(s){ tiles.push(s); }
+
+  if(t.includes("write") || t.includes("paragraph") || t.includes("story") || t.includes("essay")){
+    add("Open your copy and write the date");
+    add("Write a simple title");
+    add("Plan 3 ideas (words or short phrases)");
+    add("Write one sentence");
+    add("Add one detail to that sentence");
+    add("Check capitals and full stops");
+    add("Read it quietly to yourself");
+  } else if(t.includes("read")){
+    add("Look at the title and pictures");
+    add("Read the first paragraph");
+    add("Underline 2 new words");
+    add("Say one sentence summary");
+    add("Find one key fact");
+    add("Check the question again");
+  } else if(t.includes("math") || t.includes("problem") || t.includes("sum")){
+    add("Read the question once slowly");
+    add("Circle the numbers");
+    add("Choose the operation (+ - x Ã·)");
+    add("Do one step of working");
+    add("Check the answer makes sense");
+  } else {
+    add("Get your materials ready");
+    add("Start with a tiny first step");
+    add("Do 2 minutes of work");
+    add("Take a short reset breath");
+    add("Do 2 more minutes");
+    add("Check: did I finish the goal?");
+  }
+
+  // Supported mode: fewer tiles by default (still meaningful)
+  const supported = document.body.classList.contains("supported");
+  const maxTiles = supported ? 6 : 10;
+
+  tiles.slice(0,maxTiles).forEach(addTile);
+}
+
+function resetAll(){
+  state.tiles = [];
+  state.plan = { now: [], next: [], later: [] };
+  selectedId = null;
+  $("#task").value = "";
+  $("#focus").value = "off";
+  renderAll();
+  setStatus('Type a task, click <b>Generate steps</b>, then choose a tiny <b>Now</b> step.', null);
+}
+
+function speakColumn(name){
+  const ids = state.plan[name];
+  const words = ids.map(tileById).filter(Boolean).map(x=>x.text);
+  if(!words.length){ speakNow("No steps yet"); return; }
+  speakNow(name.toUpperCase() + ". " + words.join(". "));
+}
+
+function speakWholePlan(){
+  const a = state.plan.now.map(tileById).filter(Boolean).map(x=>x.text);
+  const b = state.plan.next.map(tileById).filter(Boolean).map(x=>x.text);
+  const c = state.plan.later.map(tileById).filter(Boolean).map(x=>x.text);
+  const txt =
+    "Now. " + (a.length ? a.join(". ") : "No steps yet.") + ". " +
+    "Next. " + (b.length ? b.join(". ") : "No steps yet.") + ". " +
+    "Later. " + (c.length ? c.join(". ") : "No steps yet.");
+  speakNow(txt, 0.9);
+}
+
+function copyPlan(){
+  const a = state.plan.now.map(tileById).filter(Boolean).map(x=>"NOW: " + x.text);
+  const b = state.plan.next.map(tileById).filter(Boolean).map(x=>"NEXT: " + x.text);
+  const c = state.plan.later.map(tileById).filter(Boolean).map(x=>"LATER: " + x.text);
+  const txt = [...a,...b,...c].join("\n");
+  if(!txt.trim()) { setStatus('Nothing to copy yet.', "warnTxt"); return; }
+  navigator.clipboard.writeText(txt).then(()=>{
+    setStatus('Copied plan to clipboard.', "ok");
+  }).catch(()=>{
+    setStatus('Could not copy (browser blocked). You can still select and copy manually.', "warnTxt");
+  });
+}
+
+function addCustomStep(){
+  const s = prompt("Add a step (keep it small):");
+  if(!s) return;
+  addTile(s);
+  renderAll();
+}
+
+function clearPlan(){
+  state.plan = { now: [], next: [], later: [] };
+  selectedId = null;
+  renderAll();
+}
+
+$("#variant").addEventListener("change", (e)=>{
+  document.body.classList.toggle("supported", e.target.value === "supported");
+  // regenerate guidance only (do not delete)
+  renderAll();
+});
+
+$("#stop").onclick = ()=>{ try{ speechSynthesis.cancel(); }catch{} };
+$("#reset").onclick = resetAll;
+
+$("#demo").onclick = ()=>{
+  $("#task").value = "Write a short paragraph about Spanish football using modal verbs.";
+  state.tiles = [];
+  state.plan = { now: [], next: [], later: [] };
+  selectedId = null;
+  generateFromTask($("#task").value);
+  renderAll();
+  setStatus('Demo loaded. Choose a tiny <b>Now</b> step.', null);
+};
+
+$("#generate").onclick = ()=>{
+  const task = $("#task").value.trim();
+  if(!task){
+    setStatus('<span class="warnTxt">Type a task first</span> (or press Load demo).', "warnTxt");
+    return;
+  }
+  // keep existing tiles, but add new suggestions
+  generateFromTask(task);
+  renderAll();
+  setStatus('Steps generated. Put the smallest one in <b>Now</b>.', null);
+};
+
+$("#makeSmaller").onclick = makeSelectedSmaller;
+$("#speakPlan").onclick = speakWholePlan;
+$("#speakNow").onclick = ()=>speakColumn("now");
+$("#copyPlan").onclick = copyPlan;
+$("#addCustom").onclick = addCustomStep;
+$("#clearPlan").onclick = clearPlan;
+
+$("#focus").addEventListener("change", renderAll);
+
+refreshVoices();
+if(window.speechSynthesis) speechSynthesis.onvoiceschanged = refreshVoices;
+
+setTimeout(()=>{
+  document.body.classList.toggle("supported", $("#variant").value==="supported");
+  resetAll();
+}, 80);
+</script>
+<script>
+// wordiness-touch-helpers-v4
+(function(){
+  try{
+    var isCoarse=false;
+    try{ isCoarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches; }catch(e){}
+    var isTouch = isCoarse || ("ontouchstart" in window) || (navigator.maxTouchPoints && navigator.maxTouchPoints>0);
+
+    // Crest fallback (works for /wordiness and file:// exports)
+    var crest = document.getElementById("crest");
+    if (crest && crest.tagName === "IMG") {
+      crest.addEventListener("error", function(){ crest.src="/wordiness/crest.png"; }, { once:true });
+    }
+
+    if(!isTouch) return;
+
+    var drags = Array.prototype.slice.call(document.querySelectorAll('[draggable="true"]'));
+    if(!drags.length) return;
+
+    drags.forEach(function(el){
+      el.classList.add("wordiness-draggable");
+      el.addEventListener("click", function(){
+        drags.forEach(function(x){ x.classList.remove("wordiness-drag-selected"); });
+        el.classList.add("wordiness-drag-selected");
+      }, { passive:true });
+    });
+
+    var btn = document.createElement("button");
+    btn.id="wordinessTouchToggle";
+    btn.type="button";
+    btn.style.position="fixed";
+    btn.style.right="12px";
+    btn.style.bottom="calc(12px + env(safe-area-inset-bottom, 0px))";
+    btn.style.zIndex="9999";
+    btn.style.border="1px solid rgba(255,255,255,.18)";
+    btn.style.background="rgba(0,0,0,.45)";
+    btn.style.color="rgba(238,242,255,.95)";
+    btn.style.backdropFilter="blur(10px)";
+    btn.style.borderRadius="999px";
+    btn.style.padding="10px 12px";
+    btn.style.font="600 13px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+    btn.style.touchAction="manipulation";
+
+    var dragEnabled=true;
+    function applyState(){
+      drags.forEach(function(el){ el.setAttribute("draggable", dragEnabled ? "true" : "false"); });
+      btn.textContent = dragEnabled ? "Touch: Drag ON" : "Touch: Drag OFF";
+    }
+    btn.addEventListener("click", function(){ dragEnabled=!dragEnabled; applyState(); });
+
+    document.body.appendChild(btn);
+    applyState();
+  }catch(e){}
+})();
+</script>
+
+<!-- wordiness-seed-bridge-v1 -->
+<script src="wordiness-seed-bridge.js"></script>
+</body>
+</html>

@@ -1,0 +1,787 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Wordiness — Working Memory Relay</title>
+<style>
+  :root{
+    --bg:#070b16;
+    --line:rgba(255,255,255,.14);
+    --text:#eef2ff;
+    --muted:rgba(238,242,255,.72);
+    --acc:#38bdf8;
+    --ok:#22c55e;
+    --bad:#ef4444;
+    --warn:#f59e0b;
+    --r:18px;
+    --fs:18px; --lh:1.6; --ls:0px; --ws:0px;
+  }
+  body.supported{ --fs:20px; --lh:1.95; --ls:.2px; --ws:.8px; }
+  body{
+    margin:0; color:var(--text);
+    background:
+      radial-gradient(900px 500px at 20% -10%, rgba(56,189,248,.14), transparent 60%),
+      radial-gradient(900px 500px at 90% 10%, rgba(34,197,94,.12), transparent 55%),
+      linear-gradient(180deg,#050816,var(--bg));
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+    font-size:var(--fs); line-height:var(--lh); letter-spacing:var(--ls); word-spacing:var(--ws);
+  }
+  .wrap{ max-width:1120px; margin:0 auto; padding:16px; }
+
+  header{
+    position:sticky; top:10px; z-index:5; backdrop-filter: blur(10px);
+    border:1px solid var(--line); border-radius:var(--r); padding:12px 14px;
+    background:linear-gradient(180deg, rgba(20,30,55,.85), rgba(10,18,38,.78));
+    display:flex; gap:12px; flex-wrap:wrap; justify-content:space-between; align-items:center;
+  }
+  h1{ margin:0; font-size:18px; }
+  .sub{ color:var(--muted); font-size:13px; margin-top:3px; max-width:760px;}
+  .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  button,select,textarea,input{ font:inherit; }
+  button{
+    cursor:pointer; color:var(--text);
+    border:1px solid rgba(56,189,248,.32);
+    background:linear-gradient(180deg, rgba(56,189,248,.14), rgba(56,189,248,.06));
+    padding:10px 12px; border-radius:12px;
+  }
+  button.ghost{ border:1px solid var(--line); background:rgba(255,255,255,.04); }
+  select,input{
+    background:rgba(0,0,0,.25); color:var(--text);
+    border:1px solid var(--line); padding:8px 10px; border-radius:12px;
+  }
+  .card{
+    margin-top:14px; border:1px solid var(--line); border-radius:var(--r);
+    background:linear-gradient(180deg, rgba(16,27,51,.78), rgba(11,20,40,.72));
+    overflow:hidden;
+  }
+  .hd{
+    padding:12px 14px; border-bottom:1px solid var(--line);
+    display:flex; gap:10px; flex-wrap:wrap; justify-content:space-between; align-items:flex-start;
+  }
+  .bd{ padding:14px; }
+  textarea{
+    width:100%; min-height:120px; resize:vertical;
+    border-radius:14px; padding:12px;
+    border:1px solid var(--line); background:rgba(0,0,0,.18); color:var(--text);
+  }
+  .status{
+    margin-top:12px; border:1px solid var(--line); border-radius:14px; padding:10px 12px;
+    background:rgba(255,255,255,.03);
+    font-size:13px; color:rgba(238,242,255,.88);
+  }
+  .ok{ color:var(--ok); font-weight:950; }
+  .bad{ color:var(--bad); font-weight:950; }
+  .warn{ color:var(--warn); font-weight:950; }
+  .grid{ display:grid; gap:12px; grid-template-columns: 1fr; }
+  @media (min-width: 980px){ .grid{ grid-template-columns: 1.1fr .9fr; } }
+
+  .stage{
+    border:1px solid rgba(255,255,255,.14);
+    border-radius:16px; padding:12px;
+    background:rgba(0,0,0,.10);
+  }
+  .stageTitle{ display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:center; }
+  .badge{
+    display:inline-flex; gap:8px; align-items:center;
+    border:1px solid rgba(255,255,255,.14);
+    background:rgba(255,255,255,.04);
+    padding:6px 10px; border-radius:999px;
+    font-size:12px; color:rgba(238,242,255,.85);
+  }
+  .timer{ font-weight:1000; font-size:14px; }
+
+  .wordsShow{ margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; }
+  .wordCard{
+    border:1px solid rgba(255,255,255,.16);
+    background:rgba(255,255,255,.04);
+    border-radius:16px;
+    padding:12px 14px;
+    font-weight:1000;
+    font-size:24px;
+    user-select:none;
+  }
+  body.supported .wordCard{ font-size:28px; padding:14px 16px; }
+
+  .slots{ margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; }
+  .slot{
+    min-width:120px;
+    border:1px dashed rgba(255,255,255,.20);
+    background:rgba(0,0,0,.12);
+    border-radius:16px;
+    padding:10px 12px;
+    font-weight:1000;
+    font-size:18px;
+    user-select:none;
+  }
+  .slot.filled{ border-style:solid; border-color:rgba(56,189,248,.38); background:rgba(56,189,248,.08); }
+  .slot.ok{ border-color:rgba(34,197,94,.55); background:rgba(34,197,94,.10); }
+  .slot.bad{ border-color:rgba(239,68,68,.55); background:rgba(239,68,68,.12); }
+
+  .bank{ margin-top:12px; display:flex; gap:10px; flex-wrap:wrap; }
+  .tile{
+    border:1px solid rgba(255,255,255,.16);
+    background:rgba(255,255,255,.04);
+    color:rgba(238,242,255,.92);
+    border-radius:999px;
+    padding:10px 12px;
+    font-weight:950;
+    cursor:pointer;
+    user-select:none;
+  }
+  body.supported .tile{ padding:12px 14px; }
+
+  .tiny{ font-size:12px; color:var(--muted); }
+  .crest{
+    width:42px; height:42px; border-radius:12px;
+    border:1px solid rgba(255,255,255,.14);
+    background:rgba(255,255,255,.04);
+    object-fit:contain;
+  }
+  details{ margin-top:10px; border:1px solid rgba(255,255,255,.10); border-radius:14px; background:rgba(0,0,0,.10); padding:10px 12px; }
+  summary{ cursor:pointer; font-weight:950; list-style:none; }
+  summary::-webkit-details-marker{ display:none; }
+  .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size:12px; color:rgba(238,242,255,.78); white-space:pre-wrap;}
+</style>
+<style>
+/* wordiness-ui-polish-v4 */
+:root{
+  --tapMin: 44px;
+  --safeBottom: env(safe-area-inset-bottom, 0px);
+}
+html, body{ height: 100%; }
+body{
+  min-height: 100dvh;
+  padding-bottom: var(--safeBottom);
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior: contain;
+}
+@supports (height: 100svh){ body{ min-height: 100svh; } }
+
+*{ -webkit-tap-highlight-color: transparent; }
+
+button, [role="button"], a, input, select, textarea,
+.tile, .wordCard, .slot, .badge{
+  min-height: var(--tapMin);
+}
+
+button, [role="button"], a, .tile, .wordCard, .slot{
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+input, textarea, select{
+  font-size: 16px !important; /* prevent iOS zoom */
+}
+
+[draggable="true"], .wordiness-draggable{
+  touch-action: none; /* reduce scroll-vs-drag fighting */
+}
+
+.wordiness-drag-selected{
+  outline: 3px solid rgba(56,189,248,.55) !important;
+}
+
+@media (prefers-reduced-motion: reduce){
+  *{ scroll-behavior: auto !important; transition: none !important; animation: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div style="display:flex; gap:12px; align-items:flex-start;">
+      <!-- Relative path: when served at /wordiness/..., this resolves to /wordiness/crest.png -->
+      <img class="crest" id="crest" src="crest.png" alt="KNS crest" />
+      <div>
+        <h1>Wordiness — Working Memory Relay</h1>
+        <div class="sub">
+          Show a short list of words, hide them, then rebuild the list from tiles.
+          <b>Supported</b> mode gives more time and fewer words.
+          Seed words via <span class="tiny"><code>#seed=word1%0Aword2%0Aword3</code></span>.
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <label class="row" style="gap:6px;color:var(--muted);font-size:13px">View
+        <select id="variant">
+          <option value="standard">Standard</option>
+          <option value="supported">Supported</option>
+        </select>
+      </label>
+      <label class="row" style="gap:6px;color:var(--muted);font-size:13px">Voice
+        <select id="voice"></select>
+      </label>
+      <button class="ghost" id="stop" type="button">Stop</button>
+      <button class="ghost" id="reset" type="button">Reset</button>
+    </div>
+  </header>
+
+  <section class="card">
+    <div class="hd">
+      <div style="max-width:780px;">
+        <div class="sub">Word list</div>
+        <div class="tiny">One word per line. Pasting a paragraph is ok — tap <b>Sanitize</b> to extract words.</div>
+      </div>
+      <div class="row">
+        <button class="ghost" id="demo" type="button">Load demo</button>
+        <button class="ghost" id="sanitize" type="button">Sanitize</button>
+        <button id="start" type="button">Start round</button>
+      </div>
+    </div>
+
+    <div class="bd">
+      <textarea id="input" spellcheck="false" placeholder="responsibility&#10;different&#10;vegetable&#10;factory"></textarea>
+
+      <div class="grid" style="margin-top:14px;">
+        <div class="stage">
+          <div class="stageTitle">
+            <div class="row">
+              <span class="badge">Round <b id="roundNo">1</b></span>
+              <span class="badge">Words: <b id="nWords">5</b></span>
+              <span class="badge">Time: <b id="showSecs">5</b>s</span>
+              <span class="badge">Distractors: <b id="nDist">4</b></span>
+              <span class="badge timer">⏱ <span id="timer">Ready</span></span>
+            </div>
+            <div class="row">
+              <label class="row" style="gap:6px;color:var(--muted);font-size:13px">Speak
+                <select id="speakMode">
+                  <option value="off">Off</option>
+                  <option value="words">Words only</option>
+                  <option value="wordsThenList">Words + full list</option>
+                </select>
+              </label>
+              <button class="ghost" id="reveal" type="button" title="Show the words again (teacher support)">Reveal</button>
+            </div>
+          </div>
+
+          <div id="phaseBox" class="status" style="margin-top:10px;">
+            Press <b>Start round</b>. The words will appear, then disappear.
+          </div>
+
+          <div id="showBox" class="wordsShow" style="display:none;"></div>
+
+          <div id="buildBox" style="display:none;">
+            <div class="tiny" style="margin-top:10px;">Tap tiles to fill the slots. Tap a filled slot to clear it.</div>
+            <div id="slots" class="slots"></div>
+
+            <div class="row" style="margin-top:12px;">
+              <button class="ghost" id="clear" type="button">Clear</button>
+              <button class="ghost" id="shuffle" type="button">Shuffle tiles</button>
+              <button id="check" type="button">Check</button>
+            </div>
+
+            <div id="bank" class="bank"></div>
+          </div>
+
+          <details>
+            <summary>Teacher controls</summary>
+            <div class="row" style="margin-top:10px;">
+              <label class="row" style="gap:6px;color:var(--muted);font-size:13px">Words per round
+                <input id="ctlWords" type="number" min="2" max="10" value="5" style="width:90px;">
+              </label>
+              <label class="row" style="gap:6px;color:var(--muted);font-size:13px">Show time (sec)
+                <input id="ctlTime" type="number" min="2" max="20" value="5" style="width:90px;">
+              </label>
+              <label class="row" style="gap:6px;color:var(--muted);font-size:13px">Distractors
+                <input id="ctlDist" type="number" min="0" max="12" value="4" style="width:90px;">
+              </label>
+              <button class="ghost" id="applyCtl" type="button">Apply</button>
+            </div>
+            <div class="tiny" style="margin-top:10px;">
+              Supported mode defaults to fewer words + longer time. Teacher controls override both modes.
+            </div>
+          </details>
+
+        </div>
+
+        <div class="stage">
+          <div class="stageTitle">
+            <span class="badge">Score</span>
+            <span class="badge">Streak: <b id="streak">0</b></span>
+            <span class="badge">Best: <b id="best">0</b></span>
+          </div>
+
+          <div id="log" class="status" style="margin-top:10px;">
+            Tips: try <b>Supported</b> first. Then increase distractors for a “real world” challenge.
+          </div>
+
+          <details>
+            <summary>Diagnostics</summary>
+            <div class="mono" id="diag"></div>
+          </details>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+const $ = (s,r=document)=>r.querySelector(s);
+
+(() => {
+  const img = $("#crest");
+  // if crest fails, try absolute fallback
+  img.addEventListener("error", () => { img.src = "/wordiness/crest.png"; }, { once:true });
+})();
+
+let voices=[];
+function refreshVoices(){
+  if(!window.speechSynthesis) return;
+  voices = speechSynthesis.getVoices()||[];
+  const sel=$("#voice"); sel.innerHTML="";
+  const d=document.createElement("option");
+  d.value=""; d.textContent=voices.length?"Default":"No voices";
+  sel.appendChild(d);
+  voices.forEach((v,i)=>{
+    const o=document.createElement("option");
+    o.value=String(i);
+    o.textContent=`${v.name} (${v.lang})`;
+    sel.appendChild(o);
+  });
+}
+function speakNow(text, rate=0.92){
+  if(!window.speechSynthesis) return;
+  const t = String(text||"").trim();
+  if(!t) return;
+  const synth = window.speechSynthesis;
+  const u=new SpeechSynthesisUtterance(t);
+  const idx=parseInt($("#voice").value,10);
+  if(Number.isFinite(idx) && voices[idx]) u.voice=voices[idx];
+  u.rate=Math.max(0.7, Math.min(1.1, rate));
+  try{ synth.cancel(); }catch{}
+  setTimeout(()=>{ try{ synth.speak(u); }catch{} }, 40);
+}
+async function speakList(words){
+  if(!window.speechSynthesis) return;
+  const mode = $("#speakMode").value;
+  if(mode==="off") return;
+  for(const w of words){
+    speakNow(w, document.body.classList.contains("supported") ? 0.86 : 0.95);
+    await new Promise(res=>setTimeout(res, 540));
+  }
+  if(mode==="wordsThenList"){
+    speakNow(words.join(" "), document.body.classList.contains("supported") ? 0.82 : 0.9);
+  }
+}
+
+function normalizeLine(s){
+  return String(s||"")
+    .replace(/[\u2010\u2011\u2012\u2013\u2014\u2212]/g, "-")
+    .replace(/\u00B7/g, "·")
+    .trim();
+}
+function hasVowelLetters(s){ return /[aeiouy]/i.test(String(s||"")); }
+
+// paragraph -> word list (deduped)
+function sanitizeToWordList(raw){
+  raw = String(raw||"").replace(/\r/g,"");
+  const out = [];
+  for(const line0 of raw.split("\n")){
+    const line = normalizeLine(line0);
+    if(!line) continue;
+
+    // keep already-one-word lines, incl syllable-marked
+    if(!/\s/.test(line)){
+      out.push(line);
+      continue;
+    }
+    const toks = line.match(/[A-Za-z]+(?:'[A-Za-z]+)?/g);
+    if(!toks) continue;
+    for(const w of toks){
+      if(w.length > 28) continue;
+      if(!hasVowelLetters(w)) continue;
+      out.push(w);
+    }
+  }
+  const seen = new Set();
+  const final = [];
+  for(const w of out){
+    const k = w.toLowerCase();
+    if(seen.has(k)) continue;
+    seen.add(k);
+    final.push(w);
+  }
+  return final.join("\n");
+}
+
+function splitToPoolLines(){
+  const raw = $("#input").value;
+  const cleaned = sanitizeToWordList(raw);
+  if(cleaned !== raw) $("#input").value = cleaned;
+  return cleaned.split("\n").map(s=>normalizeLine(s)).filter(Boolean);
+}
+
+function displayWordFromLine(line){
+  // if marked syllable: re-spon-si-bi-li-ty -> responsibility
+  if(/[-·]/.test(line) && !/\s/.test(line)){
+    return line.split(/[-·]+/).join("");
+  }
+  return line;
+}
+
+function shuffle(a){
+  const arr = a.slice();
+  for(let i=arr.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]] = [arr[j],arr[i]];
+  }
+  return arr;
+}
+function sample(arr, n){
+  const s = shuffle(arr);
+  return s.slice(0, Math.min(n, s.length));
+}
+function clampInt(v, min, max, fallback){
+  const n = parseInt(String(v), 10);
+  if(!Number.isFinite(n)) return fallback;
+  return Math.max(min, Math.min(max, n));
+}
+
+let round = 1;
+let streak = 0;
+let best = 0;
+
+let targetWords = [];
+let bankWords = [];
+let answer = [];
+let phase = "idle"; // idle|show|build|scored
+let cfg = { nWords: 5, showSecs: 5, nDist: 4 };
+
+function updateBadges(){
+  $("#roundNo").textContent = String(round);
+  $("#nWords").textContent = String(cfg.nWords);
+  $("#showSecs").textContent = String(cfg.showSecs);
+  $("#nDist").textContent = String(cfg.nDist);
+  $("#streak").textContent = String(streak);
+  $("#best").textContent = String(best);
+}
+function applyVariantDefaults(){
+  const v = $("#variant").value;
+  const ctlApplied = $("#applyCtl").dataset.applied === "1";
+  if(!ctlApplied){
+    if(v === "supported"){ cfg = { nWords: 3, showSecs: 7, nDist: 3 }; }
+    else { cfg = { nWords: 5, showSecs: 5, nDist: 4 }; }
+    $("#ctlWords").value = String(cfg.nWords);
+    $("#ctlTime").value = String(cfg.showSecs);
+    $("#ctlDist").value = String(cfg.nDist);
+  } else {
+    cfg.nWords   = clampInt($("#ctlWords").value, 2, 10, cfg.nWords);
+    cfg.showSecs = clampInt($("#ctlTime").value, 2, 20, cfg.showSecs);
+    cfg.nDist    = clampInt($("#ctlDist").value, 0, 12, cfg.nDist);
+  }
+  updateBadges();
+}
+function setTimer(text){ $("#timer").textContent = text; }
+function setPhaseBox(html, tone){
+  const box = $("#phaseBox");
+  box.innerHTML = html;
+  box.classList.remove("ok","bad","warn");
+  if(tone) box.classList.add(tone);
+}
+function log(html, tone){
+  const el = $("#log");
+  el.innerHTML = html;
+  el.classList.remove("ok","bad","warn");
+  if(tone) el.classList.add(tone);
+}
+
+function renderShow(){
+  const box = $("#showBox");
+  box.innerHTML = "";
+  targetWords.forEach(w=>{
+    const d = document.createElement("div");
+    d.className = "wordCard";
+    d.textContent = w;
+    d.onclick = ()=>speakNow(w);
+    box.appendChild(d);
+  });
+}
+function renderBuild(){
+  const slots = $("#slots");
+  const bank = $("#bank");
+  slots.innerHTML = "";
+  bank.innerHTML = "";
+
+  answer.forEach((w, i)=>{
+    const s = document.createElement("div");
+    s.className = "slot" + (w ? " filled" : "");
+    s.textContent = w ? w : "…";
+    s.title = "Tap to clear";
+    s.onclick = ()=>{
+      answer[i] = "";
+      renderBuild();
+    };
+    slots.appendChild(s);
+  });
+
+  bankWords.forEach(w=>{
+    const b = document.createElement("button");
+    b.type="button";
+    b.className="tile";
+    b.textContent = w;
+    b.onclick = ()=>{
+      const ix = answer.findIndex(x=>!x);
+      if(ix === -1) return;
+      answer[ix] = w;
+      renderBuild();
+      speakNow(w, document.body.classList.contains("supported") ? 0.86 : 0.95);
+    };
+    bank.appendChild(b);
+  });
+}
+
+let countdownHandle = null;
+function clearCountdown(){
+  if(countdownHandle) clearInterval(countdownHandle);
+  countdownHandle = null;
+}
+
+async function startRound(){
+  clearCountdown();
+  const poolLines = splitToPoolLines();
+  const poolWords = poolLines.map(displayWordFromLine).filter(Boolean);
+
+  if(poolWords.length < 3){
+    log('<span class="bad">Need at least 3 words</span>. Add a few more to the list.', "bad");
+    return;
+  }
+
+  const picks = sample(poolLines, cfg.nWords);
+  targetWords = picks.map(displayWordFromLine);
+
+  const remaining = poolWords.filter(w => !targetWords.includes(w));
+  const distractors = sample(remaining, cfg.nDist);
+  bankWords = shuffle(targetWords.concat(distractors));
+  answer = Array(targetWords.length).fill("");
+
+  phase = "show";
+  $("#showBox").style.display = "";
+  $("#buildBox").style.display = "none";
+  renderShow();
+  setPhaseBox('Memorise the words. Tap a word to hear it.', "warn");
+  log('Round started. Memorise the list, then rebuild it.', "warn");
+
+  await speakList(targetWords);
+
+  let t = cfg.showSecs;
+  setTimer(t + "s");
+  countdownHandle = setInterval(()=>{
+    t--;
+    if(t <= 0){
+      clearCountdown();
+      setTimer("Go!");
+      beginBuildPhase();
+    } else {
+      setTimer(t + "s");
+    }
+  }, 1000);
+}
+
+function beginBuildPhase(){
+  phase = "build";
+  $("#showBox").style.display = "none";
+  $("#buildBox").style.display = "";
+  setPhaseBox('Rebuild the list using the tiles.', null);
+  renderBuild();
+}
+
+function checkAnswer(){
+  if(phase !== "build" && phase !== "scored") return;
+
+  if(!answer.every(Boolean)){
+    log('<span class="warn">Not finished</span>. Fill all slots first.', "warn");
+    return;
+  }
+
+  const slots = Array.from($("#slots").children);
+  let correct = 0;
+  for(let i=0;i<answer.length;i++){
+    const ok = answer[i] === targetWords[i];
+    if(ok) correct++;
+    slots[i].classList.add(ok ? "ok" : "bad");
+  }
+
+  if(correct === answer.length){
+    streak++;
+    best = Math.max(best, streak);
+    log(`<span class="ok">Perfect!</span> You rebuilt the list. (Streak ${streak})`, "ok");
+    speakNow("Perfect", 0.95);
+  } else {
+    streak = 0;
+    log(`<span class="bad">Not quite.</span> ${correct}/${answer.length} in the right place. Try again or press Reveal.`, "bad");
+    speakNow("Try again", 0.9);
+  }
+
+  updateBadges();
+  phase = "scored";
+  $("#diag").textContent =
+`targetWords: ${JSON.stringify(targetWords)}
+answer:      ${JSON.stringify(answer)}
+bankWords:   ${JSON.stringify(bankWords)}
+cfg:         ${JSON.stringify(cfg)}`;
+}
+
+function clearAnswer(){
+  answer = Array(targetWords.length).fill("");
+  renderBuild();
+  log("Cleared. Try again.", null);
+}
+
+function reveal(){
+  if(!targetWords.length) return;
+  $("#showBox").style.display = "";
+  $("#buildBox").style.display = "none";
+  renderShow();
+  setPhaseBox('Teacher reveal: words shown again. Press Start round to retry with a new list.', "warn");
+  setTimer("Reveal");
+}
+
+function resetAll(){
+  clearCountdown();
+  round = 1; streak = 0; best = 0;
+  targetWords = []; bankWords = []; answer = [];
+  phase = "idle";
+  $("#showBox").style.display = "none";
+  $("#buildBox").style.display = "none";
+  setTimer("Ready");
+  setPhaseBox('Press <b>Start round</b>. The words will appear, then disappear.', null);
+  log('Tips: try <b>Supported</b> first. Then increase distractors for a “real world” challenge.', null);
+  updateBadges();
+  $("#diag").textContent = "";
+  $("#applyCtl").dataset.applied = "0";
+  applyVariantDefaults();
+}
+
+function nextRound(){
+  round++;
+  updateBadges();
+  startRound();
+}
+
+// UI wiring
+$("#variant").addEventListener("change", (e)=>{
+  document.body.classList.toggle("supported", e.target.value === "supported");
+  applyVariantDefaults();
+});
+$("#stop").onclick = ()=>{ try{ speechSynthesis.cancel(); }catch{} };
+$("#reset").onclick = resetAll;
+$("#start").onclick = ()=>{ (phase !== "idle") ? nextRound() : startRound(); };
+$("#check").onclick = checkAnswer;
+$("#clear").onclick = clearAnswer;
+$("#shuffle").onclick = ()=>{ bankWords = shuffle(bankWords); renderBuild(); };
+$("#reveal").onclick = reveal;
+
+$("#demo").onclick = ()=>{
+  $("#input").value =
+`responsibility
+different
+vegetable
+factory
+family
+chocolate
+camera
+interesting
+probably
+decision
+focus
+routine
+balance`;
+};
+$("#sanitize").onclick = ()=>{ splitToPoolLines(); log("Sanitized word list.", null); };
+
+$("#applyCtl").onclick = ()=>{
+  $("#applyCtl").dataset.applied = "1";
+  cfg.nWords   = clampInt($("#ctlWords").value, 2, 10, cfg.nWords);
+  cfg.showSecs = clampInt($("#ctlTime").value, 2, 20, cfg.showSecs);
+  cfg.nDist    = clampInt($("#ctlDist").value, 0, 12, cfg.nDist);
+  updateBadges();
+  log("Teacher controls applied.", null);
+};
+
+function applySeedFromHash(){
+  try{
+    const h = String(location.hash||"");
+    const m = h.match(/(?:^#|&)seed=([^&]+)/);
+    if(!m) return;
+    const seed = decodeURIComponent(m[1]||"").replace(/\r/g,"");
+    if(seed.trim()){
+      $("#input").value = sanitizeToWordList(seed);
+      log("Loaded seed from URL hash.", null);
+    }
+  }catch(e){}
+}
+window.addEventListener("hashchange", applySeedFromHash);
+
+refreshVoices();
+if(window.speechSynthesis) speechSynthesis.onvoiceschanged = refreshVoices;
+
+setTimeout(()=>{
+  applySeedFromHash();
+  document.body.classList.toggle("supported", $("#variant").value==="supported");
+  applyVariantDefaults();
+  resetAll();
+}, 80);
+</script>
+<script>
+// wordiness-touch-helpers-v4
+(function(){
+  try{
+    var isCoarse=false;
+    try{ isCoarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches; }catch(e){}
+    var isTouch = isCoarse || ("ontouchstart" in window) || (navigator.maxTouchPoints && navigator.maxTouchPoints>0);
+
+    // Crest fallback (works for /wordiness and file:// exports)
+    var crest = document.getElementById("crest");
+    if (crest && crest.tagName === "IMG") {
+      crest.addEventListener("error", function(){ crest.src="/wordiness/crest.png"; }, { once:true });
+    }
+
+    if(!isTouch) return;
+
+    var drags = Array.prototype.slice.call(document.querySelectorAll('[draggable="true"]'));
+    if(!drags.length) return;
+
+    drags.forEach(function(el){
+      el.classList.add("wordiness-draggable");
+      el.addEventListener("click", function(){
+        drags.forEach(function(x){ x.classList.remove("wordiness-drag-selected"); });
+        el.classList.add("wordiness-drag-selected");
+      }, { passive:true });
+    });
+
+    var btn = document.createElement("button");
+    btn.id="wordinessTouchToggle";
+    btn.type="button";
+    btn.style.position="fixed";
+    btn.style.right="12px";
+    btn.style.bottom="calc(12px + env(safe-area-inset-bottom, 0px))";
+    btn.style.zIndex="9999";
+    btn.style.border="1px solid rgba(255,255,255,.18)";
+    btn.style.background="rgba(0,0,0,.45)";
+    btn.style.color="rgba(238,242,255,.95)";
+    btn.style.backdropFilter="blur(10px)";
+    btn.style.borderRadius="999px";
+    btn.style.padding="10px 12px";
+    btn.style.font="600 13px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+    btn.style.touchAction="manipulation";
+
+    var dragEnabled=true;
+    function applyState(){
+      drags.forEach(function(el){ el.setAttribute("draggable", dragEnabled ? "true" : "false"); });
+      btn.textContent = dragEnabled ? "Touch: Drag ON" : "Touch: Drag OFF";
+    }
+    btn.addEventListener("click", function(){ dragEnabled=!dragEnabled; applyState(); });
+
+    document.body.appendChild(btn);
+    applyState();
+  }catch(e){}
+})();
+</script>
+
+<!-- wordiness-seed-bridge-v1 -->
+<script src="wordiness-seed-bridge.js"></script>
+</body>
+</html>

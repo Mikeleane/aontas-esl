@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>Wordiness — Start–Stop Reader</title>
+<style>
+:root{--bg:#070a12;--panel:rgba(255,255,255,.06);--stroke:rgba(255,255,255,.12);--text:rgba(238,242,255,.92);--muted:rgba(238,242,255,.70);--tap:48px;--shadow:rgba(0,0,0,.42);--primaryStroke:rgba(34,197,94,.55);--warnStroke:rgba(245,158,11,.45);}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{margin:0;background:radial-gradient(1200px 700px at 20% -10%, rgba(99,102,241,.24), transparent 55%),radial-gradient(900px 600px at 90% 10%, rgba(56,189,248,.18), transparent 55%),var(--bg);color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;min-height:100dvh;padding:16px 12px calc(104px + env(safe-area-inset-bottom,0px))}
+.wrap{max-width:1100px;margin:0 auto}
+header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
+.brand{display:flex;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--stroke);background:linear-gradient(to bottom, rgba(255,255,255,.07), rgba(255,255,255,.03));border-radius:20px;box-shadow:0 18px 50px var(--shadow);backdrop-filter:blur(10px)}
+.brand img{width:34px;height:34px;border-radius:10px;object-fit:contain;background:rgba(255,255,255,.04)}
+h1{margin:0;font-size:18px;letter-spacing:.2px}
+.sub{margin:2px 0 0;color:var(--muted);font-size:13px;line-height:1.35}
+.panel{border:1px solid var(--stroke);background:var(--panel);border-radius:22px;padding:14px;box-shadow:0 24px 70px var(--shadow);backdrop-filter:blur(10px)}
+.goal{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.18);border-radius:18px;padding:12px;margin-bottom:12px}
+.goal .left{min-width:260px;flex:1}
+.goalTitle{font-weight:950;font-size:15px;letter-spacing:.25px;margin:0 0 6px}
+.goalText{margin:0;color:var(--muted);font-size:13px;line-height:1.35}
+.pillRow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:flex-end}
+.pill{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:999px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);padding:8px 10px;min-height:40px;font-weight:900}
+.pill strong{font-size:14px;letter-spacing:.3px}
+.mini{color:var(--muted);font-weight:800;font-size:12px}
+
+.controls{display:grid;grid-template-columns:repeat(12,1fr);gap:10px;margin-bottom:12px}
+.control{grid-column:span 6;border:1px solid var(--stroke);background:rgba(0,0,0,.18);border-radius:16px;padding:10px}
+.control label{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13px;color:var(--muted)}
+.control input[type="range"]{width:100%}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding-top:6px}
+.row.tight{gap:8px}
+
+button,select,input[type="text"]{min-height:var(--tap);border-radius:999px;border:1px solid var(--stroke);background:rgba(255,255,255,.06);color:var(--text);padding:10px 12px;font-weight:850;cursor:pointer;user-select:none;touch-action:manipulation}
+input[type="text"]{cursor:text;min-width:240px;width:100%;max-width:680px;background:rgba(0,0,0,.22);font-weight:800}
+select{padding-right:34px}
+.btnPrimary{border:1px solid var(--primaryStroke);background:linear-gradient(to bottom, rgba(34,197,94,.22), rgba(34,197,94,.14));box-shadow:0 14px 40px rgba(34,197,94,.12);font-weight:950;letter-spacing:.3px}
+.btnWarn{border:1px solid var(--warnStroke);background:rgba(245,158,11,.10)}
+.btnDanger{border:1px solid rgba(239,68,68,.45);background:rgba(239,68,68,.10)}
+
+.stage{border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.18);border-radius:22px;padding:14px;display:grid;grid-template-columns:1fr;gap:12px}
+.wordCard{border:1px solid rgba(255,255,255,.16);background:rgba(10,14,26,.72);border-radius:22px;padding:16px;box-shadow:0 16px 50px rgba(0,0,0,.35);min-height:190px;display:flex;align-items:center;justify-content:center;text-align:center;position:relative;overflow:hidden}
+.word{font-weight:1000;font-size:clamp(34px, 5.6vw, 64px);letter-spacing:.4px;line-height:1.05;padding:10px 8px;word-break:break-word}
+.wordHint{position:absolute;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;gap:10px;align-items:center;color:var(--muted);font-weight:800;font-size:12px}
+.badge{border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);border-radius:999px;padding:6px 10px;min-height:34px;display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+.badge.good{border-color: rgba(34,197,94,.45); background: rgba(34,197,94,.10)}
+.badge.bad{border-color: rgba(239,68,68,.40); background: rgba(239,68,68,.10)}
+.badge.warn{border-color: rgba(245,158,11,.40); background: rgba(245,158,11,.10)}
+.upNext{display:none;gap:10px;flex-wrap:wrap;justify-content:center}
+.chip{border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);border-radius:16px;padding:10px 12px;min-height:46px;display:flex;align-items:center;justify-content:center;font-weight:900;color:rgba(238,242,255,.85)}
+.chip.small{font-size:13px;font-weight:850}
+.tip{color:var(--muted);font-size:13px;line-height:1.35;display:flex;gap:10px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+.statRow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+.statRow .left,.statRow .right{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.stat{padding:6px 10px;border:1px solid rgba(255,255,255,.12);border-radius:999px;background:rgba(0,0,0,.18);color:var(--muted);font-weight:850;font-size:13px}
+.stat b{color:var(--text)}
+.feedback{padding:10px 12px;border-radius:16px;border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.18);color:var(--muted);font-weight:850;font-size:13px}
+.feedback b{color:var(--text)}
+.feedback.good{border-color: rgba(34,197,94,.35)}
+.feedback.bad{border-color: rgba(239,68,68,.35)}
+.feedback.warn{border-color: rgba(245,158,11,.35)}
+
+.sticky{position:fixed;left:0;right:0;bottom:0;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));background:linear-gradient(to top, rgba(7,10,18,.92), rgba(7,10,18,.35));backdrop-filter:blur(10px);border-top:1px solid rgba(255,255,255,.10)}
+.stickyInner{max-width:1100px;margin:0 auto;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.bigStart{flex:1;min-width:220px;display:flex;gap:10px;align-items:center;justify-content:center;font-size:16px;font-weight:950;letter-spacing:.35px}
+.toast{flex:2;min-width:260px;padding:10px 12px;border-radius:16px;border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.18);color:var(--muted);font-weight:850;font-size:13px}
+.toast b{color:var(--text)}
+.tapBtn{flex:1;min-width:180px;font-size:16px;font-weight:1000}
+
+.overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.45);backdrop-filter:blur(6px);padding:18px 12px}
+.overlay.show{display:flex}
+.modal{max-width:560px;width:100%;border-radius:22px;border:1px solid rgba(255,255,255,.16);background:rgba(10,14,26,.88);box-shadow:0 30px 90px rgba(0,0,0,.55);padding:14px}
+.modal h2{margin:0 0 8px;font-size:18px;letter-spacing:.2px}
+.modal p{margin:0 0 10px;color:var(--muted);line-height:1.35}
+.kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:10px 0 12px}
+.kpi .box{border:1px solid rgba(255,255,255,.14);border-radius:18px;background:rgba(0,0,0,.18);padding:10px;text-align:center}
+.kpi .box .n{font-weight:1000;font-size:22px}
+.kpi .box .t{color:var(--muted);font-weight:850;font-size:12px}
+@media(max-width:900px){.control{grid-column:span 12}.upNext{display:flex}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="brand">
+    <img id="crest" src="crest.png" alt="Crest"/>
+    <div><h1>Start–Stop Reader</h1><div class="sub">A calm “GO / NO-GO” game for focus, scanning, and self-control.</div></div>
+  </div>
+  <div class="brand" style="align-items:flex-end"><div style="text-align:right"><div class="sub">Wordiness</div><div style="font-weight:950;font-size:14px">Focus + Executive Function</div></div></div>
+</header>
+
+<div class="panel">
+  <div class="goal">
+    <div class="left">
+      <div class="goalTitle">GOAL</div>
+      <p class="goalText">
+        Read the words. Tap <b>TAP</b> when the word matches the rule.
+        Choose <b>GO</b> (tap matches) or <b>NO-GO</b> (tap non-matches).
+        Press <b>START ROUND</b> to begin.
+      </p>
+    </div>
+    <div class="pillRow">
+      <span class="pill"><span class="mini">Rule</span> <strong id="rulePill">starts with</strong></span>
+      <span class="pill"><span class="mini">Target</span> <strong id="targetPill">tr</strong></span>
+      <span class="pill"><span class="mini">Mode</span> <strong id="modePill">GO</strong></span>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="control">
+      <label>Round settings <span class="pill"><span class="mini">touch-friendly</span></span></label>
+      <div class="row">
+        <button id="viewStd" type="button">Standard</button>
+        <button id="viewSup" type="button">Supported</button>
+        <button id="goBtn" type="button" class="btnPrimary">Mode: GO</button>
+        <button id="ttsBtn" type="button">TTS: Off</button>
+      </div>
+      <div class="row">
+        <button id="tapWordBtn" type="button">Tap word: On</button>
+        <button id="audioBtn" type="button">Sounds: On</button>
+        <button id="rowScanBtn" type="button">Row scan: Off</button>
+      </div>
+      <div class="sub" style="margin-top:6px">
+        Pro tip: for dyslexia “confusables”, try target <b>p,b,d,q</b> using “Contains…”.
+      </div>
+    </div>
+
+    <div class="control">
+      <label>Round length <span id="lenPill" class="pill"><strong>30s</strong></span></label>
+      <input id="lenRange" type="range" min="10" max="90" step="5" value="30"/>
+      <div class="row">
+        <label class="mini" style="flex:1">Pace</label>
+        <input id="paceRange" type="range" min="600" max="2400" step="100" value="1200" style="flex:4"/>
+        <span id="pacePill" class="pill"><strong>1.2s</strong></span>
+      </div>
+      <div class="row">
+        <label class="mini" style="flex:1">Words on deck</label>
+        <input id="deckRange" type="range" min="10" max="60" step="5" value="30" style="flex:4"/>
+        <span id="deckPill" class="pill"><strong>30</strong></span>
+      </div>
+    </div>
+
+    <div class="control">
+      <label>Rule chooser <span class="pill"><span class="mini">teacher-friendly</span></span></label>
+      <div class="row">
+        <select id="ruleSelect" aria-label="Rule type">
+          <option value="starts">Starts with…</option>
+          <option value="ends">Ends with…</option>
+          <option value="contains">Contains…</option>
+          <option value="digraph">Contains digraph… (sh/ch/th/wh/ph)</option>
+          <option value="vowelteam">Contains vowel team… (ea/ai/oo/oa/ie)</option>
+          <option value="syllables">Syllables (estimated)…</option>
+        </select>
+        <input id="targetInput" type="text" value="tr" aria-label="Target text"/>
+      </div>
+      <div class="row tight">
+        <button id="presetBtn" type="button">Presets</button>
+        <button id="newDeckBtn" type="button">New deck</button>
+        <button id="previewBtn" type="button">Preview targets</button>
+      </div>
+      <div class="sub" style="margin-top:6px">
+        Multiple targets: use commas / slashes / spaces / | — e.g. <b>cdf/bac</b> or <b>p,b,d,q</b>
+      </div>
+    </div>
+
+    <div class="control">
+      <label>Score + success <span class="pill"><span class="mini">gentle</span></span></label>
+      <div class="statRow">
+        <div class="left">
+          <span class="stat">Time: <b id="timeLeft">Ready</b></span>
+          <span class="stat">Score: <b id="score">0</b></span>
+          <span class="stat">Correct: <b id="correct">0</b></span>
+          <span class="stat">False: <b id="false">0</b></span>
+          <span class="stat">Misses: <b id="misses">0</b></span>
+        </div>
+        <div class="right">
+          <span class="stat">Targets seen: <b id="targetsSeen">0</b></span>
+          <span class="stat">Accuracy: <b id="acc">0%</b></span>
+        </div>
+      </div>
+      <div id="feedback" class="feedback"><b>Ready:</b> Choose a rule, then press START ROUND.</div>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="wordCard" id="wordCard" role="button" aria-label="Current word">
+      <div class="wordHint">
+        <span class="badge" id="ruleBadge">Rule: starts with <b>tr</b></span>
+        <span class="badge" id="statusBadge">Status: <b>Ready</b></span>
+      </div>
+      <div class="word" id="word">Press START</div>
+    </div>
+
+    <div class="upNext" id="upNext" aria-label="Up next">
+      <div class="chip small">Up next</div>
+      <div class="chip" id="next1">—</div>
+      <div class="chip" id="next2">—</div>
+      <div class="chip" id="next3">—</div>
+    </div>
+
+    <div class="tip">
+      <span>Tip: scan left-to-right like reading. Calm beats fast.</span>
+      <span class="mini">Spacebar / Enter = TAP</span>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="sticky" role="region" aria-label="Round controls">
+  <div class="stickyInner">
+    <button id="startBtn" type="button" class="btnPrimary bigStart">START ROUND</button>
+    <div id="toast" class="toast"><b>Ready:</b> Set your rule, then press START. Tap when it matches.</div>
+    <button id="tapBtn" type="button" class="btnWarn tapBtn">TAP</button>
+    <button id="stopBtn" type="button" class="btnDanger">Stop</button>
+  </div>
+</div>
+
+<div id="overlay" class="overlay" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Round summary">
+    <h2 id="endTitle">Round complete</h2>
+    <p id="endText"></p>
+    <div class="kpi">
+      <div class="box"><div class="n" id="kpiScore">0</div><div class="t">Score</div></div>
+      <div class="box"><div class="n" id="kpiAcc">0%</div><div class="t">Accuracy</div></div>
+      <div class="box"><div class="n" id="kpiTargets">0</div><div class="t">Targets seen</div></div>
+    </div>
+    <div class="row" style="justify-content:flex-end">
+      <button id="againBtn" type="button" class="btnPrimary">Play again</button>
+      <button id="closeBtn" type="button">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(()=>{const $=id=>document.getElementById(id);
+const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+const esc=s=>String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const norm=s=>String(s||"").toLowerCase().trim();
+
+function syll(w){w=norm(w).replace(/[^a-z]/g,"");if(!w)return 0;
+const sp=[[/tion$|sion$|cian$/,1],[/ture$|sure$/,1],[/ious$|eous$/,2],[/e?able$/,2],[/ery$/,2],[/different$/,3]];
+for(const [re,n] of sp){if(re.test(w))return n;}
+const g=w.match(/[aeiouy]+/g);let c=g?g.length:1;
+if(w.endsWith("e")&&!/[aeiouy]e$/.test(w))c--;
+if(/[^aeiouy]le$/.test(w))c++;
+return clamp(c||1,1,6);
+}
+
+const WORDS=["trap","tree","train","trip","truck","track","trick","treat","trend","trumpet","shop","ship","shut","shell","shine","shock","dish","wish","brush","shampoo","chip","chin","chop","chill","church","peach","teacher","catch","watch","lunch","thin","thick","thump","thunder","bath","math","with","three","think","tooth","phone","photo","graph","elephant","alphabet","dolphin","sphinx","trophy","rain","paint","main","plain","brain","stain","chain","snail","boat","coat","goat","soap","float","road","toast","oatmeal","coach","moon","soon","spoon","school","book","cook","foot","good","wood","pie","tie","field","chief","brief","thief","piece","believe","action","station","nation","fraction","traction","fiction","motion","caption","because","before","between","behind","without","inside","outside","family","friend","garden","winter","summer","music","library","classroom","different","vegetable","factory","chocolate","camera","comfortable","separate","memory","average","favourite","temperature","interesting","chicken","pencil","animal","transport","triangle","traditional","translate","telephone","photograph","understanding","pebble","quad","dig"];
+
+const PRESETS=[
+ {rule:"starts",target:"tr",label:"Starts with tr"},
+ {rule:"contains",target:"p,b,d,q",label:"Confusables (p,b,d,q)"},
+ {rule:"digraph",target:"sh",label:"Contains sh"},
+ {rule:"digraph",target:"ch",label:"Contains ch"},
+ {rule:"digraph",target:"th",label:"Contains th"},
+ {rule:"vowelteam",target:"oo",label:"Contains oo"},
+ {rule:"contains",target:"tion",label:"Contains tion"},
+ {rule:"syllables",target:"3",label:"Has ~3 syllables"},
+ {rule:"contains",target:"cdf/bac",label:"Order patterns (cdf/bac)"}
+];
+
+const state={view:"supported",goNoGo:"go",rule:"starts",target:"tr",lenSec:30,paceMs:1200,deckSize:30,tts:false,tapWord:true,sounds:true,rowScan:false};
+const DIG=["sh","ch","th","wh","ph"], VT=["ea","ai","oo","oa","ie","ee","ay","oi","ou"];
+
+let deck=[],idx=0,running=false,timer=null,endAt=0,awaiting=false,current=null;
+let score=0,cor=0,falseA=0,miss=0,tSeen=0,lastFB=0,audioCtx=null;
+
+const el={
+ rulePill:$("rulePill"),targetPill:$("targetPill"),modePill:$("modePill"),
+ viewStd:$("viewStd"),viewSup:$("viewSup"),goBtn:$("goBtn"),ttsBtn:$("ttsBtn"),
+ tapWordBtn:$("tapWordBtn"),audioBtn:$("audioBtn"),rowScanBtn:$("rowScanBtn"),
+ lenRange:$("lenRange"),lenPill:$("lenPill"),paceRange:$("paceRange"),pacePill:$("pacePill"),
+ deckRange:$("deckRange"),deckPill:$("deckPill"),
+ ruleSelect:$("ruleSelect"),targetInput:$("targetInput"),
+ presetBtn:$("presetBtn"),newDeckBtn:$("newDeckBtn"),previewBtn:$("previewBtn"),
+ timeLeft:$("timeLeft"),score:$("score"),correct:$("correct"),falses:$("false"),misses:$("misses"),
+ targetsSeen:$("targetsSeen"),acc:$("acc"),
+ feedback:$("feedback"),toast:$("toast"),
+ wordCard:$("wordCard"),word:$("word"),
+ ruleBadge:$("ruleBadge"),statusBadge:$("statusBadge"),
+ upNext:$("upNext"),next1:$("next1"),next2:$("next2"),next3:$("next3"),
+ startBtn:$("startBtn"),tapBtn:$("tapBtn"),stopBtn:$("stopBtn"),
+ overlay:$("overlay"),endTitle:$("endTitle"),endText:$("endText"),
+ kpiScore:$("kpiScore"),kpiAcc:$("kpiAcc"),kpiTargets:$("kpiTargets"),
+ againBtn:$("againBtn"),closeBtn:$("closeBtn")
+};
+
+const crest=$("crest");
+crest.addEventListener("error",()=>{
+  crest.src="/wordiness/crest.png";
+  crest.addEventListener("error",()=>{crest.style.display="none";},{once:true});
+},{once:true});
+
+const KEY="wordiness_startstop_reader_v2";
+const load=()=>{try{const r=localStorage.getItem(KEY);if(!r)return;Object.assign(state,JSON.parse(r)||{});}catch(e){}};
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}};
+
+const ruleLabel=()=>state.rule==="starts"?"starts with":state.rule==="ends"?"ends with":state.rule==="contains"?"contains":state.rule==="digraph"?"has digraph":state.rule==="vowelteam"?"has vowel team":state.rule==="syllables"?"syllables ≈":"rule";
+
+/* MULTI TARGETS:
+   commas / spaces / slashes / | work:
+   "p,b,d,q"   "cdf/bac"   "ea|oo"   "tr th sh"  */
+function parseTargets(raw){
+  raw = norm(raw);
+  if(state.rule==="syllables") return [raw];
+  if(state.rule==="digraph") return raw ? raw.split(/[\s,\/|]+/g).filter(Boolean) : ["sh"];
+  if(state.rule==="vowelteam") return raw ? raw.split(/[\s,\/|]+/g).filter(Boolean) : ["ea"];
+  const parts = raw.split(/[\s,\/|]+/g).map(s=>s.replace(/[^a-z]/g,"")).filter(Boolean);
+  return parts.length ? parts.slice(0,12) : ["tr"];
+}
+
+function validate(){
+  const parts = parseTargets(state.target);
+  if(state.rule==="syllables"){
+    let n=parseInt(parts[0],10);
+    if(!isFinite(n)||n<1) n=2;
+    n=clamp(n,1,6);
+    state.target=String(n);
+    el.targetInput.value=state.target;
+    return;
+  }
+  if(state.rule==="digraph"){
+    const ok = parts.filter(p=>DIG.includes(p));
+    state.target = (ok.length?ok:["sh"]).join(",");
+    el.targetInput.value = state.target;
+    return;
+  }
+  if(state.rule==="vowelteam"){
+    const ok = parts.filter(p=>VT.includes(p));
+    state.target = (ok.length?ok:["ea"]).join(",");
+    el.targetInput.value = state.target;
+    return;
+  }
+  state.target = parts.join(",");
+  el.targetInput.value = state.target;
+}
+
+function isTargetWord(w){
+  w = norm(w);
+  const parts = parseTargets(state.target);
+
+  if(state.rule==="starts") return parts.some(t=>t && w.startsWith(t));
+  if(state.rule==="ends") return parts.some(t=>t && w.endsWith(t));
+  if(state.rule==="contains") return parts.some(t=>t && w.includes(t));
+
+  if(state.rule==="digraph"){
+    const ok = parts.filter(p=>DIG.includes(p));
+    return ok.some(d=>w.includes(d));
+  }
+  if(state.rule==="vowelteam"){
+    const ok = parts.filter(p=>VT.includes(p));
+    return ok.some(v=>w.includes(v));
+  }
+  if(state.rule==="syllables"){
+    const n=parseInt(parts[0],10);
+    if(!isFinite(n)||n<1||n>6) return false;
+    return syll(w)===n;
+  }
+  return false;
+}
+
+const shuf=a=>{for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];}return a;};
+
+function flash(kind,html,ms){
+  const now=Date.now(); if(now-lastFB<80) return; lastFB=now;
+  el.feedback.className="feedback "+(kind||""); el.feedback.innerHTML=html; el.toast.innerHTML=html;
+  if(ms){setTimeout(()=>{if(!running) el.toast.innerHTML="<b>Ready:</b> Set your rule, then press START. Tap when it matches.";},ms);}
+}
+
+function updRuleUI(){
+  const lbl=ruleLabel();
+  el.rulePill.textContent=lbl;
+  el.targetPill.textContent=state.target;
+  el.modePill.textContent=state.goNoGo.toUpperCase();
+  el.ruleBadge.innerHTML="Rule: "+esc(lbl)+" <b>"+esc(state.target)+"</b>";
+}
+
+function build(){
+  validate();
+  const size=clamp(parseInt(state.deckSize,10)||30,10,120);
+  const pool=shuf(WORDS.slice());
+  const T=pool.filter(isTargetWord), N=pool.filter(w=>!isTargetWord(w));
+  const ratio=state.view==="supported"?0.45:0.40;
+  let tCnt=Math.max(3,Math.round(size*ratio)), nCnt=size-tCnt;
+
+  if(T.length<tCnt){
+    tCnt=Math.max(2,T.length); nCnt=size-tCnt;
+    flash("warn","<b>Note:</b> Not many targets match that rule. Try a different target.",2200);
+  }
+  deck=shuf(shuf(T).slice(0,tCnt).concat(shuf(N).slice(0,nCnt))).map(w=>({w,target:isTargetWord(w)}));
+  idx=0; upNext(); save();
+}
+
+function upNext(){
+  const a=deck.slice(idx+1,idx+4).map(x=>x.w);
+  el.next1.textContent=a[0]||"—"; el.next2.textContent=a[1]||"—"; el.next3.textContent=a[2]||"—";
+  el.upNext.style.display=state.view==="supported"?"flex":"";
+}
+
+function beep(type){
+  if(!state.sounds) return;
+  try{
+    audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();
+    const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+    o.connect(g); g.connect(audioCtx.destination);
+    const now=audioCtx.currentTime, f=type==="good"?660:220, d=type==="good"?0.06:0.08;
+    o.frequency.setValueAtTime(f,now); o.type="sine";
+    g.gain.setValueAtTime(0.0001,now);
+    g.gain.exponentialRampToValueAtTime(0.15,now+0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001,now+d);
+    o.start(now); o.stop(now+d+0.02);
+  }catch(e){}
+}
+
+function speak(word){
+  if(!state.tts) return;
+  try{
+    if(!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    setTimeout(()=>{const u=new SpeechSynthesisUtterance(String(word)); u.rate=state.view==="supported"?0.92:0.98; window.speechSynthesis.speak(u);},60);
+  }catch(e){}
+}
+
+function setStatus(kind,text){
+  el.statusBadge.className="badge "+(kind||"");
+  el.statusBadge.innerHTML="Status: <b>"+esc(text)+"</b>";
+}
+function setWord(w){
+  el.word.textContent=w;
+  el.wordCard.style.cursor=(state.tapWord&&running)?"pointer":"default";
+}
+function updSliders(){
+  el.lenPill.innerHTML="<strong>"+state.lenSec+"s</strong>";
+  el.pacePill.innerHTML="<strong>"+(state.paceMs/1000).toFixed(1)+"s</strong>";
+  el.deckPill.innerHTML="<strong>"+state.deckSize+"</strong>";
+  el.lenRange.value=state.lenSec; el.paceRange.value=state.paceMs; el.deckRange.value=state.deckSize;
+}
+function updBtns(){
+  el.viewStd.className=(state.view==="standard")?"btnPrimary":"";
+  el.viewSup.className=(state.view==="supported")?"btnPrimary":"";
+  el.goBtn.className="btnPrimary";
+  el.goBtn.textContent="Mode: "+(state.goNoGo==="go"?"GO":"NO-GO");
+  el.ttsBtn.textContent="TTS: "+(state.tts?"On":"Off");
+  el.tapWordBtn.textContent="Tap word: "+(state.tapWord?"On":"Off");
+  el.audioBtn.textContent="Sounds: "+(state.sounds?"On":"Off");
+  el.rowScanBtn.textContent="Row scan: "+(state.rowScan?"On":"Off");
+}
+function updScore(){
+  el.score.textContent=score; el.correct.textContent=cor; el.falses.textContent=falseA; el.misses.textContent=miss; el.targetsSeen.textContent=tSeen;
+  const att=cor+falseA+miss; const a=att?Math.round((cor/att)*100):0; el.acc.textContent=a+"%";
+}
+function updTime(){
+  if(!running){el.timeLeft.textContent="Ready";return;}
+  const s=Math.max(0,Math.ceil((endAt-Date.now())/1000)); el.timeLeft.textContent=s+"s";
+}
+
+const needsTap=e=>state.goNoGo==="go"?!!e.target:!e.target;
+
+function step(){
+  if(!running) return;
+  if(idx>=deck.length){end(true);return;}
+  current=deck[idx++]; awaiting=true;
+  upNext(); updRuleUI(); setStatus("warn","Playing");
+  setWord(current.w); speak(current.w);
+
+  if(state.rowScan){
+    el.word.style.textDecoration="underline";
+    el.word.style.textDecorationThickness="4px";
+    el.word.style.textUnderlineOffset="8px";
+  }else el.word.style.textDecoration="none";
+
+  const pace=clamp(parseInt(state.paceMs,10)||1200,500,4000);
+  const thisIdx=idx;
+  setTimeout(()=>{
+    if(!running||idx!==thisIdx) return;
+    if(awaiting){
+      if(needsTap(current)){
+        miss++; score=Math.max(0,score-(state.view==="supported"?3:4));
+        flash("bad","<b>Miss:</b> That one matched the rule.",900); beep("bad");
+      }else{
+        score+=(state.view==="supported"?2:3);
+        flash("good","<b>Nice stop.</b> You held back on a non-target.",700); beep("good");
+      }
+      updScore();
+    }
+    awaiting=false; step();
+  },pace);
+}
+
+function start(){
+  close(); build();
+  running=true; score=0; cor=0; falseA=0; miss=0; tSeen=0; updScore();
+  setStatus("warn","Get ready"); setWord("Ready…");
+  flash("","<b>Ready:</b> Watch the words. Tap when it matches.",900);
+
+  const len=clamp(parseInt(state.lenSec,10)||30,10,180);
+  endAt=Date.now()+len*1000;
+  if(timer) clearInterval(timer);
+  timer=setInterval(()=>{updTime(); if(running&&Date.now()>=endAt) end(true);},120);
+
+  setTimeout(()=>{if(running){setStatus("warn","Playing"); step();}}, state.view==="supported"?700:350);
+}
+
+function end(show){
+  running=false; awaiting=false;
+  if(timer){clearInterval(timer); timer=null;}
+  setStatus("", "Done"); el.timeLeft.textContent="Done"; setWord("Done"); upNext();
+  if(show) summary(); save();
+}
+
+function tap(){
+  if(!running||!awaiting||!current) return;
+  const ok=needsTap(current);
+  awaiting=false;
+  if(current.target) tSeen++;
+
+  if(ok){
+    cor++; score+=(state.view==="supported"?8:10);
+    flash("good","<b>Correct!</b> Good catch.",650); setStatus("good","Correct"); beep("good");
+  }else{
+    falseA++; score=Math.max(0,score-(state.view==="supported"?4:6));
+    flash("bad","<b>Oops.</b> That didn’t match the rule.",800); setStatus("bad","Oops"); beep("bad");
+  }
+  updScore();
+  setTimeout(()=>{if(running) step();}, state.view==="supported"?260:180);
+}
+
+function preview(){
+  validate();
+  const t=WORDS.filter(isTargetWord).slice(0,14), n=WORDS.filter(w=>!isTargetWord(w)).slice(0,10);
+  flash("warn","<b>Targets examples:</b> "+esc(t.join(", "))+"<br><span class='mini'>Non-targets:</span> "+esc(n.join(", ")),2400);
+}
+function presets(){
+  const p=PRESETS[(Math.random()*PRESETS.length)|0];
+  state.rule=p.rule; state.target=p.target;
+  el.ruleSelect.value=p.rule; el.targetInput.value=p.target;
+  validate(); updRuleUI(); build();
+  flash("warn","<b>Preset:</b> "+esc(p.label),1400);
+}
+
+function summary(){
+  const att=cor+falseA+miss; const a=att?Math.round((cor/att)*100):0;
+  let title="Round complete";
+  if(a>=90&&att>=6) title="Sharp focus!";
+  else if(a>=75) title="Nice work";
+  else title="Good effort";
+
+  el.endTitle.textContent=title;
+  el.endText.textContent=`Score ${score}. Accuracy ${a}%. Correct ${cor}, false taps ${falseA}, misses ${miss}.`;
+  el.kpiScore.textContent=score; el.kpiAcc.textContent=a+"%"; el.kpiTargets.textContent=tSeen;
+  el.overlay.classList.add("show"); el.overlay.setAttribute("aria-hidden","false");
+}
+function close(){el.overlay.classList.remove("show"); el.overlay.setAttribute("aria-hidden","true");}
+
+function apply(view){
+  state.view=view;
+  if(view==="supported"){state.paceMs=Math.max(state.paceMs,1300);state.lenSec=Math.max(state.lenSec,25);state.deckSize=Math.min(state.deckSize,35);state.rowScan=true;}
+  else{state.paceMs=Math.min(state.paceMs,1400);state.rowScan=false;}
+  updSliders(); updBtns(); updRuleUI(); build(); save();
+}
+
+load();
+el.ruleSelect.value=state.rule; el.targetInput.value=state.target;
+updSliders(); updBtns(); validate(); updRuleUI(); build();
+setStatus("", "Ready"); setWord("Press START"); updScore(); updTime();
+
+el.viewStd.onclick=()=>apply("standard");
+el.viewSup.onclick=()=>apply("supported");
+el.goBtn.onclick=()=>{state.goNoGo=state.goNoGo==="go"?"nogo":"go";updBtns();updRuleUI();save();flash("warn","<b>Mode:</b> "+(state.goNoGo==="go"?"GO (tap targets)":"NO-GO (tap non-targets)"),1200);};
+el.ttsBtn.onclick=()=>{state.tts=!state.tts;updBtns();save();};
+el.tapWordBtn.onclick=()=>{state.tapWord=!state.tapWord;updBtns();save();};
+el.audioBtn.onclick=()=>{state.sounds=!state.sounds;updBtns();save();};
+el.rowScanBtn.onclick=()=>{state.rowScan=!state.rowScan;updBtns();save();};
+
+el.lenRange.oninput=()=>{state.lenSec=parseInt(el.lenRange.value,10);updSliders();save();};
+el.paceRange.oninput=()=>{state.paceMs=parseInt(el.paceRange.value,10);updSliders();save();};
+el.deckRange.oninput=()=>{state.deckSize=parseInt(el.deckRange.value,10);updSliders();save();build();};
+
+el.ruleSelect.onchange=()=>{state.rule=el.ruleSelect.value;validate();updRuleUI();build();save();};
+el.targetInput.onchange=()=>{state.target=el.targetInput.value;validate();updRuleUI();build();save();};
+
+el.presetBtn.onclick=()=>presets();
+el.newDeckBtn.onclick=()=>{build();flash("warn","<b>New deck</b> ready.",900);};
+el.previewBtn.onclick=()=>preview();
+
+el.startBtn.onclick=()=>start();
+el.stopBtn.onclick=()=>end(false);
+el.tapBtn.onclick=()=>tap();
+el.wordCard.onclick=()=>{if(state.tapWord) tap();};
+
+window.addEventListener("keydown",e=>{
+  if(e.key===" "||e.code==="Space"||e.key==="Enter"){e.preventDefault();tap();}
+  if(e.key==="Escape") close();
+});
+
+el.againBtn.onclick=()=>{close();start();};
+el.closeBtn.onclick=()=>close();
+el.overlay.onclick=e=>{if(e.target===el.overlay) close();};
+
+document.addEventListener("visibilitychange",()=>{
+  if(document.hidden){try{window.speechSynthesis&&window.speechSynthesis.cancel();}catch(e){}}
+});
+})();
+</script>
+
+<!-- wordiness-seed-bridge-v1 -->
+<script src="wordiness-seed-bridge.js"></script>
+</body>
+</html>

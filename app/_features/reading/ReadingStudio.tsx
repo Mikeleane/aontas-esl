@@ -1,6 +1,7 @@
 
 "use client";
 
+import CefrTextTypeControls from "../../_components/CefrTextTypeControls";
 import React, { useCallback, useState } from "react";
 import TeacherInputsPanel, { TeacherInputsPayload } from "./TeacherInputsPanel";
 import ReadingPackApp from "./ReadingPackApp";
@@ -36,6 +37,8 @@ export default function ReadingStudio() {
   const [busy, setBusy] = useState<string>("");
   const [error, setError] = useState<string>("");
 
+  const [cefrLevel, setCefrLevel] = useState<string>("B1");
+  const [textType, setTextType] = useState<string>("article");
   const generateFromInputs = useCallback(async (payload: TeacherInputsPayload) => {
     setBusy("generating");
     setError("");
@@ -43,6 +46,9 @@ export default function ReadingStudio() {
       // IMPORTANT: forward what TeacherInputsPanel collected
       // (materials, primaryMaterialId, teacherContext, etc.)
       const body = {
+        cefrLevel,
+        level: cefrLevel,
+        textType,
         title: payload.title,
         stage: payload.curriculum?.stage,
         schoolClass: payload.curriculum?.classLevel,
@@ -95,6 +101,12 @@ export default function ReadingStudio() {
 
   return (
     <div style={{ padding: 18, maxWidth: 1100, margin: "0 auto" }}>
+      <div style={{ marginBottom: 12 }}>
+
+        <CefrTextTypeControls cefrLevel={cefrLevel} setCefrLevel={setCefrLevel} textType={textType} setTextType={setTextType} />
+
+      </div>
+
       <TeacherInputsPanel onGenerate={generateFromInputs} />
 
       <div style={{ height: 12 }} />
@@ -137,7 +149,7 @@ export default function ReadingStudio() {
 
           {busy && (
             <div style={{ fontSize: 12, fontWeight: 900, color: "#475569" }}>
-              {busy === "generating" ? "Generating pack…" : busy}
+              {busy === "generating" ? "Generating pack..." : busy}
             </div>
           )}
         </div>

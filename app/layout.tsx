@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
-
+import TopNav from "./_components/TopNav";
 export const metadata: Metadata = {
   title: "Aontas 10 - Kilgobnet N.S.",
   description: "Inclusive reading packs (Standard + Adapted) for one class, two streams.",
@@ -16,7 +16,40 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className="h-full">
       <body className="min-h-screen antialiased">
-        {children}
+<header style={{
+  position: "sticky",
+  top: 0,
+  zIndex: 50,
+  borderBottom: "1px solid rgba(15,23,42,.10)",
+  background: "rgba(248,250,252,.82)",
+  backdropFilter: "blur(10px)"
+}}>
+  <div style={{
+    maxWidth: 1100,
+    margin: "0 auto",
+    padding: "12px 18px",
+    display: "flex",
+    gap: 14,
+    alignItems: "center",
+    justifyContent: "space-between",
+    flexWrap: "wrap"
+  }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div style={{ fontWeight: 1000, color: "#0f172a" }}>Aontas ESL</div>
+      <div style={{ fontSize: 12, color: "#64748b", fontWeight: 800 }}>Reading Packs â€¢ Wordiness â€¢ Social â€¢ H5P</div>
+    </div>
+    <nav style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+      <a href="/" style={{ fontWeight: 900, color: "#0f172a", textDecoration: "none" }}>Reading</a>
+      <a href="/wordiness" style={{ fontWeight: 900, color: "#0f172a", textDecoration: "none" }}>Wordiness</a>
+      <a href="/social" style={{ fontWeight: 900, color: "#0f172a", textDecoration: "none" }}>Social</a>
+      <a href="/h5p" style={{ fontWeight: 900, color: "#0f172a", textDecoration: "none" }}>H5P</a>
+    </nav>
+  </div>
+</header>
+
+        
+        <TopNav />
+{children}
       </body>
     </html>
   );

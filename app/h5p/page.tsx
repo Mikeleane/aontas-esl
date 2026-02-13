@@ -143,7 +143,7 @@ export default function H5PLibraryPage() {
             Drop unzipped H5Ps into <b>public/h5p/&lt;id&gt;/</b> (must contain <b>h5p.json</b>, <b>content/</b>, <b>libraries/</b>).
             Then preview them here.
             <div style={{ marginTop: 6 }}>
-              This is the “teacher resource shelf” — later we’ll tag/filter by <b>Class</b> / <b>Stage</b> / <b>Skills</b>.
+              This is the "teacher resource shelf" - later we'll tag/filter by <b>CEFR level</b> / <b>Skills</b>.
             </div>
           </div>
           {err && (
@@ -186,7 +186,7 @@ export default function H5PLibraryPage() {
             />
 
             <div style={{ marginTop: 10, color: BRAND.muted2, fontSize: 12 }}>
-              {loading ? "Loading…" : `${filtered.length} found`}
+              {loading ? "Loading..." : `${filtered.length} found`}
             </div>
 
             <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
@@ -209,7 +209,7 @@ export default function H5PLibraryPage() {
                   >
                     <div style={{ fontWeight: 1100, fontSize: 13 }}>{it.id}</div>
                     <div style={{ marginTop: 4, fontSize: 12, opacity: active ? 0.9 : 0.75 }}>
-                      {(it.title || "Untitled")} {it.mainLibrary ? `• ${it.mainLibrary}` : ""}
+                      {(it.title || "Untitled")} {it.mainLibrary ? ` - ${it.mainLibrary}` : ""}
                     </div>
                   </button>
                 );
@@ -252,11 +252,11 @@ export default function H5PLibraryPage() {
             <div style={{ fontWeight: 1000, fontSize: 14, marginBottom: 10, color: BRAND.ink }}>Preview</div>
 
             <div style={{ color: BRAND.muted2, fontSize: 12, marginBottom: 10 }}>
-              Currently viewing: <b style={{ color: BRAND.muted }}>{selectedId || "—"}</b>
+              Currently viewing: <b style={{ color: BRAND.muted }}>{selectedId || "-"}</b>
               {selected?.mainLibrary ? (
                 <span>
                   {" "}
-                  • <span style={{ color: BRAND.muted }}>{selected.mainLibrary}</span>
+                  - <span style={{ color: BRAND.muted }}>{selected.mainLibrary}</span>
                 </span>
               ) : null}
             </div>
@@ -277,7 +277,6 @@ export default function H5PLibraryPage() {
                   borderRadius: 18,
                   background: "white",
                 }}
-                // H5P needs scripts + same-origin to load its libraries and content
                 sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"
                 allow="fullscreen"
               />

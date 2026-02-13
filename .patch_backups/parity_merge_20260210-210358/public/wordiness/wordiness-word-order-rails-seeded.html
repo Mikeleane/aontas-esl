@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>Wordiness — Word Order Rails (Seeded)</title>
+<style>
+  :root{--bg:#0a1016;--card:#0e1922;--ink:#eef5fb;--mut:#a9c0cc;--acc:#66d9ff;--ok:#19c37d;--bad:#ff5a5a}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:radial-gradient(1200px 700px at 20% 10%, #142a36, var(--bg));color:var(--ink)}
+  .wrap{max-width:1100px;margin:0 auto;padding:18px}
+  .top{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+  .brand{display:flex;gap:10px;align-items:center}
+  .brand img{width:38px;height:38px;border-radius:10px;object-fit:cover;border:1px solid rgba(255,255,255,.14)}
+  h1{margin:0;font-size:20px}
+  .sub{margin:2px 0 0;color:var(--mut);font-size:13px}
+  .grid{display:grid;grid-template-columns:1fr;gap:14px;margin-top:14px}
+  .card{background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03)); border:1px solid rgba(255,255,255,.12); border-radius:16px; padding:14px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  button{cursor:pointer;border-radius:14px;border:1px solid rgba(255,255,255,.14); background:rgba(0,0,0,.25); color:var(--ink); padding:10px 14px; font-weight:650}
+  button.primary{background:rgba(102,217,255,.14); border-color:rgba(102,217,255,.35)}
+  button.ok{background:rgba(25,195,125,.14); border-color:rgba(25,195,125,.35)}
+  .rail{display:flex;flex-wrap:wrap;gap:10px;padding:12px;border-radius:14px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.12);min-height:62px}
+  .tile{padding:12px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.25);font-weight:700;user-select:none}
+  .tile:active{transform:translateY(1px)}
+  .hint{color:var(--mut);font-size:13px;margin-top:8px}
+  .status{color:var(--mut);font-size:13px;margin-top:10px}
+  .score{display:inline-flex;gap:8px;align-items:center;border:1px solid rgba(255,255,255,.14); padding:8px 10px;border-radius:999px;background:rgba(0,0,0,.22)}
+</style>
+</head>
+<body>
+<script src="wordiness-seed-bridge.js"></script>
+<div class="wrap">
+  <div class="top">
+    <div class="brand">
+      <img src="crest.png" onerror="this.style.display='none'"/>
+      <div>
+        <h1>Word Order Rails (Seeded)</h1>
+        <div class="sub">Tap tiles to rebuild the sentence in the correct order (no drag needed).</div>
+      </div>
+    </div>
+    <div class="row">
+      <span class="score">Score <b id="score">0</b></span>
+      <span class="score">Round <b id="round">0</b></span>
+      <button id="ttsBtn">TTS: On</button>
+      <button id="stopBtn">Stop</button>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="row">
+        <button class="primary" id="startBtn">Start</button>
+        <button id="checkBtn">Check</button>
+        <button id="resetBtn">Reset</button>
+        <button id="nextBtn">Next</button>
+        <button id="hearBtn">Hear</button>
+      </div>
+
+      <div class="hint" id="goal">Goal: tap tiles into the top rail, then Check.</div>
+
+      <div style="margin-top:12px">
+        <div class="hint">Your sentence</div>
+        <div class="rail" id="outRail"></div>
+      </div>
+
+      <div style="margin-top:12px">
+        <div class="hint">Tiles</div>
+        <div class="rail" id="inRail"></div>
+      </div>
+
+      <div class="status" id="status">Tip: “Reset” is always allowed. That’s not cheating — that’s regulation.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var api = window.__WORDINESS__ || {};
+  var seed = (api.getSeed && api.getSeed()) || null;
+
+  var ttsOn = true;
+  var score=0, round=0;
+  var elScore=document.getElementById("score");
+  var elRound=document.getElementById("round");
+  var elGoal=document.getElementById("goal");
+  var elStatus=document.getElementById("status");
+  var inRail=document.getElementById("inRail");
+  var outRail=document.getElementById("outRail");
+
+  function speak(t){
+    if(!ttsOn) return;
+    if(api.speak) return api.speak(t);
+    try{ speechSynthesis.cancel(); speechSynthesis.speak(new SpeechSynthesisUtterance(String(t||""))); }catch(e){}
+  }
+  function stopSpeak(){ try{ speechSynthesis.cancel(); }catch(e){} }
+
+  function cleanSentences(text){
+    text = String(text||"").replace(/\s+/g," ").trim();
+    if(!text) return [];
+    var parts = text.split(/(?<=[.!?])\s+/);
+    return parts.map(function(s){return s.trim();}).filter(Boolean);
+  }
+
+  var bank = [];
+  if(seed && seed.text) bank = cleanSentences(seed.text);
+  if(!bank.length){
+    bank = [
+      "The children read quietly in the library.",
+      "We will play outside after lunch.",
+      "My friend brought a sandwich to school.",
+      "The teacher asked a question about the story."
+    ];
+  }
+
+  // Keep sentences that look usable
+  bank = bank.filter(function(s){ return s.split(/\s+/).length >= 4; });
+  if(!bank.length) bank = ["We learn new words every day."];
+
+  function shuffle(a){
+    a=a.slice();
+    for(var i=a.length-1;i>0;i--){
+      var r=Math.floor(Math.random()*(i+1));
+      var t=a[i];a[i]=a[r];a[r]=t;
+    }
+    return a;
+  }
+
+  var idx=-1;
+  var targetWords=[];
+  var targetSentence="";
+
+  function tokenise(s){
+    // keep punctuation attached lightly
+    return s.split(/\s+/).filter(Boolean);
+  }
+
+  function renderTiles(words){
+    inRail.innerHTML="";
+    outRail.innerHTML="";
+    words.forEach(function(w){
+      var b=document.createElement("button");
+      b.className="tile";
+      b.textContent=w;
+      b.addEventListener("click", function(){
+        // move to out rail
+        outRail.appendChild(b);
+      });
+      inRail.appendChild(b);
+    });
+  }
+
+  function startRound(){
+    round++;
+    elRound.textContent=String(round);
+
+    idx=(idx+1)%bank.length;
+    targetSentence=bank[idx];
+    targetWords=tokenise(targetSentence);
+
+    var scrambled = shuffle(targetWords);
+    renderTiles(scrambled);
+
+    elGoal.textContent="Goal: rebuild the sentence in order.";
+    elStatus.textContent="Tap tiles to move them up. Tap Reset if you want to try again.";
+    speak(targetSentence);
+  }
+
+  function reset(){
+    if(!targetWords.length) return;
+    renderTiles(shuffle(targetWords));
+    elStatus.textContent="Reset done.";
+  }
+
+  function currentOut(){
+    var btns = Array.prototype.slice.call(outRail.querySelectorAll("button"));
+    return btns.map(function(b){return b.textContent;});
+  }
+
+  function check(){
+    if(!targetWords.length) return;
+    var out = currentOut();
+    if(out.length !== targetWords.length){
+      elStatus.textContent="Not finished yet — keep going.";
+      speak("Not finished yet.");
+      return;
+    }
+
+    var ok = out.join(" ") === targetWords.join(" ");
+    if(ok){
+      score += 10;
+      elStatus.textContent="✅ Correct. Nice work.";
+      speak("Correct.");
+    } else {
+      score -= 2;
+      elStatus.textContent="❌ Not quite. Try Reset or listen again.";
+      speak("Not quite.");
+    }
+    elScore.textContent=String(score);
+  }
+
+  document.getElementById("startBtn").addEventListener("click", startRound);
+  document.getElementById("nextBtn").addEventListener("click", startRound);
+  document.getElementById("checkBtn").addEventListener("click", check);
+  document.getElementById("resetBtn").addEventListener("click", reset);
+  document.getElementById("hearBtn").addEventListener("click", function(){ if(targetSentence) speak(targetSentence); });
+  document.getElementById("ttsBtn").addEventListener("click", function(){
+    ttsOn=!ttsOn; this.textContent="TTS: "+(ttsOn?"On":"Off"); if(!ttsOn) stopSpeak();
+  });
+  document.getElementById("stopBtn").addEventListener("click", stopSpeak);
+
+})();
+</script>
+</body>
+</html>

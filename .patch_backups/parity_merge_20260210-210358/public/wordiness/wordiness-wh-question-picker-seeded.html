@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>Wordiness — WH Question Picker (Seeded)</title>
+<style>
+  :root{--bg:#070c12;--card:#0f1a22;--ink:#eef5fb;--mut:#a9c0cc;--acc:#ffd166;--ok:#19c37d;--bad:#ff5a5a}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:radial-gradient(1200px 700px at 20% 10%, #152b2e, var(--bg));color:var(--ink)}
+  .wrap{max-width:1100px;margin:0 auto;padding:18px}
+  .top{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+  .brand{display:flex;gap:10px;align-items:center}
+  .brand img{width:38px;height:38px;border-radius:10px;object-fit:cover;border:1px solid rgba(255,255,255,.14)}
+  h1{margin:0;font-size:20px}
+  .sub{margin:2px 0 0;color:var(--mut);font-size:13px}
+  .grid{display:grid;grid-template-columns:1.1fr .9fr;gap:14px;margin-top:14px}
+  @media (max-width:900px){.grid{grid-template-columns:1fr}}
+  .card{background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03)); border:1px solid rgba(255,255,255,.12); border-radius:16px; padding:14px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  button{cursor:pointer;border-radius:14px;border:1px solid rgba(255,255,255,.14); background:rgba(0,0,0,.25); color:var(--ink); padding:10px 14px; font-weight:650}
+  button.primary{background:rgba(255,209,102,.14); border-color:rgba(255,209,102,.35)}
+  .score{display:inline-flex;gap:8px;align-items:center;border:1px solid rgba(255,255,255,.14); padding:8px 10px;border-radius:999px;background:rgba(0,0,0,.22)}
+  .prompt{margin-top:12px;font-size:20px;line-height:1.25;padding:14px;border-radius:14px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.12)}
+  .choices{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+  .choice{padding:12px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.25);font-weight:750}
+  .choice.good{outline:2px solid rgba(25,195,125,.65)}
+  .choice.bad{outline:2px solid rgba(255,90,90,.65)}
+  .hint{color:var(--mut);font-size:13px;margin-top:10px}
+</style>
+</head>
+<body>
+<script src="wordiness-seed-bridge.js"></script>
+<div class="wrap">
+  <div class="top">
+    <div class="brand">
+      <img src="crest.png" onerror="this.style.display='none'"/>
+      <div>
+        <h1>WH Question Picker (Seeded)</h1>
+        <div class="sub">Pick the WH word that fits the highlighted answer chunk.</div>
+      </div>
+    </div>
+    <div class="row">
+      <span class="score">Score <b id="score">0</b></span>
+      <span class="score">Round <b id="round">0</b></span>
+      <button id="ttsBtn">TTS: On</button>
+      <button id="stopBtn">Stop</button>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="row">
+        <button class="primary" id="startBtn">Start</button>
+        <button id="hearBtn">Hear</button>
+        <button id="nextBtn">Next</button>
+      </div>
+
+      <div class="prompt" id="prompt">Press Start.</div>
+      <div class="hint" id="hint">Goal: match the answer type (person/place/time/reason/thing) to the right WH word.</div>
+    </div>
+
+    <div class="card">
+      <div class="hint">Choices (tap one)</div>
+      <div class="choices" id="choices"></div>
+      <div class="hint" style="margin-top:12px">Supported tip: try asking “Is this a person/place/time/reason/thing?”</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var api = window.__WORDINESS__ || {};
+  var seed = (api.getSeed && api.getSeed()) || null;
+
+  var ttsOn=true, score=0, round=0;
+  var elScore=document.getElementById("score");
+  var elRound=document.getElementById("round");
+  var elPrompt=document.getElementById("prompt");
+  var elChoices=document.getElementById("choices");
+  var elHint=document.getElementById("hint");
+
+  function speak(t){
+    if(!ttsOn) return;
+    if(api.speak) return api.speak(t);
+    try{ speechSynthesis.cancel(); speechSynthesis.speak(new SpeechSynthesisUtterance(String(t||""))); }catch(e){}
+  }
+  function stopSpeak(){ try{ speechSynthesis.cancel(); }catch(e){} }
+
+  function cleanSentences(text){
+    text = String(text||"").replace(/\s+/g," ").trim();
+    if(!text) return [];
+    var parts = text.split(/(?<=[.!?])\s+/);
+    return parts.map(function(s){return s.trim();}).filter(Boolean);
+  }
+
+  var bank = [];
+  if(seed && seed.text) bank = cleanSentences(seed.text);
+  if(!bank.length){
+    bank = [
+      "We went to the library after lunch.",
+      "The teacher smiled because the class worked hard.",
+      "A doctor helps people when they are sick.",
+      "The match started at three o’clock.",
+      "They played in the school hall."
+    ];
+  }
+  bank = bank.filter(function(s){return s.split(/\s+/).length >= 5;});
+  if(!bank.length) bank=["We learn in many different ways."];
+
+  function pickChunk(s){
+    // Return {answer, wh, promptHtml}
+    var lower = s.toLowerCase();
+
+    // WHY: because clause
+    var mBecause = s.match(/\bbecause\b(.+)$/i);
+    if(mBecause && mBecause[1] && mBecause[1].trim().length > 6){
+      var ans = mBecause[1].trim().replace(/[.?!]+$/,"");
+      return { answer: ans, wh: "Why", prompt: s.replace(mBecause[1], ' <mark style="background:rgba(255,209,102,.35);padding:2px 6px;border-radius:8px">'+ans+'</mark>') };
+    }
+
+    // WHEN: time-ish words
+    if(/\b(today|yesterday|tomorrow|morning|afternoon|evening|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i.test(s) || /\b\d{1,2}(:\d{2})?\b/.test(s)){
+      var timeMatch = s.match(/\b(today|yesterday|tomorrow|morning|afternoon|evening|monday|tuesday|wednesday|thursday|friday|saturday|sunday|at\s+\d{1,2}(:\d{2})?)\b/i);
+      var ans2 = (timeMatch && timeMatch[0]) ? timeMatch[0].trim() : "then";
+      return { answer: ans2, wh: "When", prompt: s.replace(ans2, ' <mark style="background:rgba(102,217,255,.25);padding:2px 6px;border-radius:8px">'+ans2+'</mark>') };
+    }
+
+    // WHERE: preposition + place-ish word
+    var whereMatch = s.match(/\b(in|on|at)\s+(the\s+)?([a-z][a-z\-]+)\b/i);
+    if(whereMatch){
+      var ans3 = whereMatch[0].trim().replace(/[.?!]+$/,"");
+      return { answer: ans3, wh: "Where", prompt: s.replace(ans3, ' <mark style="background:rgba(25,195,125,.22);padding:2px 6px;border-radius:8px">'+ans3+'</mark>') };
+    }
+
+    // WHO: subject pronoun or "The ___"
+    var whoMatch = s.match(/^(I|We|You|He|She|They|The\s+[A-Z]?[a-z\-]+)/);
+    if(whoMatch){
+      var ans4 = whoMatch[0].trim();
+      return { answer: ans4, wh: "Who", prompt: '<mark style="background:rgba(255,90,90,.18);padding:2px 6px;border-radius:8px">'+ans4+'</mark>' + s.slice(ans4.length) };
+    }
+
+    // Default WHAT
+    var firstNoun = s.split(/\s+/).slice(0,4).join(" ");
+    return { answer: firstNoun, wh: "What", prompt: '<mark style="background:rgba(255,209,102,.22);padding:2px 6px;border-radius:8px">'+firstNoun+'</mark>' + s.slice(firstNoun.length) };
+  }
+
+  var current=null;
+
+  function shuffle(a){
+    a=a.slice();
+    for(var i=a.length-1;i>0;i--){
+      var r=Math.floor(Math.random()*(i+1));
+      var t=a[i];a[i]=a[r];a[r]=t;
+    }
+    return a;
+  }
+
+  function render(){
+    elChoices.innerHTML="";
+    var all = ["Who","What","Where","When","Why"];
+    var correct = current.wh;
+    var pool = shuffle(all.filter(function(x){return x!==correct;})).slice(0,2);
+    var choices = shuffle([correct].concat(pool));
+
+    choices.forEach(function(w){
+      var b=document.createElement("button");
+      b.className="choice";
+      b.textContent=w;
+      b.addEventListener("click", function(){ choose(w,b); });
+      elChoices.appendChild(b);
+    });
+  }
+
+  function choose(w, btn){
+    var correct=current.wh;
+    var buttons = Array.prototype.slice.call(elChoices.querySelectorAll("button"));
+    buttons.forEach(function(b){
+      b.disabled=true;
+      if(b.textContent===correct) b.classList.add("good");
+    });
+
+    if(w===correct){
+      score += 10;
+      elHint.textContent="✅ Correct. That answer type matches "+correct+".";
+      speak("Correct. " + correct);
+    } else {
+      score -= 2;
+      btn.classList.add("bad");
+      elHint.textContent="❌ Not quite. Correct was "+correct+".";
+      speak("Not quite. Correct was " + correct);
+    }
+    elScore.textContent=String(score);
+
+    setTimeout(function(){
+      buttons.forEach(function(b){ b.disabled=false; b.classList.remove("bad","good"); });
+      render();
+    }, 900);
+  }
+
+  var idx=-1;
+  function nextRound(){
+    round++;
+    elRound.textContent=String(round);
+
+    idx=(idx+1)%bank.length;
+    var s = bank[idx];
+    current = pickChunk(s);
+
+    elPrompt.innerHTML = current.prompt;
+    elHint.textContent = "Pick the WH word that would ask for the highlighted part.";
+    render();
+    speak(s);
+  }
+
+  document.getElementById("startBtn").addEventListener("click", nextRound);
+  document.getElementById("nextBtn").addEventListener("click", nextRound);
+  document.getElementById("hearBtn").addEventListener("click", function(){ if(current) speak(elPrompt.textContent); });
+  document.getElementById("ttsBtn").addEventListener("click", function(){
+    ttsOn=!ttsOn; this.textContent="TTS: "+(ttsOn?"On":"Off"); if(!ttsOn) stopSpeak();
+  });
+  document.getElementById("stopBtn").addEventListener("click", stopSpeak);
+})();
+</script>
+</body>
+</html>

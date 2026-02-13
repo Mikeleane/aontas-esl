@@ -1,0 +1,87 @@
+﻿@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Safe defaults */
+html, body { height: 100%; }
+body { margin: 0; }
+* { box-sizing: border-box; }
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root{
+    --kns-navy:#2f3f78;
+    --kns-green:#147d3b;
+    --kns-sky:#67c9e9;
+    --kns-gold:#f3d81f;
+    --kns-ink:#0b1220;
+    --kns-bg:#f7f9fc;
+    --kns-card:#ffffff;
+    --kns-line:rgba(15,23,42,.12);
+  }
+
+  body{
+    background: var(--kns-bg);
+    color: var(--kns-ink);
+  }
+
+  /* Make form controls feel consistent + “printable” */
+  input, select, textarea{
+    @apply rounded-xl border px-3 py-2 outline-none;
+    border-color: var(--kns-line);
+    background: white;
+  }
+  input:focus, select:focus, textarea:focus{
+    box-shadow: 0 0 0 4px rgba(103,201,233,.25); /* sky glow */
+    border-color: rgba(103,201,233,.7);
+  }
+}
+
+@layer components{
+  .kns-card{
+    @apply rounded-2xl border bg-white;
+    border-color: var(--kns-line);
+  }
+
+  .kns-h1{
+    @apply text-2xl font-black tracking-tight;
+    color: var(--kns-navy);
+  }
+
+  .kns-muted{
+    @apply text-sm;
+    color: rgba(15,23,42,.72);
+  }
+
+  .btn-primary{
+    @apply rounded-xl px-4 py-2 font-semibold text-white;
+    background: var(--kns-green);
+  }
+  .btn-primary:hover{ filter: brightness(1.05); }
+
+  .btn-secondary{
+    @apply rounded-xl px-4 py-2 font-semibold;
+    background: rgba(103,201,233,.18);
+    color: var(--kns-navy);
+    border: 1px solid rgba(103,201,233,.35);
+  }
+  .btn-secondary:hover{ background: rgba(103,201,233,.24); }
+
+  .btn-ghost{
+    @apply rounded-xl px-3 py-2 font-semibold;
+    background: rgba(47,63,120,.06);
+    border: 1px solid rgba(47,63,120,.14);
+    color: var(--kns-navy);
+  }
+  .btn-ghost:hover{ background: rgba(47,63,120,.10); }
+
+  .pill{
+    @apply inline-flex items-center rounded-full px-2 py-1 text-xs font-bold;
+    background: rgba(243,216,31,.22);
+    color: rgba(47,63,120,.95);
+    border: 1px solid rgba(243,216,31,.35);
+  }
+}
+

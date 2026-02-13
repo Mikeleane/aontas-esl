@@ -1,0 +1,783 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Wordiness: Order Finder</title>
+  <style>
+    :root{
+      --bg:#070a12;
+      --panel:rgba(255,255,255,.06);
+      --stroke:rgba(255,255,255,.12);
+      --text:rgba(238,242,255,.92);
+      --muted:rgba(238,242,255,.70);
+      --good:rgba(34,197,94,.95);
+      --bad:rgba(239,68,68,.92);
+      --tap:46px;
+      --shadow:rgba(0,0,0,.38);
+      --primary:rgba(34,197,94,.22);
+      --primaryStroke:rgba(34,197,94,.55);
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background:
+        radial-gradient(1200px 700px at 20% -10%, rgba(99,102,241,.24), transparent 55%),
+        radial-gradient(900px 600px at 90% 10%, rgba(56,189,248,.18), transparent 55%),
+        var(--bg);
+      color:var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      min-height:100dvh;
+      padding:16px 12px calc(92px + env(safe-area-inset-bottom,0px));
+    }
+    .wrap{max-width:1100px;margin:0 auto;}
+    header{
+      display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+      margin-bottom:12px;
+    }
+    .brand{
+      display:flex;gap:10px;align-items:center;
+      padding:10px 12px;border:1px solid var(--stroke);
+      background:linear-gradient(to bottom, rgba(255,255,255,.07), rgba(255,255,255,.03));
+      border-radius:20px;
+      box-shadow:0 18px 50px var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+    .brand img{width:34px;height:34px;border-radius:10px;object-fit:contain}
+    h1{margin:0;font-size:18px;letter-spacing:.2px}
+    .sub{margin:2px 0 0;color:var(--muted);font-size:13px;line-height:1.35}
+    .panel{
+      border:1px solid var(--stroke);
+      background:var(--panel);
+      border-radius:22px;
+      padding:14px;
+      box-shadow:0 24px 70px var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    /* GOAL banner */
+    .goal{
+      display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(0,0,0,.18);
+      border-radius:18px;
+      padding:12px 12px;
+      margin-bottom:12px;
+    }
+    .goal .left{min-width:240px;flex:1}
+    .goalTitle{font-weight:900;font-size:15px;letter-spacing:.25px;margin:0 0 6px}
+    .goalText{margin:0;color:var(--muted);font-size:13px;line-height:1.35}
+    .patternBig{
+      display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;
+      min-width:240px;
+    }
+    .pill{
+      display:inline-flex;align-items:center;justify-content:center;gap:8px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.18);
+      background:rgba(255,255,255,.06);
+      padding:8px 10px;
+      min-height:40px;
+      font-weight:900;
+    }
+    .pill strong{font-size:16px;letter-spacing:.8px}
+    .mini{color:var(--muted);font-weight:800;font-size:12px}
+
+    .controls{
+      display:grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap:10px;
+      margin-bottom:12px;
+    }
+    .control{
+      grid-column: span 6;
+      border:1px solid var(--stroke);
+      background:rgba(0,0,0,.18);
+      border-radius:16px;
+      padding:10px 10px;
+    }
+    .control label{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13px;color:var(--muted)}
+    .control input[type="range"]{width:100%}
+    .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding-top:6px;}
+
+    button, select, input[type="text"]{
+      min-height:var(--tap);
+      border-radius:999px;
+      border:1px solid var(--stroke);
+      background:rgba(255,255,255,.06);
+      color:var(--text);
+      padding:10px 12px;
+      font-weight:800;
+      cursor:pointer;
+      user-select:none;
+      touch-action:manipulation;
+    }
+    input[type="text"]{
+      cursor:text;
+      min-width:240px;
+      width:100%;
+      max-width:520px;
+      background:rgba(0,0,0,.22);
+    }
+    select{padding-right:34px}
+    button:hover{background:rgba(255,255,255,.09)}
+    .btnPrimary{
+      border:1px solid var(--primaryStroke);
+      background:linear-gradient(to bottom, rgba(34,197,94,.22), rgba(34,197,94,.14));
+      box-shadow:0 14px 40px rgba(34,197,94,.12);
+      font-weight:950;
+      letter-spacing:.3px;
+    }
+    .btnDanger{
+      border:1px solid rgba(239,68,68,.45);
+      background:rgba(239,68,68,.10);
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap:10px;
+    }
+    @media (max-width:900px){ .grid{grid-template-columns: repeat(4, 1fr);} }
+    @media (max-width:620px){ .grid{grid-template-columns: repeat(2, 1fr);} }
+
+    .tile{
+      min-height:56px;
+      border-radius:16px;
+      border:1px solid var(--stroke);
+      background:rgba(0,0,0,.18);
+      padding:12px 12px;
+      display:flex;align-items:center;justify-content:center;
+      text-align:center;
+      font-size:18px;
+      font-weight:950;
+      letter-spacing:.35px;
+      cursor:pointer;
+      user-select:none;
+      position:relative;
+      overflow:hidden;
+    }
+    .tile.small{font-size:16px}
+    .tile.good{outline:3px solid rgba(34,197,94,.55); background:rgba(34,197,94,.10)}
+    .tile.bad{outline:3px solid rgba(239,68,68,.45); background:rgba(239,68,68,.10)}
+    .mark{
+      text-decoration: underline;
+      text-decoration-thickness: 3px;
+      text-underline-offset: 3px;
+    }
+
+    .footer{
+      display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;
+      margin-top:12px;
+      color:var(--muted);
+      font-size:13px;
+    }
+    .stat{display:flex;gap:10px;flex-wrap:wrap}
+    .stat span{
+      padding:6px 10px;border:1px solid var(--stroke);
+      border-radius:999px;background:rgba(0,0,0,.18)
+    }
+
+    .sticky{
+      position:fixed;
+      left:0;right:0;bottom:0;
+      padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));
+      background:linear-gradient(to top, rgba(7,10,18,.92), rgba(7,10,18,.35));
+      backdrop-filter: blur(10px);
+      border-top:1px solid rgba(255,255,255,.10);
+    }
+    .stickyInner{
+      max-width:1100px;margin:0 auto;
+      display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;
+    }
+    .bigStart{
+      flex:1;min-width:240px;
+      display:flex;gap:10px;align-items:center;justify-content:center;
+      font-size:16px;font-weight:950;letter-spacing:.3px;
+    }
+    .toast{
+      flex:2;min-width:260px;
+      padding:10px 12px;border-radius:16px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(0,0,0,.18);
+      color:var(--muted);
+      font-weight:800;
+    }
+    .toast b{color:var(--text)}
+    .overlay{
+      position:fixed; inset:0;
+      display:none;align-items:center; justify-content:center;
+      background:rgba(0,0,0,.45);
+      backdrop-filter: blur(6px);
+      padding:18px 12px;
+    }
+    .overlay.show{display:flex;}
+    .modal{
+      max-width:520px;width:100%;
+      border-radius:22px;
+      border:1px solid rgba(255,255,255,.16);
+      background:rgba(10,14,26,.88);
+      box-shadow:0 30px 90px rgba(0,0,0,.55);
+      padding:14px;
+    }
+    .modal h2{margin:0 0 8px;font-size:18px;letter-spacing:.2px}
+    .modal p{margin:0 0 10px;color:var(--muted);line-height:1.35}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <img id="crest" src="/wordiness/crest.png" alt="Crest" />
+        <div>
+          <h1>Order Finder</h1>
+          <div class="sub">Executive-function focus game: scan and tap items that match the pattern rule.</div>
+        </div>
+      </div>
+      <div class="brand" style="align-items:flex-end">
+        <div style="text-align:right">
+          <div class="sub">Wordiness</div>
+          <div style="font-weight:900;font-size:14px">Focus Game</div>
+        </div>
+      </div>
+    </header>
+
+    <div class="panel">
+      <div class="goal">
+        <div class="left">
+          <div class="goalTitle">GOAL</div>
+          <p class="goalText">
+            Tap tiles that match the <b>pattern</b>.
+            Choose <b>In order</b> (letters appear left-to-right with gaps allowed) or <b>Exact</b> (letters must be together).
+            Press <b>START ROUND</b> to begin.
+          </p>
+        </div>
+        <div class="patternBig">
+          <span class="mini">Current pattern</span>
+          <span class="pill"><strong id="patternBig">b a c</strong></span>
+          <span class="pill"><span class="mini">Rule</span> <strong id="ruleBig">In order</strong></span>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="control" style="grid-column: span 6;">
+          <label>Pattern set <span class="pill"><span class="mini">comma separated</span></span></label>
+          <div class="row">
+            <input id="patternInput" type="text" value="bac,cdf,tion,str,ing,pre,un,re" aria-label="Pattern list" />
+          </div>
+          <div class="row">
+            <button id="pickPattern" type="button">Pick next pattern</button>
+            <button id="highlightBtn" type="button">Highlight match: On</button>
+            <button id="ttsBtn" type="button">TTS: Off</button>
+          </div>
+          <div class="sub" style="margin-top:6px">
+            Tip: patterns like <b>cdf</b> work best in <b>letter-string</b> mode (not real words).
+          </div>
+        </div>
+
+        <div class="control" style="grid-column: span 6;">
+          <label>Round length <span id="timeLabel" class="pill"><strong>35s</strong></span></label>
+          <input id="timeRange" type="range" min="10" max="90" step="5" value="35" />
+          <div class="row">
+            <button id="startTop" type="button" class="btnPrimary">START ROUND</button>
+            <button id="stopTop" type="button" class="btnDanger">Stop</button>
+            <button id="newGrid" type="button">New grid</button>
+          </div>
+        </div>
+
+        <div class="control" style="grid-column: span 6;">
+          <label>Tiles on screen <span id="countLabel" class="pill"><strong>24</strong></span></label>
+          <input id="countRange" type="range" min="8" max="48" step="2" value="24" />
+          <div class="row">
+            <button id="modeWords" type="button">Content: Words</button>
+            <button id="modeLetters" type="button">Content: Letter strings</button>
+            <button id="ruleBtn" type="button">Rule: In order</button>
+          </div>
+        </div>
+
+        <div class="control" style="grid-column: span 6;">
+          <label>Success feedback <span class="pill"><span class="mini">gentle</span></span></label>
+          <div class="row">
+            <span class="pill">Matched: <strong id="matched">0</strong>/<strong id="total">0</strong></span>
+            <span class="pill">Accuracy: <strong id="acc">0%</strong></span>
+            <span class="pill">Score: <strong id="score">0</strong></span>
+          </div>
+          <div class="row">
+            <span class="pill">Time: <strong id="timeLeft">Ready</strong></span>
+            <span class="pill">Correct: <strong id="correct">0</strong></span>
+            <span class="pill">Misses: <strong id="misses">0</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <div id="grid" class="grid" aria-label="Tile grid"></div>
+
+      <div class="footer">
+        <div class="stat">
+          <span>Success = spot the pattern, not perfection.</span>
+        </div>
+        <div class="stat">
+          <span>Scan left-to-right like reading.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sticky" role="region" aria-label="Round controls">
+    <div class="stickyInner">
+      <button id="start" type="button" class="btnPrimary bigStart">START ROUND</button>
+      <div id="toast" class="toast"><b>Ready:</b> Pick a pattern, choose a rule, then press START.</div>
+      <button id="stop" type="button" class="btnDanger">Stop</button>
+    </div>
+  </div>
+
+  <div id="overlay" class="overlay" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Round summary">
+      <h2 id="endTitle">Round complete</h2>
+      <p id="endText"></p>
+      <div class="row" style="justify-content:flex-end">
+        <button id="playAgain" type="button" class="btnPrimary">Play again</button>
+        <button id="closeEnd" type="button">Close</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  const grid = document.getElementById('grid');
+  const toast = document.getElementById('toast');
+
+  const patternInput = document.getElementById('patternInput');
+  const pickPattern = document.getElementById('pickPattern');
+
+  const highlightBtn = document.getElementById('highlightBtn');
+  const ttsBtn = document.getElementById('ttsBtn');
+
+  const timeRange = document.getElementById('timeRange');
+  const timeLabel = document.getElementById('timeLabel');
+  const countRange = document.getElementById('countRange');
+  const countLabel = document.getElementById('countLabel');
+
+  const modeWords = document.getElementById('modeWords');
+  const modeLetters = document.getElementById('modeLetters');
+  const ruleBtn = document.getElementById('ruleBtn');
+
+  const start = document.getElementById('start');
+  const startTop = document.getElementById('startTop');
+  const stop = document.getElementById('stop');
+  const stopTop = document.getElementById('stopTop');
+  const newGrid = document.getElementById('newGrid');
+
+  const patternBig = document.getElementById('patternBig');
+  const ruleBig = document.getElementById('ruleBig');
+
+  const matchedEl = document.getElementById('matched');
+  const totalEl = document.getElementById('total');
+  const accEl = document.getElementById('acc');
+  const scoreEl = document.getElementById('score');
+  const timeLeftEl = document.getElementById('timeLeft');
+  const correctEl = document.getElementById('correct');
+  const missesEl = document.getElementById('misses');
+
+  const overlay = document.getElementById('overlay');
+  const endTitle = document.getElementById('endTitle');
+  const endText = document.getElementById('endText');
+  const playAgain = document.getElementById('playAgain');
+  const closeEnd = document.getElementById('closeEnd');
+
+  // Settings
+  let currentPattern = "bac";
+  let rule = "inorder"; // inorder | exact
+  let contentMode = "words"; // words | letters
+  let highlight = true;
+  let speak = false;
+
+  // Round state
+  let running = false;
+  let timer = null;
+  let endAt = 0;
+
+  let score = 0, correct = 0, misses = 0;
+  let matched = 0, totalTargets = 0;
+
+  const wordList = [
+    "bacon","back","backup","backpack","basket","banana","cab","cabin","brace","bracket","crab",
+    "reading","teacher","school","classroom","library","garden","winter","summer","music","family","friend",
+    "station","motion","nation","action","fraction","traction","fiction","caution","caption",
+    "string","strong","street","stripe","strange","strategy",
+    "undo","unfair","unhappy","unknown","unlock","rewrite","rebuild","review","return","prepare","preview"
+  ];
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  function updateToast(msg){ toast.innerHTML = msg; }
+  function updateLabels(){
+    timeLabel.innerHTML = "<strong>" + timeRange.value + "s</strong>";
+    countLabel.innerHTML = "<strong>" + countRange.value + "</strong>";
+    patternBig.textContent = currentPattern.split("").join(" ");
+    ruleBig.textContent = (rule === "exact" ? "Exact" : "In order");
+    ruleBtn.textContent = "Rule: " + (rule === "exact" ? "Exact" : "In order");
+  }
+
+  function speakItem(text){
+    try{
+      if(!window.speechSynthesis) return;
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = 0.95;
+      u.pitch = 1.0;
+      window.speechSynthesis.speak(u);
+    }catch(e){}
+  }
+
+  function sayTile(tileText){
+    if(!speak) return;
+    if(contentMode === "words"){
+      speakItem(tileText);
+    } else {
+      speakItem(String(tileText).split("").join(" "));
+    }
+  }
+
+  function containsExact(s, pat){
+    return String(s).toLowerCase().includes(String(pat).toLowerCase());
+  }
+
+  function containsInOrder(s, pat){
+    s = String(s).toLowerCase();
+    pat = String(pat).toLowerCase();
+    let j = 0;
+    for(let i=0;i<s.length && j<pat.length;i++){
+      if(s[i] === pat[j]) j++;
+    }
+    return j === pat.length;
+  }
+
+  function isTarget(s){
+    return rule === "exact" ? containsExact(s, currentPattern) : containsInOrder(s, currentPattern);
+  }
+
+  function renderMarked(s){
+    s = String(s);
+    if(!highlight) return escapeHtml(s);
+
+    const lower = s.toLowerCase();
+    const pat = currentPattern.toLowerCase();
+
+    if(rule === "exact"){
+      const idx = lower.indexOf(pat);
+      if(idx < 0) return escapeHtml(s);
+      const a = s.slice(0, idx);
+      const b = s.slice(idx, idx + pat.length);
+      const c = s.slice(idx + pat.length);
+      return escapeHtml(a) + '<span class="mark">' + escapeHtml(b) + '</span>' + escapeHtml(c);
+    }
+
+    // inorder: underline the letters as we match them
+    let out = "";
+    let j = 0;
+    for(let i=0;i<s.length;i++){
+      const ch = s[i];
+      const is = (j < pat.length && lower[i] === pat[j]);
+      if(is){
+        out += '<span class="mark">' + escapeHtml(ch) + '</span>';
+        j++;
+      } else {
+        out += escapeHtml(ch);
+      }
+    }
+    return out;
+  }
+
+  function shuffle(a){
+    for(let i=a.length-1;i>0;i--){
+      const j=(Math.random()*(i+1))|0;
+      [a[i],a[j]]=[a[j],a[i]];
+    }
+    return a;
+  }
+
+  function randLetters(len){
+    const alpha = "abcdefghijklmnopqrstuvwxyz";
+    let s = "";
+    for(let i=0;i<len;i++){
+      s += alpha[(Math.random()*alpha.length)|0];
+    }
+    return s;
+  }
+
+  function makeLetterTarget(){
+    const pat = currentPattern;
+    if(rule === "exact"){
+      const left = randLetters( (Math.random()*2)|0 );
+      const right = randLetters( (Math.random()*2)|0 );
+      const tail = randLetters( 1 + ((Math.random()*2)|0) );
+      return left + pat + right + tail;
+    } else {
+      // in order: interleave pattern letters with filler
+      let s = "";
+      for(let i=0;i<pat.length;i++){
+        s += randLetters((Math.random()*2)|0);
+        s += pat[i];
+      }
+      s += randLetters(1 + ((Math.random()*2)|0));
+      return s;
+    }
+  }
+
+  function pickGridItems(n){
+    let targetCount = Math.max(4, Math.round(n * 0.42));
+    let nonCount = Math.max(0, n - targetCount);
+
+    let targets = [];
+    let nonTargets = [];
+
+    if(contentMode === "words"){
+      const words = wordList.slice();
+      const tPool = words.filter(w => isTarget(w));
+      const nPool = words.filter(w => !isTarget(w));
+
+      // If not enough real-word targets, fall back to letter mode for targets only
+      if(tPool.length >= 3){
+        targets = shuffle(tPool).slice(0, targetCount);
+      } else {
+        targets = Array.from({length: targetCount}, () => makeLetterTarget());
+        updateToast("<b>Note:</b> Not many real words match <b>" + escapeHtml(currentPattern) + "</b>. Using letter-strings for targets.");
+      }
+      nonTargets = shuffle(nPool).slice(0, nonCount);
+
+      // If still short, pad with letter strings (non-targets)
+      while(nonTargets.length < nonCount){
+        const s = randLetters(3 + ((Math.random()*3)|0));
+        if(!isTarget(s)) nonTargets.push(s);
+      }
+    } else {
+      targets = Array.from({length: targetCount}, () => makeLetterTarget());
+      while(nonTargets.length < nonCount){
+        const s = randLetters(3 + ((Math.random()*4)|0));
+        if(!isTarget(s)) nonTargets.push(s);
+      }
+    }
+
+    return shuffle(targets.concat(nonTargets));
+  }
+
+  function updateStats(){
+    matchedEl.textContent = String(matched);
+    totalEl.textContent = String(totalTargets);
+
+    const attempts = correct + misses;
+    const acc = attempts ? Math.round((correct/attempts)*100) : 0;
+    accEl.textContent = acc + "%";
+
+    scoreEl.textContent = String(score);
+    correctEl.textContent = String(correct);
+    missesEl.textContent = String(misses);
+  }
+
+  function buildGrid(){
+    const n = +countRange.value;
+    const items = pickGridItems(n);
+
+    grid.innerHTML = "";
+    matched = 0;
+    totalTargets = 0;
+
+    items.forEach(text => {
+      const t = String(text);
+      const el = document.createElement("div");
+      el.className = "tile" + (t.length > 10 ? " small" : "");
+      el.dataset.text = t;
+      el.dataset.target = isTarget(t) ? "1" : "0";
+      el.dataset.hit = "0";
+      el.setAttribute("role","button");
+      el.setAttribute("tabindex","0");
+      el.innerHTML = renderMarked(t);
+
+      if(el.dataset.target === "1") totalTargets++;
+
+      el.addEventListener("click", () => onTap(el));
+      el.addEventListener("keydown", (e) => {
+        if(e.key === "Enter" || e.key === " ") { e.preventDefault(); onTap(el); }
+      });
+
+      grid.appendChild(el);
+    });
+
+    updateStats();
+    updateToast("<b>Ready:</b> Tap tiles that match <b>" + escapeHtml(currentPattern) + "</b> (" + (rule==="exact" ? "Exact" : "In order") + ").");
+  }
+
+  function onTap(el){
+    const text = el.dataset.text || el.textContent || "";
+    sayTile(text);
+
+    if(!running) return;
+    if(el.dataset.hit === "1") return;
+    el.dataset.hit = "1";
+
+    if(el.dataset.target === "1"){
+      correct++;
+      score += 10;
+      matched++;
+      el.classList.add("good");
+      updateToast("<b>Nice.</b> Matched: <b>" + matched + "/" + totalTargets + "</b>");
+      if(totalTargets > 0 && matched >= totalTargets){
+        endRound(true);
+      }
+    } else {
+      misses++;
+      score = Math.max(0, score - 6);
+      el.classList.add("bad");
+      updateToast("Keep scanning. Pattern: <b>" + escapeHtml(currentPattern) + "</b>");
+    }
+    updateStats();
+  }
+
+  function tick(){
+    const ms = endAt - Date.now();
+    const s = Math.max(0, Math.ceil(ms/1000));
+    timeLeftEl.textContent = running ? (s + "s") : "Ready";
+    if(running && ms <= 0){
+      endRound(true);
+    }
+  }
+
+  function startRound(){
+    running = true;
+    score = 0; correct = 0; misses = 0;
+    matched = 0;
+
+    // reset hits + classes
+    Array.from(grid.children).forEach(el => { el.classList.remove("good","bad"); el.dataset.hit="0"; });
+
+    updateStats();
+
+    endAt = Date.now() + (+timeRange.value)*1000;
+    tick();
+    if(timer) clearInterval(timer);
+    timer = setInterval(tick, 150);
+
+    updateToast("<b>Go!</b> Find matches for <b>" + escapeHtml(currentPattern) + "</b> (" + (rule==="exact" ? "Exact" : "In order") + ").");
+  }
+
+  function endRound(showSummary){
+    running = false;
+    if(timer){ clearInterval(timer); timer = null; }
+    timeLeftEl.textContent = "Done";
+    if(showSummary) showEndSummary();
+  }
+
+  function showEndSummary(){
+    const attempts = correct + misses;
+    const acc = attempts ? Math.round((correct/attempts)*100) : 0;
+
+    let title = "Round complete";
+    let msg = "Matched: " + matched + "/" + totalTargets + ". Accuracy: " + acc + "%. Score: " + score + ".";
+
+    if(totalTargets > 0 && matched === totalTargets){
+      title = "Perfect!";
+      msg = "You matched every target. Matched: " + matched + "/" + totalTargets + ". Accuracy: " + acc + "%. Score: " + score + ".";
+    } else if(totalTargets > 0 && matched >= Math.max(1, Math.round(totalTargets*0.75))){
+      title = "Great scanning!";
+      msg = "Strong round. Matched: " + matched + "/" + totalTargets + ". Accuracy: " + acc + "%. Score: " + score + ".";
+    } else {
+      title = "Good effort";
+      msg = "Try again: slow scan left-to-right. Matched: " + matched + "/" + totalTargets + ". Accuracy: " + acc + "%. Score: " + score + ".";
+    }
+
+    endTitle.textContent = title;
+    endText.textContent = msg;
+
+    overlay.classList.add("show");
+    overlay.setAttribute("aria-hidden","false");
+  }
+
+  function closeSummary(){
+    overlay.classList.remove("show");
+    overlay.setAttribute("aria-hidden","true");
+  }
+
+  function parsePatterns(){
+    const raw = String(patternInput.value || "");
+    const parts = raw.split(",").map(s => s.trim()).filter(Boolean);
+    // keep only a-z letters
+    const cleaned = parts.map(p => p.toLowerCase().replace(/[^a-z]/g,"")).filter(p => p.length >= 2 && p.length <= 6);
+    return cleaned.length ? cleaned : ["bac","cdf","tion","str","ing"];
+  }
+
+  function nextPattern(){
+    const pats = parsePatterns();
+    // rotate: first -> end
+    const cur = currentPattern;
+    const idx = pats.indexOf(cur);
+    const next = (idx >= 0 && idx < pats.length-1) ? pats[idx+1] : pats[0];
+    currentPattern = next;
+    updateLabels();
+    buildGrid();
+  }
+
+  function toggleRule(){
+    rule = (rule === "exact") ? "inorder" : "exact";
+    updateLabels();
+    buildGrid();
+  }
+
+  function setContent(mode){
+    contentMode = mode;
+    modeWords.textContent = "Content: " + (contentMode === "words" ? "Words (selected)" : "Words");
+    modeLetters.textContent = "Content: " + (contentMode === "letters" ? "Letter strings (selected)" : "Letter strings");
+    buildGrid();
+  }
+
+  // Wiring
+  timeRange.addEventListener("input", () => { updateLabels(); });
+  countRange.addEventListener("input", () => { updateLabels(); buildGrid(); });
+
+  pickPattern.addEventListener("click", () => nextPattern());
+
+  highlightBtn.addEventListener("click", () => {
+    highlight = !highlight;
+    highlightBtn.textContent = "Highlight match: " + (highlight ? "On" : "Off");
+    buildGrid();
+  });
+
+  ttsBtn.addEventListener("click", () => {
+    speak = !speak;
+    ttsBtn.textContent = "TTS: " + (speak ? "On" : "Off");
+  });
+
+  ruleBtn.addEventListener("click", () => toggleRule());
+  modeWords.addEventListener("click", () => setContent("words"));
+  modeLetters.addEventListener("click", () => setContent("letters"));
+
+  start.addEventListener("click", () => { closeSummary(); startRound(); });
+  startTop.addEventListener("click", () => { closeSummary(); startRound(); });
+
+  stop.addEventListener("click", () => endRound(false));
+  stopTop.addEventListener("click", () => endRound(false));
+
+  newGrid.addEventListener("click", () => { endRound(false); buildGrid(); });
+
+  playAgain.addEventListener("click", () => { closeSummary(); startRound(); });
+  closeEnd.addEventListener("click", () => closeSummary());
+  overlay.addEventListener("click", (e) => { if(e.target === overlay) closeSummary(); });
+
+  // Crest fallback
+  const crest = document.getElementById("crest");
+  crest.addEventListener("error", () => { crest.src = "/wordiness/crest.png"; }, { once:true });
+
+  // Init
+  updateLabels();
+  setContent("words");
+  buildGrid();
+})();
+</script>
+
+<!-- wordiness-seed-bridge-v1 -->
+<script src="wordiness-seed-bridge.js"></script>
+</body>
+</html>

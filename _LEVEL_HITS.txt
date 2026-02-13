@@ -1,0 +1,300 @@
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\Add-WordinessNextTinyStepBuilder.ps1:695  # Quick structural fix: missing commas between adjacent objects at top-level
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\.wordiness_backups\20260127_232713\public\wordiness\wordiness-working-memory-relay.html:79  .stage{
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\.wordiness_backups\20260127_232713\public\wordiness\wordiness-working-memory-relay.html:195  <div class="stage">
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\.wordiness_backups\20260127_232713\public\wordiness\wordiness-working-memory-relay.html:256  <div class="stage">
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\.wordiness_backups\20260127_232727\public\wordiness\wordiness-working-memory-relay.html:79  .stage{
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\.wordiness_backups\20260127_232727\public\wordiness\wordiness-working-memory-relay.html:239  <div class="stage">
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\.wordiness_backups\20260127_232727\public\wordiness\wordiness-working-memory-relay.html:300  <div class="stage">
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\.wordiness_backups\hubfix_20260129_155609\ReadingPackApp.tsx:299  withCrest.stage ? `stage${withCrest.stage}` : null,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\.wordiness_backups\hubfix_20260129_155609\ReadingPackApp.tsx:358  const base = `aontas10-reading-${slug}-class${withCrest.schoolClass ?? ""}-stage${withCrest.stage ?? ""}`.replace(/--+/g, "-");
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\.wordiness_backups\hubfix_20260129_155609\ReadingPackApp.tsx:390  const base = `aontas10-reading-${slug}-class${withCrest.schoolClass ?? ""}-stage${withCrest.stage ?? ""}`.replace(/--+/g, "-");
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\.wordiness_backups\hubfix_20260129_155609\ReadingPackApp.tsx:509  return `${pack.title || "Untitled"} ï Class ${pack.schoolClass ?? "?"} ï Stage ${pack.stage ?? "?"} ï ${exCount} exercises`;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\.wordiness_backups\hubfix_20260129_171259\ReadingPackApp.tsx:299  withCrest.stage ? `stage${withCrest.stage}` : null,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\.wordiness_backups\hubfix_20260129_171259\ReadingPackApp.tsx:358  const base = `aontas10-reading-${slug}-class${withCrest.schoolClass ?? ""}-stage${withCrest.stage ?? ""}`.replace(/--+/g, "-");
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\.wordiness_backups\hubfix_20260129_171259\ReadingPackApp.tsx:390  const base = `aontas10-reading-${slug}-class${withCrest.schoolClass ?? ""}-stage${withCrest.stage ?? ""}`.replace(/--+/g, "-");
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\.wordiness_backups\hubfix_20260129_171259\ReadingPackApp.tsx:509  return `${pack.title || "Untitled"} ï Class ${pack.schoolClass ?? "?"} ï Stage ${pack.stage ?? "?"} ï ${exCount} exercises`;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\.wordiness_backups\hubfix_20260129_172419\ReadingPackApp.tsx:299  withCrest.stage ? `stage${withCrest.stage}` : null,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\.wordiness_backups\hubfix_20260129_172419\ReadingPackApp.tsx:358  const base = `aontas10-reading-${slug}-class${withCrest.schoolClass ?? ""}-stage${withCrest.stage ?? ""}`.replace(/--+/g, "-");
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\.wordiness_backups\hubfix_20260129_172419\ReadingPackApp.tsx:390  const base = `aontas10-reading-${slug}-class${withCrest.schoolClass ?? ""}-stage${withCrest.stage ?? ""}`.replace(/--+/g, "-");
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\.wordiness_backups\hubfix_20260129_172419\ReadingPackApp.tsx:509  return `${pack.title || "Untitled"} ï Class ${pack.schoolClass ?? "?"} ï Stage ${pack.stage ?? "?"} ï ${exCount} exercises`;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\page.tsx:17  stage?: number; // 1-4
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\page.tsx:184  stage: req.meta.stage,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\page.tsx:216  const [stage, setStage] = useState<number>(4);
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\page.tsx:243  if (typeof obj?.stage === "number") setStage(clamp(obj.stage, 1, 4));
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\page.tsx:267  stage,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\page.tsx:280  }, [inputKind, url, text, uploaded, pasted, schoolClass, stage, titleHint, textType, purpose, supports, allowLocalNames, pilotMode, notes]);
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\page.tsx:341  stage,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\page.tsx:554  Class/Stage ï Text type ï Purpose ï Supports ï Pilot mode
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\page.tsx:577  <div style={labelStyle}>Stage</div>
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\page.tsx:582  value={stage}
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts:10  stage?: string | number;     // Irish primary stage (1-4) - may arrive as "Auto (Stage 4)"
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts:11  level?: string;              // legacy (older builds)
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts:63  function parseStage(v: any): number {
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts:70  // Practical word-length targets by Irish primary stage (tuning knob, not a label for kids)
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts:71  function getLengthTargets(stage: number): LengthTargets {
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts:72  switch (stage) {
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts:88  stage: number,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts:120  // Accept either stage or legacy level field; default to Stage 4 (upper primary)
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts:121  const stage = parseStage(body.stage ?? body.level ?? 4);
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts:131  const targets = getLengthTargets(stage);
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts:137  stage,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts:159  - Use a suitable length for the stage.
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts:184  Stage: ${stage}
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts:225  stage,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak:6  level: string; // CEFR: A1, A2, B1, B2, C1, C2
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak:24  * Hard-ish word-length targets per CEFR level for reading texts.
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak:27  function getLengthTargets(level: string): LengthTargets {
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak:28  switch (level.toUpperCase()) {
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak:79  level: string,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak:87  `CEFR level: ${level}`,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak:100  `CEFR level: ${level}`,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak:115  const { inputText, outputLanguage, level, outputType, dyslexiaFriendly } =
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak:118  if (!inputText || !outputLanguage || !level || !outputType) {
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak:135  const targets = getLengthTargets(level);
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak:142  level,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak:156  - Same CEFR level as requested.
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak:158  - Clean, coherent, natural text for that CEFR level.
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak:159  - Keep all key ideas, domain concepts, and important details that a learner at that level should encounter.
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak:160  - You may tidy structure and wording, but you MUST keep the overall level and genre.
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak:163  - Same CEFR level AND same genre as the STANDARD VERSION (do NOT drop the level).
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak:186  CEFR LEVEL RULES (APPROXIMATE TARGETS FOR READING TEXTS)
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak:264  ADAPTED VS STANDARD BEHAVIOUR BY LEVEL
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak:267  - STANDARD: follow the level rules above.
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak:268  - ADAPTED: same level and genre but with even shorter sentences and clearer paragraphs; you may slightly shorten the text, but do not drop key ideas.
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak:277  - STANDARD: full use of the level's complexity and register within the word-range targets.
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak:279  - Do NOT significantly simplify the vocabulary or drop the CEFR level.
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak:289  - Always respect the requested CEFR LEVEL and OUTPUT TYPE/GENRE.
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak:304  Requested CEFR level: ${level}
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak:308  For this CEFR level, the approximate word-length targets are:
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak:315  1. Write the STANDARD VERSION of the text that respects the CEFR rules, genre, level, and length targets.
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak:317  - The same CEFR level and genre.
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak:354  level,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak:386  level,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak_stage:9  stage?: number; // 1..4 (PLC stages)
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak_stage:12  level?: string; // old CEFR value or band
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak_stage:37  function normalizeStage(stage?: number, schoolClass?: number, legacyLevel?: string): number {
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak_stage:38  // Preferred: explicit stage
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak_stage:39  if (Number.isFinite(stage)) {
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak_stage:40  const s = Number(stage);
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak_stage:66  * Word-length targets by Irish Primary stage band.
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak_stage:69  function getLengthTargets(stage: number): LengthTargets {
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak_stage:70  switch (stage) {
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak_stage:87  stage: number;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak_stage:92  const { inputText, outputLanguage, schoolClass, stage, outputType, dyslexiaFriendly, reason } = args;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak_stage:102  `Class/Stage: Class ${schoolClass ?? "?"} ï Stage ${stage}`,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak_stage:111  `Class/Stage: Class ${schoolClass ?? "?"} ï Stage ${stage}`,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak_stage:130  const stage = normalizeStage(body.stage, schoolClass, body.level);
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak_stage:145  const targets = getLengthTargets(stage);
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak_stage:152  stage,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak_stage:166  - Suitable for the requested Irish Primary stage.
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak_stage:201  Requested Irish Primary band: Class ${schoolClass ?? "?"} ï Stage ${stage}
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak_stage:246  stage,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\adapt\route.ts.bak_stage:277  stage,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\exercises\route.ts:537  const stage: number | undefined = Number.isFinite(body.stage) ? Number(body.stage) : undefined;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\exercises\route.ts:589  Stage: ${stage ?? "?"}
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\exercises\route.ts.bak:375  const level: string = body.level || body.cefrLevel || "B1";
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\exercises\route.ts.bak:410  1) STANDARD text (grade-level)
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\exercises\route.ts.bak:419  - Reading level: ${level}
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\exercises\route.ts.bak-20260109-033048:375  const level: string = body.level || body.cefrLevel || "B1";
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\exercises\route.ts.bak-20260109-033048:410  1) STANDARD text (grade-level)
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\exercises\route.ts.bak-20260109-033048:419  - Reading level: ${level}
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\exercises\route.ts.bak_stage:48  function normalizeStage(stage?: any, schoolClass?: any, legacyLevel?: any): number {
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\exercises\route.ts.bak_stage:49  const s = Number(stage);
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\exercises\route.ts.bak_stage:311  const stage = normalizeStage(body.stage, schoolClass, body.level);
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\exercises\route.ts.bak_stage:352  - Class/Stage: Class ${schoolClass ?? "?"} ï Stage ${stage}
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\h5p\create-word-order\route.ts:9  stage?: number | string | null;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\h5p\create-word-order\route.ts:43  function pickSentences(text: string, stage: number, max = 8): string[] {
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\h5p\create-word-order\route.ts:46  // Stage-based difficulty heuristics
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\h5p\create-word-order\route.ts:47  const st = Number.isFinite(stage) ? stage : 3;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\h5p\create-word-order\route.ts:174  const stage = Number(body.stage ?? 3);
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\h5p\create-word-order\route.ts:188  const chosen = pickSentences(readingText, stage, 8);
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\h5p\create-word-order\route.ts.bak_regexfix:9  stage?: number | string | null;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\h5p\create-word-order\route.ts.bak_regexfix:41  function pickSentences(text: string, stage: number, max = 8): string[] {
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\h5p\create-word-order\route.ts.bak_regexfix:44  // Stage-based difficulty heuristics
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\h5p\create-word-order\route.ts.bak_regexfix:45  const st = Number.isFinite(stage) ? stage : 3;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\h5p\create-word-order\route.ts.bak_regexfix:172  const stage = Number(body.stage ?? 3);
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\h5p\create-word-order\route.ts.bak_regexfix:186  const chosen = pickSentences(readingText, stage, 8);
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\h5p\create-word-order\route.ts.bak_regexfix2:9  stage?: number | string | null;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\h5p\create-word-order\route.ts.bak_regexfix2:41  function pickSentences(text: string, stage: number, max = 8): string[] {
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\h5p\create-word-order\route.ts.bak_regexfix2:44  // Stage-based difficulty heuristics
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\h5p\create-word-order\route.ts.bak_regexfix2:45  const st = Number.isFinite(stage) ? stage : 3;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\h5p\create-word-order\route.ts.bak_regexfix2:172  const stage = Number(body.stage ?? 3);
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\h5p\create-word-order\route.ts.bak_regexfix2:186  const chosen = pickSentences(readingText, stage, 8);
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\h5p\create-word-order\route.ts.bak_regexfix3:9  stage?: number | string | null;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\h5p\create-word-order\route.ts.bak_regexfix3:43  function pickSentences(text: string, stage: number, max = 8): string[] {
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\h5p\create-word-order\route.ts.bak_regexfix3:46  // Stage-based difficulty heuristics
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\h5p\create-word-order\route.ts.bak_regexfix3:47  const st = Number.isFinite(stage) ? stage : 3;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\h5p\create-word-order\route.ts.bak_regexfix3:174  const stage = Number(body.stage ?? 3);
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\h5p\create-word-order\route.ts.bak_regexfix3:188  const chosen = pickSentences(readingText, stage, 8);
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\h5p\create-word-order\route.ts.bak_regexfix_wraptokens:9  stage?: number | string | null;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\h5p\create-word-order\route.ts.bak_regexfix_wraptokens:43  function pickSentences(text: string, stage: number, max = 8): string[] {
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\h5p\create-word-order\route.ts.bak_regexfix_wraptokens:46  // Stage-based difficulty heuristics
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\h5p\create-word-order\route.ts.bak_regexfix_wraptokens:47  const st = Number.isFinite(stage) ? stage : 3;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\h5p\create-word-order\route.ts.bak_regexfix_wraptokens:174  const stage = Number(body.stage ?? 3);
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\h5p\create-word-order\route.ts.bak_regexfix_wraptokens:188  const chosen = pickSentences(readingText, stage, 8);
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\reading\generate-pack\route.tsx:41  stage?: number;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\reading\generate-pack\route.tsx:82  stage?: number;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\reading\generate-pack\route.tsx:135  function stageTargets(stage: number) {
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\reading\generate-pack\route.tsx:137  if (stage <= 1) return { min: 120, max: 220 };
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\reading\generate-pack\route.tsx:138  if (stage === 2) return { min: 220, max: 360 };
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\reading\generate-pack\route.tsx:139  if (stage === 3) return { min: 360, max: 600 };
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\reading\generate-pack\route.tsx:140  return { min: 650, max: 950 }; // stage 4
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\reading\generate-pack\route.tsx:212  const stage = clamp(Number(tr?.meta?.stage ?? 3), 1, 4);
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\reading\generate-pack\route.tsx:261  stage,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\reading\generate-pack\route.tsx:378  "stage",
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\reading\generate-pack\route.tsx:389  stage: { type: "number" },
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\reading\generate-pack\route.tsx:444  const stage = body.stage ?? 3;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\reading\generate-pack\route.tsx:446  const targets = stageTargets(stage);
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\reading\generate-pack\route.tsx:456  `Reading length target (Stage ${stage}): about ${targets.min}‚Äì${targets.max} words for STANDARD. SUPPORTED should be similar length (not a tiny summary) but with access supports.`,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\reading\generate-pack\route.tsx:491  `Stage: ${stage}. Class: ${klass}.`,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\reading\generate-pack\route.tsx:502  const stage = body.stage ?? 3;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\reading\generate-pack\route.tsx:503  const targets = stageTargets(stage);
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\reading\generate-pack\route.tsx:508  `Stage: ${stage}`,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\reading\generate-pack\route.tsx:579  const stage = body.stage ?? 3;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\api\reading\generate-pack\route.tsx:682  pack.stage = Number(pack.stage ?? stage);
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\h5p\page.tsx:146  This is the ìteacher resource shelfî ó later weíll tag/filter by <b>Class</b> / <b>Stage</b> / <b>Skills</b>.
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx:311  withCrest.stage ? `stage${withCrest.stage}` : null,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx:370  const base = `aontas10-reading-${slug}-class${withCrest.schoolClass ?? ""}-stage${withCrest.stage ?? ""}`.replace(/--+/g, "-");
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx:402  const base = `aontas10-reading-${slug}-class${withCrest.schoolClass ?? ""}-stage${withCrest.stage ?? ""}`.replace(/--+/g, "-");
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx:521  return `${pack.title || "Untitled"} ‚Ä¢ Class ${pack.schoolClass ?? "?"} ‚Ä¢ Stage ${pack.stage ?? "?"} ‚Ä¢ ${exCount} exercises`;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:33  type Stage = 1 | 2 | 3 | 4;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:36  // Stage 1 (Infants) is included for future-proofing, even though the UI starts at Class 1.
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:38  const STAGES: Stage[] = [1, 2, 3, 4];
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:40  function stageFromClass(c: SchoolClass): Stage {
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:50  function stageLabel(s: Stage) {
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:51  return `Stage ${s}`;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:163  hint: "Tighter distractors, inference, and summary selection (level-appropriate).",
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:167  function defaultBlocksFor(stage: Stage, focus: QuestionFocus): ExerciseBlockId[] {
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:168  const low = stage <= 2;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:169  const high = stage >= 4;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:380  stage: Stage;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:388  stage: args.stage,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:749  subEl.textContent = (data.schoolClass ? ("Class " + data.schoolClass + " ‚Ä¢ Stage " + data.stage) : ("Stage " + (data.stage || "")));
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:804  subEl.textContent = (data.schoolClass ? ("Class " + data.schoolClass + " ‚Ä¢ Stage " + data.stage) : ("Stage " + (data.stage || ""))) + " ‚Ä¢ Classic = Standard ‚Ä¢ Spacious = Supported";
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:806  subEl.textContent = "Stage " + (data.stage || "");
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:1222  // ---------- Stage-tuned vocab suggestions (words + collocations + phrasal verbs) ----------
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:1236  function scoreWord(stage, w){
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:1242  // Simple ‚Äúinterestingness‚Äù score that adapts by Stage.
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:1244  var stg = Number(stage || 3);
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:1281  function suggestForStage(stage, text){
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:1290  return { w:w, c:freq[w], s: scoreWord(stage, w) };
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:1298  var stg = Number(stage || 3);
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:1317  var s = suggestForStage(Number(data.stage || 3), text);
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:1712  stage: Stage;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:1762  text: `${args.title} ‚Ä¢ ${classLabel(args.schoolClass)} ‚Ä¢ ${stageLabel(args.stage)} ‚Ä¢ Student Sheet (${SUPPORTED ? "B" : "A"})`,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:1825  stage: Stage;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:1862  children: [new TextRun({ text: `${args.title} ‚Ä¢ ${classLabel(args.schoolClass)} ‚Ä¢ ${stageLabel(args.stage)} ‚Ä¢ Teacher Key`, bold: true, size: 22, font: "Calibri" })],
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:1979  stage: Stage;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:2024  doc.text(pdfSafe(`${args.title} - ${classLabel(args.schoolClass)} - ${stageLabel(args.stage)} - Student Sheet (${args.mode === "SUPPORTED" ? "B" : "A"})`), margin, y);
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:2122  stage: Stage;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:2158  doc.text(`${args.title} ‚Ä¢ ${classLabel(args.schoolClass)} ‚Ä¢ ${stageLabel(args.stage)}`, margin, y);
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:2233  const [stageManual, setStageManual] = useState<Stage>(4);
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:2236  const stage = stageMode === "auto" ? stageAuto : stageManual;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:2289  stage,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:2306  forStage: Stage = stage,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:2347  stage,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:2369  stage,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:2376  `aontas10-reading-${slugify(title)}-class${schoolClass}-stage${stage}-deluxe.html`
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:2382  const tag = `class${schoolClass}-stage${stage}`;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:2387  stage,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:2395  stage,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:2406  const tag = `class${schoolClass}-stage${stage}`;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:2411  stage,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:2421  const tag = `class${schoolClass}-stage${stage}`;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:2426  stage,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:2434  stage,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:2445  const tag = `class${schoolClass}-stage${stage}`;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:2450  stage,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:2501  <span className="text-xs text-slate-300">Stage</span>
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:2510  setStageManual(Number(v) as Stage);
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:2636  onClick={() => applyExercisePreset(stage, questionFocus)}
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:2640  Apply recommended (based on Class/Stage)
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak:2674  onClick={() => setSelectedBlocks(defaultBlocksFor(stage, questionFocus))}
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:33  type Stage = 1 | 2 | 3 | 4;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:36  // Stage 1 (Infants) is included for future-proofing, even though the UI starts at Class 1.
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:38  const STAGES: Stage[] = [1, 2, 3, 4];
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:40  function stageFromClass(c: SchoolClass): Stage {
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:50  function stageLabel(s: Stage) {
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:51  return `Stage ${s}`;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:163  hint: "Tighter distractors, inference, and summary selection (level-appropriate).",
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:167  function defaultBlocksFor(stage: Stage, focus: QuestionFocus): ExerciseBlockId[] {
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:168  const low = stage <= 2;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:169  const high = stage >= 4;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:380  stage: Stage;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:388  stage: args.stage,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:749  subEl.textContent = (data.schoolClass ? ("Class " + data.schoolClass + " ï Stage " + data.stage) : ("Stage " + (data.stage || "")));
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:804  subEl.textContent = (data.schoolClass ? ("Class " + data.schoolClass + " ï Stage " + data.stage) : ("Stage " + (data.stage || ""))) + " ï Classic = Standard ï Spacious = Supported";
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:806  subEl.textContent = "Stage " + (data.stage || "");
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:1222  // ---------- Stage-tuned vocab suggestions (words + collocations + phrasal verbs) ----------
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:1236  function scoreWord(stage, w){
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:1242  // Simple "interestingness" score that adapts by Stage.
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:1244  var stg = Number(stage || 3);
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:1281  function suggestForStage(stage, text){
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:1290  return { w:w, c:freq[w], s: scoreWord(stage, w) };
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:1298  var stg = Number(stage || 3);
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:1317  var s = suggestForStage(Number(data.stage || 3), text);
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:1712  stage: Stage;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:1762  text: `${args.title} ï ${classLabel(args.schoolClass)} ï ${stageLabel(args.stage)} ï Student Sheet (${SUPPORTED ? "B" : "A"})`,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:1825  stage: Stage;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:1862  children: [new TextRun({ text: `${args.title} ï ${classLabel(args.schoolClass)} ï ${stageLabel(args.stage)} ï Teacher Key`, bold: true, size: 22, font: "Calibri" })],
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:1979  stage: Stage;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:2024  doc.text(pdfSafe(`${args.title} - ${classLabel(args.schoolClass)} - ${stageLabel(args.stage)} - Student Sheet (${args.mode === "SUPPORTED" ? "B" : "A"})`), margin, y);
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:2122  stage: Stage;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:2158  doc.text(`${args.title} ï ${classLabel(args.schoolClass)} ï ${stageLabel(args.stage)}`, margin, y);
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:2233  const [stageManual, setStageManual] = useState<Stage>(4);
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:2236  const stage = stageMode === "auto" ? stageAuto : stageManual;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:2289  stage,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:2306  forStage: Stage = stage,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:2347  stage,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:2369  stage,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:2376  `aontas10-reading-${slugify(title)}-class${schoolClass}-stage${stage}-deluxe.html`
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:2382  const tag = `class${schoolClass}-stage${stage}`;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:2387  stage,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:2395  stage,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:2406  const tag = `class${schoolClass}-stage${stage}`;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:2411  stage,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:2421  const tag = `class${schoolClass}-stage${stage}`;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:2426  stage,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:2434  stage,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:2445  const tag = `class${schoolClass}-stage${stage}`;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:2450  stage,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:2501  <span className="text-xs text-slate-300">Stage</span>
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:2510  setStageManual(Number(v) as Stage);
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:2636  onClick={() => applyExercisePreset(stage, questionFocus)}
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:2640  Apply recommended (based on Class/Stage)
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak-20260110-192348:2674  onClick={() => setSelectedBlocks(defaultBlocksFor(stage, questionFocus))}
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak2:36  type Stage = 1 | 2 | 3 | 4;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak2:39  // Stage 1 (Infants) is included for future-proofing, even though the UI starts at Class 1.
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak2:41  const STAGES: Stage[] = [1, 2, 3, 4];
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak2:43  function stageFromClass(c: SchoolClass): Stage {
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak2:52  function stageLabel(s: Stage) {
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak2:53  return "Stage " + s;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak2:107  const LEVEL_RANK: Record<Level, number> = {
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak2:116  function levelAtMost(level: Level, max: Level) {
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak2:117  return LEVEL_RANK[level] <= LEVEL_RANK[max];
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak2:119  function levelAtLeast(level: Level, min: Level) {
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak2:120  return LEVEL_RANK[level] >= LEVEL_RANK[min];
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak2:177  hint: "Tighter distractors, inference, and summary selection (level-appropriate).",
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak2:181  function defaultBlocksFor(level: Level, focus: QuestionFocus): ExerciseBlockId[] {
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak2:183  return levelAtMost(level, "A2")
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak2:194  return levelAtLeast(level, "B2")
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak2:199  return levelAtMost(level, "A2")
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak2:390  stage: Stage;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak2:398  stage: args.stage,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak2:759  subEl.textContent = "Class " + (data.schoolClass || "?") + " ‚Ä¢ Stage " + (data.stage || "?");
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak2:813  var base = "Class " + (data.schoolClass || "?") + " ‚Ä¢ Stage " + (data.stage || "?");
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak2:1247  function scoreWord(stage, w){
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak2:1252  stage = parseInt(stage||"3",10) || 3;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak2:1253  if(stage <= 1) return -Math.abs(L-5) + (rare*0.5);
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak2:1254  if(stage === 2) return -Math.abs(L-6) + (rare*0.7);
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak2:1255  if(stage === 3) return base;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak2:1286  function suggestForStage(stage, text){
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak2:1295  return { w:w, c:freq[w], s: scoreWord(stage, w) };
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak2:1303  var st = parseInt(stage||"3",10) || 3;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak2:1322  var s = suggestForStage(String(data.stage || "3"), text);
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak2:1717  stage: Stage;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak2:1767  text: `${args.title} ‚Ä¢ ${classLabel(args.schoolClass)} ‚Ä¢ ${stageLabel(args.stage)} ‚Ä¢ Student Sheet (${adapted ? "B" : "A"})`,
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak2:1830  stage: Stage;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak2:1867  children: [new TextRun({ text: `${args.title} ‚Ä¢ ${classLabel(args.schoolClass)} ‚Ä¢ ${stageLabel(args.stage)} ‚Ä¢ Teacher Key`, bold: true, size: 22, font: "Calibri" })],
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak2:1988  stage: Stage;
+C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl\app\_features\reading\ReadingPackApp.tsx.bak2:2033  doc.text(pdfSafe(`${args.title} - ${classLabel(args.schoolClass)} - ${stageLabel(args.stage)} - Student Sheet (${args.mode === "adapted" ? "B" : "A"})`), margin, y);

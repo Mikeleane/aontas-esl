@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { parseCefrLevel, cefrToStageBand } from "../../../../lib/cefr";
 import path from "path";
 import fs from "fs/promises";
@@ -30,7 +30,7 @@ function safeId(raw: string) {
 function splitSentences(text: string): string[] {
   const t = String(text || "").replace(/\s+/g, " ").trim();
   if (!t) return [];
-  // Simple sentence split â€“ good enough for MVP
+  // Simple sentence split - good enough for MVP
   return t.split(/(?<=[.!?])\s+/).map((s) => s.trim()).filter(Boolean);
 }
 
@@ -82,11 +82,11 @@ function wrapEveryWord(sentence: string) {
 function buildDragTextParams(textField: string) {
   return {
     taskDescription:
-      "<p><strong>Drag the words into the correct order.</strong></p>\n<p>Tip: read the whole sentence first, then build it left â†’ right.</p>\n",
+      "<p><strong>Drag the words into the correct order.</strong></p>\n<p>Tip: read the whole sentence first, then build it left → right.</p>\n",
     overallFeedback: [
-      { from: 0, to: 50, feedback: "Have another go â€” focus on the first word and punctuation clues." },
+      { from: 0, to: 50, feedback: "Have another go - focus on the first word and punctuation clues." },
       { from: 51, to: 85, feedback: "Nearly there. Check word order and small grammar words." },
-      { from: 86, to: 100, feedback: "Excellent â€” clean word order!" },
+      { from: 86, to: 100, feedback: "Excellent - clean word order!" },
     ],
     checkAnswer: "Check",
     tryAgain: "Try again",
@@ -183,7 +183,7 @@ const stage = Number.isFinite(Number(body.stage)) ? Number(body.stage) : cefrToS
       return NextResponse.json({ error: `H5P id already exists: ${id}` }, { status: 409 });
     }
 
-    // Copy template â†’ new folder
+    // Copy template → new folder
     await fs.cp(templateDir, outDir, { recursive: true });
 
     // Build content from reading text
@@ -218,7 +218,7 @@ const stage = Number.isFinite(Number(body.stage)) ? Number(body.stage) : cefrToS
       library: libraryString,
       params,
       metadata: {
-        title: `${baseTitle} â€” Word order`,
+        title: `${baseTitle} - Word order`,
         license: "U",
         defaultLanguage: "en",
       },
@@ -232,7 +232,7 @@ const stage = Number.isFinite(Number(body.stage)) ? Number(body.stage) : cefrToS
     );
 
     const h5pJson = {
-      title: `${baseTitle} â€” Word order`,
+      title: `${baseTitle} - Word order`,
       language: "en",
       mainLibrary,
       embedTypes: ["div"],
