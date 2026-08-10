@@ -70,7 +70,8 @@ assert.match(h5pRoute, /path\.join\(process\.cwd\(\),\s*"public",\s*"h5p"\)/, "H
 
 const adaptRoute = read("app/api/adapt/route.ts");
 assert.match(adaptRoute, /ALLOW_DEGRADED_FALLBACK/, "Adapt fallback must be explicit opt-in");
-assert.match(adaptRoute, /buildCambridgeConstraints/, "Adapt must apply CEFR/text-type constraints");
+assert.match(adaptRoute, /buildCefrConstraints/, "Adapt must apply canonical CEFR/text-type constraints");
+assert.doesNotMatch(adaptRoute, /cefrCambridge/, "Adapt must not depend on the deprecated CEFR module");
 
 const exerciseRoute = read("app/api/exercises/route.ts");
 const systemSourceSection = exerciseRoute.match(/cambridgeBlock\s*=\s*`([\s\S]*?)`\.trim\(\)/)?.[1] || "";

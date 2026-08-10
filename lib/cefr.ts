@@ -200,23 +200,3 @@ export function buildCefrConstraints(level: CefrLevel, type: TextType): string {
 // Compatibility aliases for older imports. New code should use the canonical names above.
 export const buildCambridgeConstraints = buildCefrConstraints;
 export const cambridgeTextTypeSpec = textTypeSpec;
-
-export function cefrToStageBand(level: CefrLevel): number {
-  switch (level) {
-    case "A1": return 1;
-    case "A2": return 2;
-    case "B1": return 3;
-    case "B2": return 4;
-    case "C1": return 5;
-    case "C2": return 6;
-  }
-}
-
-export function stageBandToCefr(stage: number): CefrLevel {
-  if (stage <= 1) return "A1";
-  if (stage === 2) return "A2";
-  if (stage === 3) return "B1";
-  if (stage === 4) return "B2";
-  if (stage === 5) return "C1";
-  return "C2";
-}

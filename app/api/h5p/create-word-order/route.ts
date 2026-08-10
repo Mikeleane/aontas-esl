@@ -1,22 +1,49 @@
 import { NextResponse } from "next/server";
-import { parseCefrLevel, cefrToStageBand } from "../../../../lib/cefr";
 import path from "path";
 import fs from "fs/promises";
 import { existsSync } from "fs";
+import { parseCefrLevel, type CefrLevel } from "@/lib/cefr";
+import { asRecord, enforceRateLimit, firstString, jsonError, readJsonObject } from "@/lib/server/apiResponse";
 
-type Body = {
-  title?: string;
-  stage?: number | string;
+const MAX_READING_CHARS = 50_000;
 
-  // ✅ add these
-  level?: string;
-  cefrLevel?: string;
-
-  // ✅ prevents future “Property X does not exist on type Body” build failures
-  [key: string]: any;
+type CreateWordOrderRequest = {
+  title: string;
+  id: string;
+  readingText: string;
+  cefrLevel: CefrLevel;
 };
-function slugify(s: string) {
-  return (s || "")
+
+type Dependency = {
+  machineName: string;
+  majorVersion: number;
+  minorVersion: number;
+};
+
+const SENTENCE_WORD_RANGES: Record<CefrLevel, { min: number; max: number }> = {
+  A1: { min: 3, max: 8 },
+  A2: { min: 4, max: 10 },
+  B1: { min: 6, max: 12 },
+  B2: { min: 7, max: 15 },
+  C1: { min: 8, max: 18 },
+  C2: { min: 8, max: 20 },
+};
+
+function normalizeRequest(body: Record<string, unknown>): CreateWordOrderRequest | null {
+  const readingText = firstString(body.readingText, body.text, body.sourceText);
+  if (!readingText) return null;
+
+  const title = firstString(body.title) || "Word order";
+  return {
+    readingText,
+    title,
+    id: firstString(body.id),
+    cefrLevel: parseCefrLevel(body.cefrLevel ?? body.level ?? "B1"),
+  };
+}
+
+function slugify(value: string) {
+  return value
     .toLowerCase()
     .trim()
     .replace(/['"]/g, "")
@@ -32,61 +59,47 @@ function safeId(raw: string) {
 }
 
 function splitSentences(text: string): string[] {
-  const t = String(text || "").replace(/\s+/g, " ").trim();
-  if (!t) return [];
-  // Simple sentence split - good enough for MVP
-  return t.split(/(?<=[.!?])\s+/).map((s) => s.trim()).filter(Boolean);
+  const normalized = text.replace(/\s+/g, " ").trim();
+  if (!normalized) return [];
+  return normalized.split(/(?<=[.!?])\s+/).map((sentence) => sentence.trim()).filter(Boolean);
 }
 
-function countWords(s: string) {
-  // Unicode-safe: letters + combining marks + numbers + apostrophe
-  // \u0027 is a plain apostrophe (')
-  const m = String(s || "").match(/[\p{L}\p{M}\p{N}\u0027]+/gu);
-  return m ? m.length : 0;
+function countWords(sentence: string) {
+  const matches = sentence.match(/[\p{L}\p{M}\p{N}\u0027]+/gu);
+  return matches ? matches.length : 0;
 }
 
-function pickSentences(text: string, stage: number, max = 8): string[] {
-  const sents = splitSentences(text);
+function pickSentences(text: string, cefrLevel: CefrLevel, max = 8): string[] {
+  const sentences = splitSentences(text);
+  const range = SENTENCE_WORD_RANGES[cefrLevel];
 
-  // Stage-based difficulty heuristics
-  const st = Number.isFinite(stage) ? stage : 3;
-  const minW = st <= 2 ? 4 : st === 3 ? 6 : 7;
-  const maxW = st <= 2 ? 8 : st === 3 ? 12 : 16;
-
-  const filtered = sents.filter((s) => {
-    const w = countWords(s);
-    if (w < minW || w > maxW) return false;
-    // avoid super-short fragments or weird punctuation-only lines
-    if (!/[\p{L}\p{M}]/u.test(s)) return false;
-    return true;
+  const filtered = sentences.filter((sentence) => {
+    const words = countWords(sentence);
+    if (words < range.min || words > range.max) return false;
+    return /[\p{L}\p{M}]/u.test(sentence);
   });
 
-  // Fallback: if nothing fits, just take whatever we have
-  const pool = filtered.length ? filtered : sents;
-
-  // Deduplicate-ish (case-insensitive)
+  const pool = filtered.length ? filtered : sentences;
   const seen = new Set<string>();
-  const out: string[] = [];
-  for (const s of pool) {
-    const key = s.toLowerCase();
+  const chosen: string[] = [];
+  for (const sentence of pool) {
+    const key = sentence.toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
-    out.push(s);
-    if (out.length >= max) break;
+    chosen.push(sentence);
+    if (chosen.length >= max) break;
   }
-  return out;
+  return chosen;
 }
 
 function wrapEveryWord(sentence: string) {
-  // Wrap word tokens in *...* so DragText makes them draggable+blank.
-  // Keep punctuation outside.
   return sentence.replace(/([\p{L}\p{M}\p{N}\u0027]+)/gu, "*$1*");
 }
 
 function buildDragTextParams(textField: string) {
   return {
     taskDescription:
-      "<p><strong>Drag the words into the correct order.</strong></p>\n<p>Tip: read the whole sentence first, then build it left → right.</p>\n",
+      "<p><strong>Drag the words into the correct order.</strong></p>\n<p>Tip: read the whole sentence first, then build it left to right.</p>\n",
     overallFeedback: [
       { from: 0, to: 50, feedback: "Have another go - focus on the first word and punctuation clues." },
       { from: 51, to: 85, feedback: "Nearly there. Check word order and small grammar words." },
@@ -122,109 +135,103 @@ function buildDragTextParams(textField: string) {
   };
 }
 
-async function readJson(filePath: string) {
+async function readJsonObjectFile(filePath: string): Promise<Record<string, unknown>> {
   const raw = await fs.readFile(filePath, "utf8");
-  return JSON.parse(raw);
+  const parsed: unknown = JSON.parse(raw);
+  return asRecord(parsed) ?? {};
 }
 
-async function getDependenciesFromLibrariesDir(librariesDir: string) {
-  // Reads every */library.json under librariesDir and returns preloadedDependencies entries.
+async function getDependenciesFromLibrariesDir(librariesDir: string): Promise<Dependency[]> {
   const entries = await fs.readdir(librariesDir, { withFileTypes: true });
-  const deps: Array<{ machineName: string; majorVersion: number; minorVersion: number }> = [];
+  const dependencies: Dependency[] = [];
 
-  for (const ent of entries) {
-    if (!ent.isDirectory()) continue;
-    const libPath = path.join(librariesDir, ent.name, "library.json");
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    const libPath = path.join(librariesDir, entry.name, "library.json");
     if (!existsSync(libPath)) continue;
 
     try {
-      const j = await readJson(libPath);
-      const machineName = String(j.machineName || "").trim();
-      const majorVersion = Number(j.majorVersion);
-      const minorVersion = Number(j.minorVersion);
+      const json = await readJsonObjectFile(libPath);
+      const machineName = firstString(json.machineName);
+      const majorVersion = Number(json.majorVersion);
+      const minorVersion = Number(json.minorVersion);
       if (!machineName || !Number.isFinite(majorVersion) || !Number.isFinite(minorVersion)) continue;
-      deps.push({ machineName, majorVersion, minorVersion });
+      dependencies.push({ machineName, majorVersion, minorVersion });
     } catch {
-      // ignore broken library.json
+      // Ignore a broken optional library descriptor; the template validation below remains authoritative.
     }
   }
 
-  // Ensure stable ordering
-  deps.sort((a, b) => a.machineName.localeCompare(b.machineName));
-  return deps;
+  dependencies.sort((a, b) => a.machineName.localeCompare(b.machineName));
+  return dependencies;
 }
 
 export async function POST(req: Request) {
+  const rateLimited = enforceRateLimit(req, { bucket: "h5p-create-word-order", limit: 20 });
+  if (rateLimited) return rateLimited;
+
+  const body = await readJsonObject(req);
+  if (!body) return jsonError("Invalid JSON body.", 400, "INVALID_JSON");
+
+  const request = normalizeRequest(body);
+  if (!request) return jsonError("Missing readingText.", 400, "INVALID_REQUEST");
+  if (request.readingText.length > MAX_READING_CHARS) {
+    return jsonError("Reading text is too large. Please shorten it first.", 413, "SOURCE_TOO_LARGE");
+  }
+
   try {
-    const body = (await req.json()) as Body;
-
-    const readingText = String(body.readingText || "").trim();
-    if (!readingText) {
-      return NextResponse.json({ error: "Missing readingText" }, { status: 400 });
-    }
-
     const h5pRoot = process.env.H5P_ROOT || path.join(process.cwd(), "public", "h5p");
     const templateDir = path.join(h5pRoot, "_templates", "dragtext");
     const templateLibDir = path.join(templateDir, "libraries");
     if (!existsSync(templateDir) || !existsSync(templateLibDir)) {
-      return NextResponse.json(
-        {
-          error:
-            "Missing template at public/h5p/_templates/dragtext. It must include libraries/ and content/.",
-        },
-        { status: 400 }
+      return jsonError(
+        "Missing H5P DragText template. Expected public/h5p/_templates/dragtext with libraries/ and content/.",
+        503,
+        "H5P_TEMPLATE_MISSING"
       );
     }
 
-    const baseTitle = String(body.title || "Word order").trim() || "Word order";
-    const level = parseCefrLevel(body.cefrLevel ?? body.level ?? "B1");
-const stage = Number.isFinite(Number(body.stage)) ? Number(body.stage) : cefrToStageBand(level);
-
-    const id =
-      safeId(body.id || `${baseTitle}-word-order-${Date.now().toString(36)}`);
-
+    const generatedId = request.id || `${request.title}-word-order-${Date.now().toString(36)}`;
+    const id = safeId(generatedId);
     const writeRoot = process.env.H5P_WRITE_ROOT || h5pRoot;
     const outDir = path.join(writeRoot, id);
-    if (existsSync(outDir)) {
-      return NextResponse.json({ error: `H5P id already exists: ${id}` }, { status: 409 });
-    }
+    if (existsSync(outDir)) return jsonError(`H5P id already exists: ${id}`, 409, "H5P_ID_EXISTS");
 
-    // Copy template → new folder
     await fs.cp(templateDir, outDir, { recursive: true });
 
-    // Build content from reading text
-    const chosen = pickSentences(readingText, stage, 8);
+    const chosen = pickSentences(request.readingText, request.cefrLevel, 8);
+    if (!chosen.length) {
+      await fs.rm(outDir, { recursive: true, force: true }).catch(() => undefined);
+      return jsonError("No usable sentences were found in the supplied reading text.", 422, "NO_USABLE_SENTENCES");
+    }
+
     const textField = chosen.map(wrapEveryWord).join("\n\n");
     const params = buildDragTextParams(textField);
 
-    // Try to reuse template main library version if present
     const templateH5pJsonPath = path.join(templateDir, "h5p.json");
     let mainLibrary = "H5P.DragText";
     let libraryString = "H5P.DragText 1.8";
 
     if (existsSync(templateH5pJsonPath)) {
       try {
-        const tj = await readJson(templateH5pJsonPath);
-        if (tj?.mainLibrary) mainLibrary = String(tj.mainLibrary);
+        const templateJson = await readJsonObjectFile(templateH5pJsonPath);
+        mainLibrary = firstString(templateJson.mainLibrary) || mainLibrary;
       } catch {
-        // ignore
+        // Keep the known DragText default when optional template metadata cannot be read.
       }
     }
 
-    // Derive dependencies from libraries folder we copied
-    const deps = await getDependenciesFromLibrariesDir(path.join(outDir, "libraries"));
-
-    // If we can find the main library in deps, use its version for libraryString
-    const mainDep = deps.find((d) => d.machineName === mainLibrary);
-    if (mainDep) {
-      libraryString = `${mainLibrary} ${mainDep.majorVersion}.${mainDep.minorVersion}`;
+    const dependencies = await getDependenciesFromLibrariesDir(path.join(outDir, "libraries"));
+    const mainDependency = dependencies.find((dependency) => dependency.machineName === mainLibrary);
+    if (mainDependency) {
+      libraryString = `${mainLibrary} ${mainDependency.majorVersion}.${mainDependency.minorVersion}`;
     }
 
     const contentJson = {
       library: libraryString,
       params,
       metadata: {
-        title: `${baseTitle} - Word order`,
+        title: `${request.title} - Word order`,
         license: "U",
         defaultLanguage: "en",
       },
@@ -238,23 +245,22 @@ const stage = Number.isFinite(Number(body.stage)) ? Number(body.stage) : cefrToS
     );
 
     const h5pJson = {
-      title: `${baseTitle} - Word order`,
+      title: `${request.title} - Word order`,
       language: "en",
       mainLibrary,
       embedTypes: ["div"],
-      preloadedDependencies: deps,
+      preloadedDependencies: dependencies,
     };
-
     await fs.writeFile(path.join(outDir, "h5p.json"), JSON.stringify(h5pJson, null, 2), "utf8");
 
-    return NextResponse.json({ ok: true, id, sentencesUsed: chosen.length });
-  } catch (err: any) {
-    return NextResponse.json(
-      { error: err?.message || "Failed to create H5P" },
-      { status: 500 }
-    );
+    return NextResponse.json({
+      ok: true,
+      id,
+      cefrLevel: request.cefrLevel,
+      sentencesUsed: chosen.length,
+    });
+  } catch (error: unknown) {
+    console.error("H5P word-order creation failed", error instanceof Error ? error.message : error);
+    return jsonError("Failed to create H5P word-order activity.", 500, "H5P_CREATE_FAILED");
   }
 }
-
-
-
