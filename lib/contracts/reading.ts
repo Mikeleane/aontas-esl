@@ -1,24 +1,10 @@
-import { parseCefrLevel, parseTextType, type CefrLevel, type TextType } from "@/lib/cefr";
+import { parseCefrLevel, parseTextType } from "@/lib/cefr";
 import type { GenerationMeta, OutputVariant, VariantPair } from "@/lib/contracts/generation";
+import { normalizeExerciseItem, type ExerciseItem } from "@/lib/contracts/exercises";
 
 export type ReadingMode = OutputVariant;
 
-export type ExerciseSide = {
-  prompt: string;
-  options?: string[];
-};
-
-export type ExerciseAnswer = string | string[];
-
-export type ExerciseItem = {
-  id: string;
-  type: string;
-  skill?: string;
-  answer: ExerciseAnswer;
-  answerIndex?: number;
-  standard: ExerciseSide;
-  supported: ExerciseSide;
-};
+export type { ExerciseAnswer, ExerciseItem, ExerciseSide } from "@/lib/contracts/exercises";
 
 export type MaterialType = "link" | "text" | "image" | "pdf" | "docx" | "other";
 
@@ -83,37 +69,6 @@ function asStringArray(value: unknown): string[] | undefined {
   if (!Array.isArray(value)) return undefined;
   const out = value.map(asString).map((v) => v.trim()).filter(Boolean);
   return out.length ? out : undefined;
-}
-
-function normalizeSide(value: unknown, fallback: ExerciseSide = { prompt: "" }): ExerciseSide {
-  const obj = asRecord(value);
-  const prompt = asString(obj.prompt) || fallback.prompt;
-  const options = asStringArray(obj.options) ?? fallback.options;
-  return options ? { prompt, options } : { prompt };
-}
-
-function normalizeAnswer(value: unknown): ExerciseAnswer {
-  if (Array.isArray(value)) return value.map(asString).filter(Boolean);
-  if (typeof value === "string") return value;
-  if (value == null) return "";
-  return String(value);
-}
-
-function normalizeExercise(value: unknown, index: number): ExerciseItem {
-  const obj = asRecord(value);
-  const standardSeed = obj.standard ?? (typeof obj.prompt === "string" ? { prompt: obj.prompt, options: obj.options } : undefined);
-  const standard = normalizeSide(standardSeed);
-  const supported = normalizeSide(obj.supported ?? obj.SUPPORTED ?? obj.adapted, standard);
-  const answerIndex = Number(obj.answerIndex);
-  return {
-    id: asString(obj.id) || String(index + 1),
-    type: asString(obj.type) || "exercise",
-    skill: asOptionalString(obj.skill),
-    answer: normalizeAnswer(obj.answer),
-    ...(Number.isFinite(answerIndex) ? { answerIndex } : {}),
-    standard,
-    supported,
-  };
 }
 
 function normalizeMaterials(value: unknown): Material[] | undefined {
@@ -213,7 +168,7 @@ export function normalizeReadingPack(input: unknown): ReadingPackData {
       standard: standardReading,
       supported: supportedReading,
     },
-    exercises: rawExercises.map(normalizeExercise),
+    exercises: rawExercises.map(normalizeExerciseItem),
     ...(crest ? { crest } : {}),
     ...(materials ? { materials } : {}),
     ...(primaryMaterialId ? { primaryMaterialId } : {}),

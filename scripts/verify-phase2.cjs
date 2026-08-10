@@ -55,7 +55,7 @@ assert.match(generationContract, /\["standard",\s*"supported"\]/, "Canonical out
 const readingContract = read("lib/contracts/reading.ts");
 assert.match(readingContract, /schemaVersion:\s*2/, "Reading contract must be schema version 2");
 assert.match(readingContract, /reading:\s*VariantPair<string>/, "Reading contract must use the canonical variant pair");
-assert.match(readingContract, /obj\.supported \?\? obj\.SUPPORTED \?\? obj\.adapted/, "Legacy exercise aliases must be normalized at one boundary");
+assert.match(readingContract, /normalizeExerciseItem/, "Reading must reuse the canonical exercise normalizer");
 assert.match(readingContract, /readingObj\.supported[\s\S]*readingObj\.SUPPORTED[\s\S]*source\.adaptedText/, "Legacy reading aliases must be normalized at one boundary");
 
 const readingTypes = read("app/_features/reading/readingPackTypes.ts");
