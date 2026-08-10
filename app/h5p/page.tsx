@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 type H5PLibItem = {
   id: string;               // folder name under /public/h5p/<id>/
@@ -85,7 +85,7 @@ export default function H5PLibraryPage() {
   const [selectedId, setSelectedId] = useState<string>("");
   const [height, setHeight] = useState(640);
 
-  async function loadList() {
+  const loadList = useCallback(async () => {
     setLoading(true);
     setErr("");
 
@@ -109,12 +109,15 @@ export default function H5PLibraryPage() {
     }
 
     setLoading(false);
-  }
+  }, []);
 
   useEffect(() => {
-    loadList();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    const timer = window.setTimeout(() => {
+      void loadList();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [loadList]);
 
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 
 export type MaterialKind = "link" | "text" | "image" | "file";
 
@@ -70,9 +70,7 @@ type Props = {
 
 function uid() {
   // crypto.randomUUID is great, but fallback keeps us safe.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const c: any = globalThis as any;
-  return (c.crypto?.randomUUID?.() as string) || `m_${Math.random().toString(16).slice(2)}_${Date.now()}`;
+  return globalThis.crypto?.randomUUID?.() || `m_${Math.random().toString(16).slice(2)}_${Date.now()}`;
 }
 
 function humanSize(n?: number) {
@@ -143,12 +141,10 @@ export default function TeacherInputsPanel({ onGenerate }: Props) {
   const [useLocalContextExactly, setUseLocalContextExactly] = useState<boolean>(true);
   const [onlyUseProvidedFacts, setOnlyUseProvidedFacts] = useState<boolean>(true);
 
-  const active = useMemo(() => materials.find((m) => m.id === activeId) || null, [materials, activeId]);
-
-  // Auto-select first material
-  useEffect(() => {
-    if (!activeId && materials.length) setActiveId(materials[0].id);
-  }, [materials, activeId]);
+  const active = useMemo(
+    () => materials.find((m) => m.id === activeId) || materials[0] || null,
+    [materials, activeId]
+  );
 
   // Clipboard paste for screenshots/images
   const onPasteCapture = async (e: React.ClipboardEvent<HTMLDivElement>) => {
@@ -290,11 +286,6 @@ export default function TeacherInputsPanel({ onGenerate }: Props) {
     setActiveId(created[0].id);
 
     if (fileInputRef.current) fileInputRef.current.value = "";
-  };
-
-  const updateActive = (patch: Partial<TeacherMaterial>) => {
-    if (!active) return;
-    setMaterials((prev) => prev.map((m) => (m.id === active.id ? { ...m, ...patch } : m)));
   };
 
   const primary = useMemo(() => materials.find((m) => m.isPrimary) || null, [materials]);
@@ -549,10 +540,10 @@ export default function TeacherInputsPanel({ onGenerate }: Props) {
                 key={m.id}
                 onClick={() => setActiveId(m.id)}
                 style={{
-                  border: m.id === activeId ? "2px solid rgba(45,125,79,.6)" : "1px solid rgba(15,23,42,.12)",
+                  border: m.id === active?.id ? "2px solid rgba(45,125,79,.6)" : "1px solid rgba(15,23,42,.12)",
                   borderRadius: 14,
                   padding: 12,
-                  background: m.id === activeId ? "#f0fdf4" : "white",
+                  background: m.id === active?.id ? "#f0fdf4" : "white",
                   cursor: "pointer",
                 }}
               >
@@ -597,6 +588,8 @@ export default function TeacherInputsPanel({ onGenerate }: Props) {
 
                 {m.objectUrl && m.kind === "image" && (
                   <div style={{ marginTop: 10 }}>
+                    {/* Local object URLs are browser-only previews; Next image optimisation is not useful here. */}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={m.objectUrl}
                       alt={m.title}

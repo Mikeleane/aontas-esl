@@ -177,8 +177,8 @@ export async function fetchExternalText(
         text,
         status: response.status,
       };
-    } catch (error: any) {
-      if (error?.name === "AbortError") throw new Error("Remote request timed out.");
+    } catch (error: unknown) {
+      if (error instanceof DOMException && error.name === "AbortError") throw new Error("Remote request timed out.");
       if (error instanceof Error && !/^fetch failed$/i.test(error.message)) throw error;
       throw new Error("Could not fetch the remote URL.");
     } finally {

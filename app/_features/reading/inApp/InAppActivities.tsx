@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import type { ReadingMode, ReadingPackData } from "../readingPackTypes";
 import type { CefrLevel } from "@/lib/cefr";
 
@@ -540,84 +540,73 @@ function SyllableGameView(props: { games: SyllableGame[]; fontSizePx: number; vo
   );
 }
 
-function MorphologyGameView(props: { games: MorphGame[]; supported: boolean; fontSizePx: number; voice: VoiceChoice }) {
-  const [idx, setIdx] = useState(0);
-  const g = props.games[idx];
-  const [prefix, setPrefix] = useState("");
-  const [root, setRoot] = useState("");
-  const [suffix, setSuffix] = useState("");
+function MorphologyAttempt(props: { game: MorphGame; supported: boolean; fontSizePx: number }) {
+  const { game, supported, fontSizePx } = props;
+  const [prefix, setPrefix] = useState(supported ? game.split.prefix || "" : "");
+  const [root, setRoot] = useState(supported ? game.split.root || "" : "");
+  const [suffix, setSuffix] = useState(supported ? game.split.suffix || "" : "");
   const [msg, setMsg] = useState("");
-
-  useEffect(() => {
-    if (!g) return;
-    setPrefix("");
-    setRoot("");
-    setSuffix("");
-    setMsg("");
-    if (props.supported) {
-      // scaffold: prefill the likely split, but still requires noticing + discussion
-      setPrefix(g.split.prefix || "");
-      setRoot(g.split.root || "");
-      setSuffix(g.split.suffix || "");
-    }
-  }, [g, props.supported]);
-
-  if (!g) return null;
 
   function check() {
     const correct =
-      String(prefix || "").toLowerCase() === String(g.split.prefix || "").toLowerCase() &&
-      String(root || "").toLowerCase() === String(g.split.root || "").toLowerCase() &&
-      String(suffix || "").toLowerCase() === String(g.split.suffix || "").toLowerCase();
+      prefix.toLowerCase() === String(game.split.prefix || "").toLowerCase() &&
+      root.toLowerCase() === String(game.split.root || "").toLowerCase() &&
+      suffix.toLowerCase() === String(game.split.suffix || "").toLowerCase();
     setMsg(correct ? "✅ Looks good." : "Close - try adjusting prefix/root/suffix.");
   }
 
   return (
+    <div style={{ padding: 12, borderRadius: 16, border: "1px solid rgba(15,23,42,.14)", background: "#f8fafc" }}>
+      <div style={{ fontWeight: 1000, color: "#0f172a", fontSize: fontSizePx + 4 }}>{game.word}</div>
+      <div style={{ color: "#64748b", fontSize: 12, marginTop: 6 }}>
+        Identify <b>prefix</b>, <b>root</b>, <b>suffix</b>. (Not every word has all three - that's part of the fun.)
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginTop: 12 }}>
+        <label style={fieldStyle}>
+          <div style={fieldLabel}>Prefix</div>
+          <input value={prefix} onChange={(e) => setPrefix(e.target.value)} placeholder="(optional)" style={fieldInput} />
+        </label>
+        <label style={fieldStyle}>
+          <div style={fieldLabel}>Root</div>
+          <input value={root} onChange={(e) => setRoot(e.target.value)} placeholder="root" style={fieldInput} />
+        </label>
+        <label style={fieldStyle}>
+          <div style={fieldLabel}>Suffix</div>
+          <input value={suffix} onChange={(e) => setSuffix(e.target.value)} placeholder="(optional)" style={fieldInput} />
+        </label>
+      </div>
+
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+        <button type="button" onClick={check} style={miniBtnStyleStrong}>Check</button>
+        {msg && <div style={{ fontWeight: 1000, color: msg.startsWith("✅") ? "#16a34a" : "#b45309", paddingTop: 8 }}>{msg}</div>}
+      </div>
+
+      <div style={{ marginTop: 10, color: "#64748b", fontSize: 12 }}>
+        Supported scaffold: prefilled split to support discussion; same learning target.
+      </div>
+    </div>
+  );
+}
+
+function MorphologyGameView(props: { games: MorphGame[]; supported: boolean; fontSizePx: number; voice: VoiceChoice }) {
+  const [idx, setIdx] = useState(0);
+  const g = props.games[idx];
+  if (!g) return null;
+
+  return (
     <div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
-        <button type="button" onClick={() => setIdx((n) => Math.max(0, n - 1))} style={miniBtnStyle}>
-          Prev
-        </button>
-        <button type="button" onClick={() => setIdx((n) => Math.min(props.games.length - 1, n + 1))} style={miniBtnStyle}>
-          Next
-        </button>
-        <button type="button" onClick={() => speakText(g.word, props.voice, 0.95, 1)} style={miniBtnStyleStrong}>
-          🔊 Say word
-        </button>
+        <button type="button" onClick={() => setIdx((n) => Math.max(0, n - 1))} style={miniBtnStyle}>Prev</button>
+        <button type="button" onClick={() => setIdx((n) => Math.min(props.games.length - 1, n + 1))} style={miniBtnStyle}>Next</button>
+        <button type="button" onClick={() => speakText(g.word, props.voice, 0.95, 1)} style={miniBtnStyleStrong}>🔊 Say word</button>
       </div>
-
-      <div style={{ padding: 12, borderRadius: 16, border: "1px solid rgba(15,23,42,.14)", background: "#f8fafc" }}>
-        <div style={{ fontWeight: 1000, color: "#0f172a", fontSize: props.fontSizePx + 4 }}>{g.word}</div>
-        <div style={{ color: "#64748b", fontSize: 12, marginTop: 6 }}>
-          Identify <b>prefix</b>, <b>root</b>, <b>suffix</b>. (Not every word has all three - that's part of the fun.)
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginTop: 12 }}>
-          <label style={fieldStyle}>
-            <div style={fieldLabel}>Prefix</div>
-            <input value={prefix} onChange={(e) => setPrefix(e.target.value)} placeholder="(optional)" style={fieldInput} />
-          </label>
-          <label style={fieldStyle}>
-            <div style={fieldLabel}>Root</div>
-            <input value={root} onChange={(e) => setRoot(e.target.value)} placeholder="root" style={fieldInput} />
-          </label>
-          <label style={fieldStyle}>
-            <div style={fieldLabel}>Suffix</div>
-            <input value={suffix} onChange={(e) => setSuffix(e.target.value)} placeholder="(optional)" style={fieldInput} />
-          </label>
-        </div>
-
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
-          <button type="button" onClick={check} style={miniBtnStyleStrong}>
-            Check
-          </button>
-          {msg && <div style={{ fontWeight: 1000, color: msg.startsWith("✅") ? "#16a34a" : "#b45309", paddingTop: 8 }}>{msg}</div>}
-        </div>
-
-        <div style={{ marginTop: 10, color: "#64748b", fontSize: 12 }}>
-          Supported scaffold: prefilled split to support discussion; same learning target.
-        </div>
-      </div>
+      <MorphologyAttempt
+        key={`${g.id}:${props.supported ? "supported" : "standard"}`}
+        game={g}
+        supported={props.supported}
+        fontSizePx={props.fontSizePx}
+      />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import CefrTextTypeControls from "@/app/_components/CefrTextTypeControls";
 import { parseCefrLevel, parseTextType, type CefrLevel, type TextType } from "@/lib/cefr";
@@ -195,7 +196,7 @@ export default function WordinessHubPage() {
     <main className={styles.page}>
       <div className={styles.shell}>
         <header className={styles.header}>
-          <img className={styles.mark} src="/wordiness/aontas-esl-mark.svg" alt="Aontas ESL" />
+          <Image className={styles.mark} src="/wordiness/aontas-esl-mark.svg" alt="Aontas ESL" width={54} height={54} priority />
           <div>
             <a className={styles.back} href="/pack">← Reading Studio</a>
             <h1 className={styles.title}>Wordiness Hub</h1>

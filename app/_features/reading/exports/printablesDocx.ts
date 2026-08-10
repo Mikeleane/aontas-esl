@@ -4,7 +4,7 @@ import { splitParas } from "./printablesHtml";
 
 type DocxOpts = { mode: ReadingMode; includeAnswers: boolean };
 
-function norm(v: any) {
+function norm(v: unknown) {
   return v == null ? "" : String(v);
 }
 

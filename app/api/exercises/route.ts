@@ -260,7 +260,6 @@ function fallbackExercises(args: {
 
   if (wants.has("true_false")) {
     const w1 = sharedWords[0] || "the topic";
-    const w2 = sharedWords[1] || "a detail";
     items.push({
       id: String(id++),
       type: "trueFalse",

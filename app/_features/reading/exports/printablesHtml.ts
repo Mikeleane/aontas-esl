@@ -48,7 +48,7 @@ function escapeHtmlInline(s: string) {
   return (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-function norm(v: any) {
+function norm(v: unknown) {
   return v == null ? "" : String(v);
 }
 

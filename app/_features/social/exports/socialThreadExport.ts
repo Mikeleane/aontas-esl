@@ -317,7 +317,7 @@ export async function exportSocialThreadHtml(opts: ExportOpts): Promise<void> {
       <label>Variant:
         <select id="variantSel">
           <option value="standard">Standard</option>
-          <option value="adapted">Adapted</option>
+          <option value="supported">Supported</option>
         </select>
       </label>
 

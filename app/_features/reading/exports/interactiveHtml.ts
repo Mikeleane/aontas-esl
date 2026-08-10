@@ -1,4 +1,4 @@
-import type { ReadingPackData, ReadingMode } from "../readingPackTypes";
+import type { ReadingPackData } from "../readingPackTypes";
 
 function escHtml(s: string) {
   return String(s || "")
@@ -8,7 +8,7 @@ function escHtml(s: string) {
     .replace(/"/g, "&quot;");
 }
 
-function safeJson(obj: any) {
+function safeJson(obj: unknown) {
   // prevent </script> breakouts
   return JSON.stringify(obj).replace(/</g, "\\u003c");
 }
@@ -668,7 +668,7 @@ export function buildInteractiveHtml(pack: ReadingPackData): string {
     const txt = allReadingText();
     if(!txt) return "";
     const sentences = txt.split(/(?<=[.!?])\\s+/);
-    
+
  function escRe(str){
    return String(str||"").replace(/[.*+?^{}()|[\\]\\\\$]/g,"\\\\$&");
  }

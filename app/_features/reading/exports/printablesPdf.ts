@@ -1,10 +1,10 @@
-import { PDFDocument, StandardFonts } from "pdf-lib";
+import { PDFDocument, StandardFonts, type PDFFont, type PDFImage } from "pdf-lib";
 import type { ExerciseItem, ReadingMode, ReadingPackData } from "../readingPackTypes";
 import { splitParas } from "./printablesHtml";
 
 type PdfOpts = { mode: ReadingMode; includeAnswers: boolean };
 
-function norm(v: any) {
+function norm(v: unknown) {
   return v == null ? "" : String(v);
 }
 
@@ -52,7 +52,7 @@ function dataUrlToBytes(dataUrl: string): Uint8Array | null {
   }
 }
 
-function wrapLines(text: string, font: any, fontSize: number, maxWidth: number): string[] {
+function wrapLines(text: string, font: PDFFont, fontSize: number, maxWidth: number): string[] {
   const words = (text || "").split(/\s+/).filter(Boolean);
   if (!words.length) return [""];
   const lines: string[] = [];
@@ -108,7 +108,7 @@ export async function buildPrintablesPdfBytes(pack: ReadingPackData, opts: PdfOp
       const bytes = dataUrlToBytes(pack.crest);
       if (bytes) {
         // Try PNG first, then JPG
-        let img: any = null;
+        let img: PDFImage;
         try {
           img = await pdf.embedPng(bytes);
         } catch {

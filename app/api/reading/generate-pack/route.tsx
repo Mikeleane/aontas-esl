@@ -79,7 +79,6 @@ type GeneratePackBody = {
  * The current /app/page.tsx sends TeacherRequest:
  * { meta: {...}, alignment: {...}, material: {...} }
  */
-type InputKind = "link" | "text" | "paste" | "upload";
 type MaterialInput =
   | { kind: "link"; url: string }
   | { kind: "text"; text: string }
@@ -104,6 +103,12 @@ type TeacherRequest = {
 };
 
 /* ---------------- Helpers ---------------- */
+
+type UnknownRecord = Record<string, unknown>;
+
+function asRecord(value: unknown): UnknownRecord {
+  return value && typeof value === "object" ? value as UnknownRecord : {};
+}
 
 function stripHtmlToText(html: string) {
   return (
@@ -154,27 +159,25 @@ function clamp(n: number, lo: number, hi: number) {
  * - response.output_text sometimes exists
  * - otherwise, you must walk response.output[].content[].text
  */
-function extractResponsesText(resp: any): string {
-  const t = typeof resp?.output_text === "string" ? resp.output_text : "";
-  if (t && t.trim()) return t;
+function extractResponsesText(resp: unknown): string {
+  const root = asRecord(resp);
+  const outputText = typeof root.output_text === "string" ? root.output_text : "";
+  if (outputText.trim()) return outputText;
 
-  const out = resp?.output;
-  if (Array.isArray(out)) {
+  if (Array.isArray(root.output)) {
     const chunks: string[] = [];
-    for (const item of out) {
-      const content = item?.content;
-      if (!Array.isArray(content)) continue;
-      for (const c of content) {
-        if (typeof c?.text === "string" && c.text.trim()) chunks.push(c.text);
-        // Some variants use output_text keys per content item
-        if (typeof c?.output_text === "string" && c.output_text.trim()) chunks.push(c.output_text);
+    for (const rawItem of root.output) {
+      const item = asRecord(rawItem);
+      if (!Array.isArray(item.content)) continue;
+      for (const rawContent of item.content) {
+        const content = asRecord(rawContent);
+        if (typeof content.text === "string" && content.text.trim()) chunks.push(content.text);
+        if (typeof content.output_text === "string" && content.output_text.trim()) chunks.push(content.output_text);
       }
     }
-    const joined = chunks.join("\n").trim();
-    if (joined) return joined;
+    return chunks.join("\n").trim();
   }
 
-  // last resort
   return "";
 }
 
@@ -209,21 +212,25 @@ function findFirstJsonObject(s: string): string | null {
   return null;
 }
 
-function normalizeTeacherRequest(body: any): GeneratePackBody {
-  // If it already looks like GeneratePackBody, keep it.
-  if (body && (body.primaryText || body.primaryImageDataUrl || body.materials || body.primaryUrl)) {
-    return body as GeneratePackBody;
+function normalizeTeacherRequest(body: unknown): GeneratePackBody {
+  const candidate = asRecord(body);
+
+  // Canonical request. Legacy level/stage aliases are normalized once here so
+  // the generation path below only consumes cefrLevel.
+  if (candidate.primaryText || candidate.primaryImageDataUrl || candidate.materials || candidate.primaryUrl) {
+    const request = body as GeneratePackBody;
+    return {
+      ...request,
+      cefrLevel: request.cefrLevel ?? request.level ?? parseCefrLevel(request.stage ?? "B1"),
+    };
   }
 
-  // Otherwise treat it as TeacherRequest (page.tsx format)
+  // Compatibility boundary for the older TeacherRequest shape.
   const tr = body as TeacherRequest;
-
-  const stage = clamp(Number(tr?.meta?.stage ?? 3), 1, 4);
-
+  const legacyStage = clamp(Number(tr?.meta?.stage ?? 3), 1, 4);
   const title = (tr?.meta?.titleHint || "").trim() || "Reading Pack";
   const pilotMode = !!tr?.meta?.pilotMode;
 
-  // Light teacher context from alignment (kept permissive)
   const teacherContext: TeacherContext = {
     contextTags: [],
     crossCurricularLinks: [],
@@ -238,7 +245,6 @@ function normalizeTeacherRequest(body: any): GeneratePackBody {
   const purpose = Array.isArray(tr?.alignment?.purpose) ? tr?.alignment?.purpose.join(", ") : "";
   const supports = Array.isArray(tr?.alignment?.supports) ? tr?.alignment?.supports.join(", ") : "";
 
-  // Map their material into our canonical fields
   const mat = tr?.material;
   let primaryText = "";
   let primaryUrl = "";
@@ -249,32 +255,20 @@ function normalizeTeacherRequest(body: any): GeneratePackBody {
   } else if (mat?.kind === "link") {
     primaryUrl = String(mat.url || "").trim();
   } else if (mat?.kind === "paste") {
-    // paste tab is image-only
     primaryImageDataUrl = String(mat.dataUrl || "").trim();
   } else if (mat?.kind === "upload") {
     const mime = String(mat.mime || "");
     const dataUrl = String(mat.dataUrl || "").trim();
     if (mime.startsWith("image/")) primaryImageDataUrl = dataUrl;
-    else {
-      // PDF/DOCX parsing not implemented here yet
-      // Force teacher to paste text or screenshot for MVP stability.
-      primaryText = "";
-      primaryUrl = "";
-      primaryImageDataUrl = "";
-    }
   }
 
   return {
     title,
-    cefrLevel: parseCefrLevel(stage),
+    cefrLevel: parseCefrLevel(legacyStage),
     pilotMode,
-
-    // Curriculum "hints"
     genre: textType || undefined,
     purpose: [purpose, supports].filter(Boolean).join(" • ") || undefined,
-
     teacherContext,
-
     primaryText: primaryText || undefined,
     primaryUrl: primaryUrl || undefined,
     primaryImageDataUrl: primaryImageDataUrl || undefined,
@@ -449,7 +443,7 @@ function buildJsonSchema() {
 /* ---------------- Prompts ---------------- */
 
 function buildSystemPrompt(body: GeneratePackBody) {
-  const cefrLevel = parseCefrLevel(body.cefrLevel ?? body.level ?? body.stage ?? "B1");
+  const cefrLevel = parseCefrLevel(body.cefrLevel ?? body.level ?? "B1");
   const textType = parseTextType(body.textType ?? body.genre ?? "article");
   const targets = getWordTarget(cefrLevel, textType);
   const tc = body.teacherContext;
@@ -505,7 +499,7 @@ function buildSystemPrompt(body: GeneratePackBody) {
 }
 
 function buildUserInstruction(body: GeneratePackBody, primaryTextHint: string) {
-  const cefrLevel = parseCefrLevel(body.cefrLevel ?? body.level ?? body.stage ?? "B1");
+  const cefrLevel = parseCefrLevel(body.cefrLevel ?? body.level ?? "B1");
   const textType = parseTextType(body.textType ?? body.genre ?? "article");
   const targets = getWordTarget(cefrLevel, textType);
 
@@ -529,7 +523,7 @@ function buildUserInstruction(body: GeneratePackBody, primaryTextHint: string) {
 
 /* ---------------- OpenAI call ---------------- */
 
-async function callOpenAIResponses(payload: any) {
+async function callOpenAIResponses(payload: Record<string, unknown>): Promise<unknown> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error("Missing OPENAI_API_KEY in environment.");
 
@@ -593,7 +587,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Source text is too large. Please shorten it before generating." }, { status: 413 });
     }
 
-    const cefrLevel = parseCefrLevel(body.cefrLevel ?? body.level ?? body.stage ?? "B1");
+    const cefrLevel = parseCefrLevel(body.cefrLevel ?? body.level ?? "B1");
     const textType = parseTextType(body.textType ?? body.genre ?? "article");
 
     if (primaryImageDataUrl) {
@@ -630,7 +624,10 @@ export async function POST(req: Request) {
     const userInstruction = buildUserInstruction(body, primaryTextHint);
 
     // Multimodal user content: include image if present (data URL supported)
-    const userContent: Array<any> = [{ type: "input_text", text: userInstruction }];
+    type UserContentPart =
+      | { type: "input_text"; text: string }
+      | { type: "input_image"; image_url: string };
+    const userContent: UserContentPart[] = [{ type: "input_text", text: userInstruction }];
 
     if (primaryImageDataUrl) {
       userContent.push({
@@ -671,7 +668,7 @@ export async function POST(req: Request) {
       );
     }
 
-    let pack: any;
+    let pack: unknown;
     try {
       pack = JSON.parse(outText);
     } catch {
@@ -703,22 +700,23 @@ export async function POST(req: Request) {
       }
     }
 
+    const packRecord = asRecord(pack);
     const normalizedPack = normalizeReadingPack({
-      ...pack,
+      ...packRecord,
       schemaVersion: 2,
-      title: String(pack.title || body.title || "Reading Pack"),
+      title: String(packRecord.title || body.title || "Reading Pack"),
       cefrLevel,
       textType,
-      teacherContext: pack.teacherContext ?? body.teacherContext ?? undefined,
-      materials: pack.materials ?? body.materials ?? undefined,
-      primaryMaterialId: pack.primaryMaterialId ?? body.primaryMaterialId ?? undefined,
+      teacherContext: packRecord.teacherContext ?? body.teacherContext ?? undefined,
+      materials: packRecord.materials ?? body.materials ?? undefined,
+      primaryMaterialId: packRecord.primaryMaterialId ?? body.primaryMaterialId ?? undefined,
       pilotMode: body.pilotMode,
     });
 
     return NextResponse.json({ pack: normalizedPack });
-  } catch (e: any) {
-    const msg = typeof e?.message === "string" ? e.message : "Unknown error";
-    return NextResponse.json({ error: msg }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 

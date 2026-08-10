@@ -14,7 +14,7 @@ export function slugify(input: string) {
     .slice(0, 70);
 }
 
-export function toText(value: any): string {
+export function toText(value: unknown): string {
   if (value === null || value === undefined) return "";
   if (typeof value === "string") return value;
   if (typeof value === "number" || typeof value === "boolean") return String(value);
@@ -23,9 +23,9 @@ export function toText(value: any): string {
   }
   if (typeof value === "object") {
     // Common cases: {text:"..."}, {content:"..."}, etc.
-    const anyObj = value as any;
-    if (typeof anyObj.text === "string") return anyObj.text;
-    if (typeof anyObj.content === "string") return anyObj.content;
+    const obj = value as Record<string, unknown>;
+    if (typeof obj.text === "string") return obj.text;
+    if (typeof obj.content === "string") return obj.content;
     try {
       return JSON.stringify(value, null, 2);
     } catch {
@@ -53,7 +53,7 @@ export function safeSerializeForHtml(obj: unknown) {
  * jsPDF default fonts are limited; normalize fancy punctuation to ASCII-ish.
  * Use this before adding text to PDFs when you don't have embedded fonts.
  */
-export function pdfSafeText(t: any) {
+export function pdfSafeText(t: unknown) {
   return String(t ?? "")
     .replace(/[\u2013\u2014]/g, "-")
     .replace(/[\u2018\u2019]/g, "'")
