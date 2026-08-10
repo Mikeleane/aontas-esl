@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { buildCambridgeConstraints, getWordTarget, parseCefrLevel, parseTextType } from "@/lib/cefrCambridge";
+import { buildCefrConstraints, getWordTarget, parseCefrLevel, parseTextType } from "@/lib/cefr";
+import { normalizeReadingPack } from "@/lib/contracts/reading";
 import { fetchExternalText } from "@/lib/server/fetchExternalText";
 import { checkRateLimit } from "@/lib/server/rateLimit";
 
@@ -46,6 +47,7 @@ type GeneratePackBody = {
   cefrLevel?: string;
   level?: string;
   textType?: string;
+  /** Legacy-only inputs from older clients. */
   stage?: number;
   schoolClass?: number;
 
@@ -217,7 +219,6 @@ function normalizeTeacherRequest(body: any): GeneratePackBody {
   const tr = body as TeacherRequest;
 
   const stage = clamp(Number(tr?.meta?.stage ?? 3), 1, 4);
-  const schoolClass = clamp(Number(tr?.meta?.schoolClass ?? 3), 1, 6);
 
   const title = (tr?.meta?.titleHint || "").trim() || "Reading Pack";
   const pilotMode = !!tr?.meta?.pilotMode;
@@ -265,8 +266,7 @@ function normalizeTeacherRequest(body: any): GeneratePackBody {
 
   return {
     title,
-    stage,
-    schoolClass,
+    cefrLevel: parseCefrLevel(stage),
     pilotMode,
 
     // Curriculum "hints"
@@ -380,11 +380,10 @@ function buildJsonSchema() {
       type: "object",
       additionalProperties: false,
       required: [
+        "schemaVersion",
         "title",
         "cefrLevel",
         "textType",
-        "schoolClass",
-        "stage",
         "crest",
         "teacherContext",
         "materials",
@@ -393,11 +392,10 @@ function buildJsonSchema() {
         "exercises",
       ],
       properties: {
+        schemaVersion: { type: "number", enum: [2] },
         title: { type: "string" },
-        cefrLevel: { type: "string", enum: ["A2", "B1", "B2", "C1", "C2"] },
-        textType: { type: "string" },
-        schoolClass: { type: "number" },
-        stage: { type: "number" },
+        cefrLevel: { type: "string", enum: ["A1", "A2", "B1", "B2", "C1", "C2"] },
+        textType: { type: "string", enum: ["story", "short_message", "email_informal", "email_formal", "article", "review", "report", "essay"] },
 
         crest: NullableString,
 
@@ -415,10 +413,10 @@ function buildJsonSchema() {
         reading: {
           type: "object",
           additionalProperties: false,
-          required: ["standard", "SUPPORTED"],
+          required: ["standard", "supported"],
           properties: {
             standard: { type: "string" },
-            SUPPORTED: { type: "string" },
+            supported: { type: "string" },
           },
         },
 
@@ -427,7 +425,7 @@ function buildJsonSchema() {
           items: {
             type: "object",
             additionalProperties: false,
-            required: ["id", "type", "skill", "answer", "answerIndex", "standard", "SUPPORTED", "adapted"],
+            required: ["id", "type", "skill", "answer", "answerIndex", "standard", "supported"],
             properties: {
               id: { type: "string" },
               type: { type: "string" },
@@ -439,8 +437,7 @@ function buildJsonSchema() {
               answerIndex: NullableNumber,
 
               standard: ExerciseSideSchema,
-              SUPPORTED: { anyOf: [ExerciseSideSchema, { type: "null" }] },
-              adapted: { anyOf: [ExerciseSideSchema, { type: "null" }] },
+              supported: ExerciseSideSchema,
             },
           },
         },
@@ -460,10 +457,10 @@ function buildSystemPrompt(body: GeneratePackBody) {
   const guards = [
     "Teacher agency first: preserve teacher-provided names, places, organisations, terminology and facts.",
     "Do not invent facts that are not supported by the teacher-provided material.",
-    "STANDARD and SUPPORTED must share one learning target and one answer key.",
-    "SUPPORTED is access support, not a different lesson: use clearer chunking, scaffolds, word banks and sentence frames without changing correct answers.",
+    "standard and supported must share one learning target and one answer key.",
+    "supported is access support, not a different lesson: use clearer chunking, scaffolds, word banks and sentence frames without changing correct answers.",
     `STANDARD target length: about ${targets.target} words (acceptable range ${targets.min}-${targets.max}).`,
-    "SUPPORTED should cover the same core content and remain substantial; do not reduce it to a tiny summary.",
+    "supported should cover the same core content and remain substantial; do not reduce it to a tiny summary.",
     "Return only valid JSON matching the schema. No commentary, markdown or code fences.",
   ];
 
@@ -499,7 +496,7 @@ function buildSystemPrompt(body: GeneratePackBody) {
 
   return [
     "You generate CEFR-aligned ESL reading packs for teachers and learners.",
-    buildCambridgeConstraints(cefrLevel, textType),
+    buildCefrConstraints(cefrLevel, textType),
     guards.map((g) => `- ${g}`).join("\n"),
     targetBits.length ? `\nTeacher target:\n${targetBits.map((p) => `- ${p}`).join("\n")}` : "",
     contextBits.length ? `\nTeacher context:\n${contextBits.map((c) => `- ${c}`).join("\n")}` : "",
@@ -521,11 +518,11 @@ function buildUserInstruction(body: GeneratePackBody, primaryTextHint: string) {
     "\nReading requirements:",
     `- Produce a coherent STANDARD ${textType} of roughly ${targets.target} words (acceptable range ${targets.min}-${targets.max}).`,
     "- Keep the source facts locked: do not add unsupported factual claims.",
-    "- SUPPORTED must cover the same content and learning target, using access supports rather than easier answers.",
+    "- supported must cover the same content and learning target, using access supports rather than easier answers.",
     "- If the source is short, expand only with safe, generic connective language or clearly non-factual examples; do not invent source facts.",
     "\nExercises:",
     "- Create about 10-12 exercises.",
-    "- STANDARD and SUPPORTED must use the same correct answers.",
+    "- standard and supported must use the same correct answers.",
     "- Use a mix of literal and inferential comprehension, vocabulary in context, sequencing/organisation, author craft and short response.",
   ].join("\n");
 }
@@ -598,8 +595,6 @@ export async function POST(req: Request) {
 
     const cefrLevel = parseCefrLevel(body.cefrLevel ?? body.level ?? body.stage ?? "B1");
     const textType = parseTextType(body.textType ?? body.genre ?? "article");
-    const stage = body.stage ?? 3;
-    const schoolClass = body.schoolClass ?? 3;
 
     if (primaryImageDataUrl) {
       if (!/^data:image\/(png|jpe?g|webp|gif);base64,/i.test(primaryImageDataUrl)) {
@@ -708,20 +703,19 @@ export async function POST(req: Request) {
       }
     }
 
-    // Normalize defaults and echo helpful fields
-    pack.title = String(pack.title || body.title || "Reading Pack");
-    pack.cefrLevel = String(pack.cefrLevel || cefrLevel);
-    pack.textType = String(pack.textType || textType);
-    pack.stage = Number(pack.stage ?? stage);
-    pack.schoolClass = Number(pack.schoolClass ?? schoolClass);
+    const normalizedPack = normalizeReadingPack({
+      ...pack,
+      schemaVersion: 2,
+      title: String(pack.title || body.title || "Reading Pack"),
+      cefrLevel,
+      textType,
+      teacherContext: pack.teacherContext ?? body.teacherContext ?? undefined,
+      materials: pack.materials ?? body.materials ?? undefined,
+      primaryMaterialId: pack.primaryMaterialId ?? body.primaryMaterialId ?? undefined,
+      pilotMode: body.pilotMode,
+    });
 
-    // carry through teacher context / materials if present (handy for later exports)
-    pack.teacherContext = pack.teacherContext ?? body.teacherContext ?? null;
-    pack.materials = pack.materials ?? (body.materials ?? null);
-    pack.primaryMaterialId = pack.primaryMaterialId ?? (body.primaryMaterialId ?? null);
-
-    // Compatibility: return both pack + spread
-    return NextResponse.json({ ...pack, pack });
+    return NextResponse.json({ pack: normalizedPack });
   } catch (e: any) {
     const msg = typeof e?.message === "string" ? e.message : "Unknown error";
     return NextResponse.json({ error: msg }, { status: 500 });

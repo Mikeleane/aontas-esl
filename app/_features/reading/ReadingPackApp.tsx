@@ -1,6 +1,8 @@
-﻿"use client";
+"use client";
 
 import React, { useEffect, useMemo, useState, useCallback } from "react";
+import { normalizeReadingPack } from "@/lib/contracts/reading";
+import type { ReadingPackData } from "./readingPackTypes";
 
 // Keep these re-exports so any existing imports don't break
 export type { ReadingMode, ReadingPackData, ExerciseItem, ExerciseSide } from "./readingPackTypes";
@@ -20,12 +22,12 @@ import {
 } from "@/lib/exporters";
 
 type Props = {
-  pack: any | null;
+  pack: ReadingPackData | null;
   crestFallbackPath?: string;
-  onPackChange?: React.Dispatch<React.SetStateAction<any | null>>;
+  onPackChange?: (pack: ReadingPackData | null) => void;
 };
 
-function safeText(v: any): string {
+function safeText(v: unknown): string {
   return typeof v === "string" ? v : "";
 }
 
@@ -50,55 +52,6 @@ function downloadBlob(blob: Blob, filename: string) {
   setTimeout(() => URL.revokeObjectURL(url), 500);
 }
 
-// Robustly pull reading text out of whatever shape the pack currently has.
-function extractReadingText(pack: any, variant: "standard" | "SUPPORTED"): string {
-  if (!pack) return "";
-
-  const pick = (v: any) => (typeof v === "string" ? v : "");
-  const src = variant === "SUPPORTED" ? "SUPPORTED" : "standard";
-
-  // Common field names across Aontas variants
-  const candidates: any[] = [
-    pack?.[`${src}Text`],
-    pack?.[`${src.toLowerCase()}Text`],
-    pack?.[src],
-    pack?.text,
-    pack?.primaryText,
-    pack?.articleText,
-    pack?.readingText,
-    pack?.passage,
-    pack?.content,
-
-    // Sometimes nested
-    pack?.reading?.[`${src}Text`],
-    pack?.reading?.[src],
-    pack?.reading?.text,
-
-    // Sometimes inside meta
-    pack?.meta?.[`${src}Text`],
-    pack?.meta?.[src],
-  ];
-
-  for (const c of candidates) {
-    const s = pick(c);
-    if (s.trim()) return s;
-  }
-
-  return "";
-}
-
-function getExercises(pack: any): any[] {
-  if (!pack) return [];
-  // Different shapes seen in different repos/patches:
-  const a = pack?.exercises?.items;
-  const b = pack?.exercises;
-  const c = pack?.items;
-  const d = pack?.exerciseItems;
-
-  const raw = Array.isArray(a) ? a : Array.isArray(b) ? b : Array.isArray(c) ? c : Array.isArray(d) ? d : [];
-  return raw.filter(Boolean);
-}
-
 function renderParagraphs(text: string) {
   const t = (text || "").trim();
   if (!t) return <div style={{ color: "#64748b" }}>No reading text found in this pack yet.</div>;
@@ -115,39 +68,24 @@ function renderParagraphs(text: string) {
   );
 }
 
-export default function ReadingPackApp({ pack, crestFallbackPath = "/kns-crest.jpg", onPackChange }: Props) {
-  const packAny = pack as any;
+export default function ReadingPackApp({ pack, crestFallbackPath = "", onPackChange }: Props) {
+  const packAny = useMemo(() => (pack ? normalizeReadingPack(pack) : null), [pack]);
 
   const [view, setView] = useState<"reading" | "exercises" | "exports">("reading");
   const [busy, setBusy] = useState<"" | "exporting">("");
 
-  const readingStandard = useMemo(() => extractReadingText(packAny, "standard"), [packAny]);
-  const readingSupported = useMemo(() => extractReadingText(packAny, "SUPPORTED"), [packAny]);
-  const exercises = useMemo(() => getExercises(packAny), [packAny]);
+  const readingStandard = packAny?.reading.standard ?? "";
+  const readingSupported = packAny?.reading.supported ?? "";
+  const exercises = packAny?.exercises ?? [];
 
   const packSummary = useMemo(() => {
     if (!packAny) return "No pack loaded yet. Generate a pack to see the reading text + exercises.";
 
-    const lvl =
-      safeText(packAny.cefrLevel) ||
-      safeText(packAny.level) ||
-      safeText(packAny.meta?.cefrLevel) ||
-      safeText(packAny.meta?.level) ||
-      "";
-
-    const textType =
-      safeText(packAny.textType) ||
-      safeText(packAny.meta?.textType) ||
-      safeText(packAny.kind) ||
-      "";
-
-    const topic =
-      safeText(packAny.topic) ||
-      safeText(packAny.meta?.topic) ||
-      safeText(packAny.title) ||
-      "";
-
-    const bits = [lvl && `CEFR ${lvl}`, textType && `Text type: ${textType}`, topic && `Topic: ${topic}`].filter(Boolean);
+    const bits = [
+      `CEFR ${packAny.cefrLevel}`,
+      `Text type: ${packAny.textType}`,
+      packAny.title && `Topic: ${packAny.title}`,
+    ].filter(Boolean);
     return bits.length ? bits.join(" | ") : "Reading pack generated.";
   }, [packAny]);
 
@@ -164,7 +102,7 @@ export default function ReadingPackApp({ pack, crestFallbackPath = "/kns-crest.j
     if (packAny) return;
     try {
       const raw = localStorage.getItem("aontas_esl_last_pack_json");
-      if (raw) onPackChange?.(JSON.parse(raw));
+      if (raw) onPackChange?.(normalizeReadingPack(JSON.parse(raw)));
     } catch {}
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -180,7 +118,7 @@ export default function ReadingPackApp({ pack, crestFallbackPath = "/kns-crest.j
     } catch {}
   }, [packAny, readingStandard, readingSupported]);
 
-  const nameBase = useMemo(() => slugify(packAny?.title || packAny?.topic || "reading-pack"), [packAny]);
+  const nameBase = useMemo(() => slugify(packAny?.title || "reading-pack"), [packAny]);
 
   const doExportInteractive = useCallback(async () => {
     if (!packAny) return;
@@ -336,21 +274,17 @@ export default function ReadingPackApp({ pack, crestFallbackPath = "/kns-crest.j
             <div style={{ color: "#64748b" }}>No exercises found in this pack yet.</div>
           ) : (
             <div style={{ display: "grid", gap: 14 }}>
-              {exercises.map((it: any, idx: number) => {
+              {exercises.map((it, idx: number) => {
                 const id = it?.id ?? idx + 1;
                 const type = safeText(it?.type) || safeText(it?.skill) || "exercise";
 
-                const stdPrompt = safeText(it?.standard?.prompt) || safeText(it?.prompt) || "";
-                const supPrompt = safeText(it?.adapted?.prompt) || safeText(it?.supported?.prompt) || "";
+                const stdPrompt = it.standard.prompt;
+                const supPrompt = it.supported.prompt;
 
-                const stdOptions: string[] = Array.isArray(it?.standard?.options) ? it.standard.options : [];
-                const supOptions: string[] = Array.isArray(it?.adapted?.options)
-                  ? it.adapted.options
-                  : Array.isArray(it?.supported?.options)
-                    ? it.supported.options
-                    : [];
+                const stdOptions: string[] = it.standard.options ?? [];
+                const supOptions: string[] = it.supported.options ?? [];
 
-                const answer = safeText(it?.answer);
+                const answer = Array.isArray(it.answer) ? it.answer.join("; ") : safeText(it.answer);
 
                 return (
                   <div key={id} style={{ border: "1px solid rgba(15,23,42,.10)", borderRadius: 16, padding: 14 }}>

@@ -1,16 +1,8 @@
-import { parseCefrLevel } from "./cefrCambridge";
+import { cefrToStageBand, parseCefrLevel } from "./cefr";
 
 /**
- * Compatibility shim: old "stage" -> CEFR mapping.
- * 2->A2, 3->B1, 4->B2, 5->C1, 6->C2
+ * Legacy-only compatibility shim. New ESL generation must use CEFR directly.
  */
 export function stageFromCefr(input: unknown): number {
-  const lvl = parseCefrLevel(input);
-  switch (lvl) {
-    case "A2": return 2;
-    case "B1": return 3;
-    case "B2": return 4;
-    case "C1": return 5;
-    case "C2": return 6;
-  }
+  return cefrToStageBand(parseCefrLevel(input));
 }

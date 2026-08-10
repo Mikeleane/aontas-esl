@@ -17,7 +17,7 @@ export function buildInteractiveHtml(pack: ReadingPackData): string {
   const title = pack.title || "Reading Pack";
   const crest = pack.crest || "";
   const readingStandard = pack.reading?.standard || "";
-  const readingSupported = (pack.reading?.SUPPORTED || pack.reading?.standard || "") as string;
+  const readingSupported = (pack.reading?.supported || pack.reading?.standard || "") as string;
 
   const initialSettings = {
     font: "system",
@@ -362,7 +362,7 @@ export function buildInteractiveHtml(pack: ReadingPackData): string {
 
 <script id="packData" type="application/json">${safeJson({
     ...pack,
-    reading: { standard: readingStandard, SUPPORTED: readingSupported },
+    reading: { standard: readingStandard, supported: readingSupported },
   })}</script>
 
 <script>
@@ -472,7 +472,7 @@ export function buildInteractiveHtml(pack: ReadingPackData): string {
 
   function currentReading(){
     const r = pack.reading || {};
-    return state.mode === "SUPPORTED" ? (r.SUPPORTED || r.standard || "") : (r.standard || "");
+    return state.mode === "supported" ? (r.supported || r.standard || "") : (r.standard || "");
   }
 
   function wrapWords(p){
@@ -532,7 +532,7 @@ export function buildInteractiveHtml(pack: ReadingPackData): string {
   /* ------------------------------ Exercises -------------------------------- */
 
   function getSide(ex){
-    if(state.mode === "SUPPORTED") return ex.SUPPORTED || ex.adapted || ex.standard;
+    if(state.mode === "supported") return ex.supported || ex.standard;
     return ex.standard;
   }
 
@@ -816,7 +816,7 @@ export function buildInteractiveHtml(pack: ReadingPackData): string {
     const w = normalizeWord(state.word);
 
     $("wlWord").textContent = w ? state.word : "—";
-    $("wlModeTag").textContent = w ? (state.mode === "SUPPORTED" ? "Supported (B)" : "Standard (A)") : "Click a word";
+    $("wlModeTag").textContent = w ? (state.mode === "supported" ? "Supported (B)" : "Standard (A)") : "Click a word";
 
     state.context = w ? findContext(w) : "";
     $("wlContext").textContent = state.context ? ("Context: " + state.context) : "";
@@ -860,7 +860,7 @@ export function buildInteractiveHtml(pack: ReadingPackData): string {
   function setMode(m){
     state.mode = m;
     $("modeStandard").classList.toggle("active", m === "standard");
-    $("modeSupported").classList.toggle("active", m === "SUPPORTED");
+    $("modeSupported").classList.toggle("active", m === "supported");
     renderReading();
     renderExercises();
     updateWordLab(state.word);
@@ -868,7 +868,7 @@ export function buildInteractiveHtml(pack: ReadingPackData): string {
   }
 
   $("modeStandard").onclick = () => setMode("standard");
-  $("modeSupported").onclick = () => setMode("SUPPORTED");
+  $("modeSupported").onclick = () => setMode("supported");
 
   $("toggleNight").onclick = () => { state.night = !state.night; applyA11y(); saveSettings(); };
   $("toggleBionic").onclick = () => { state.bionic = !state.bionic; applyA11y(); renderReading(); saveSettings(); };

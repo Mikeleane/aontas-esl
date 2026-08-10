@@ -54,7 +54,7 @@ function norm(v: any) {
 
 function getSide(item: ExerciseItem, mode: ReadingMode): ExerciseSide {
   if (mode === "standard") return item.standard;
-  return item.SUPPORTED || item.adapted || item.standard;
+  return item.supported || item.standard;
 }
 
 function getCorrectIndex(item: ExerciseItem) {
@@ -88,8 +88,8 @@ export function buildPrintablesHtml(pack: ReadingPackData, mode: ReadingMode, in
   const reading = pack.reading?.[mode] || "";
   const paras = splitParas(reading);
 
-  const fontSize = mode === "SUPPORTED" ? 16 : 12;
-  const lineHeight = mode === "SUPPORTED" ? 1.6 : 1.4;
+  const fontSize = mode === "supported" ? 16 : 12;
+  const lineHeight = mode === "supported" ? 1.6 : 1.4;
 
   const exercises = pack.exercises || [];
 
@@ -137,7 +137,7 @@ export function buildPrintablesHtml(pack: ReadingPackData, mode: ReadingMode, in
     .join("");
 
   const readingHtml = paras.map((p) => `<p class="p">${escapeHtmlInline(p)}</p>`).join("");
-  const meta = `Class ${pack.schoolClass ?? ""} • Stage ${pack.stage ?? ""}`.replace(/•\s*$/, "").trim();
+  const meta = `CEFR ${pack.cefrLevel} • ${pack.textType}`;
 
   return `<!doctype html>
 <html lang="en">

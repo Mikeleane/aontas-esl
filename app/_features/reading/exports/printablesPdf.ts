@@ -10,7 +10,7 @@ function norm(v: any) {
 
 function getSide(item: ExerciseItem, mode: ReadingMode) {
   if (mode === "standard") return item.standard;
-  return item.SUPPORTED || item.adapted || item.standard;
+  return item.supported || item.standard;
 }
 
 function getCorrectIndex(item: ExerciseItem) {
@@ -82,7 +82,7 @@ export async function buildPrintablesPdfBytes(pack: ReadingPackData, opts: PdfOp
   const margin = 46;
   const contentW = PAGE_W - margin * 2;
 
-  const isB = opts.mode === "SUPPORTED";
+  const isB = opts.mode === "supported";
   const bodySize = isB ? 13 : 11;
   const lineGap = isB ? 6 : 5;
   const lineH = bodySize + lineGap;
@@ -129,7 +129,7 @@ export async function buildPrintablesPdfBytes(pack: ReadingPackData, opts: PdfOp
   // Title + meta
   const titleX = margin + 54;
   page.drawText(pack.title || "Reading Pack", { x: titleX, y: y - 18, size: titleSize, font: fontBold });
-  const meta = `Class ${pack.schoolClass ?? ""}  •  Stage ${pack.stage ?? ""}`.replace(/•\s*$/, "").trim();
+  const meta = `CEFR ${pack.cefrLevel}  •  ${pack.textType}`;
   page.drawText(`${meta}  •  ${opts.mode === "standard" ? "Student A (Standard)" : "Student B (Supported)"}`, {
     x: titleX,
     y: y - 36,

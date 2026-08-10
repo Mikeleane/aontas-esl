@@ -2,10 +2,12 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import type { ReadingMode, ReadingPackData } from "../readingPackTypes";
+import type { CefrLevel } from "@/lib/cefr";
 
-/** ---------- Stage profiles (keeps games aligned to curriculum stage) ---------- */
-type StageProfile = {
-  stage: number;
+/** ---------- CEFR profiles ---------- */
+type CefrProfile = {
+  level: CefrLevel;
+  rank: number;
   label: string;
   focus: string[];
   sentenceCount: number;
@@ -14,48 +16,41 @@ type StageProfile = {
   vocabTargets: number;
 };
 
-const STAGE_PROFILES: Record<number, StageProfile> = {
-  1: {
-    stage: 1,
-    label: "Stage 1 (Early reading / decoding)",
-    focus: ["phonological awareness", "high-frequency words", "simple sequencing", "basic meaning"],
-    sentenceCount: 3,
-    maxSentenceWords: 10,
-    clozeBlanks: 2,
-    vocabTargets: 6,
+const CEFR_PROFILES: Record<CefrLevel, CefrProfile> = {
+  A1: {
+    level: "A1", rank: 1, label: "A1 (Foundation)",
+    focus: ["high-frequency vocabulary", "simple sequencing", "basic literal meaning", "short oral rehearsal"],
+    sentenceCount: 3, maxSentenceWords: 10, clozeBlanks: 2, vocabTargets: 5,
   },
-  2: {
-    stage: 2,
-    label: "Stage 2 (Developing fluency)",
+  A2: {
+    level: "A2", rank: 2, label: "A2 (Elementary)",
     focus: ["fluency", "literal comprehension", "vocabulary building", "basic inference"],
-    sentenceCount: 4,
-    maxSentenceWords: 14,
-    clozeBlanks: 3,
-    vocabTargets: 8,
+    sentenceCount: 4, maxSentenceWords: 14, clozeBlanks: 3, vocabTargets: 7,
   },
-  3: {
-    stage: 3,
-    label: "Stage 3 (Secure reading / comprehension)",
-    focus: ["literal + inferential comprehension", "author's craft", "vocabulary (tier 2/3)", "summarising"],
-    sentenceCount: 5,
-    maxSentenceWords: 18,
-    clozeBlanks: 4,
-    vocabTargets: 10,
+  B1: {
+    level: "B1", rank: 3, label: "B1 (Intermediate)",
+    focus: ["literal + inferential comprehension", "vocabulary in context", "summarising", "author choices"],
+    sentenceCount: 5, maxSentenceWords: 18, clozeBlanks: 4, vocabTargets: 9,
   },
-  4: {
-    stage: 4,
-    label: "Stage 4 (Upper primary / critical reading)",
-    focus: ["inference + justification", "viewpoint/bias", "morphology (prefix/suffix/root)", "discipline vocabulary"],
-    sentenceCount: 6,
-    maxSentenceWords: 22,
-    clozeBlanks: 5,
-    vocabTargets: 12,
+  B2: {
+    level: "B2", rank: 4, label: "B2 (Upper-intermediate)",
+    focus: ["inference + justification", "viewpoint", "morphology", "precise vocabulary"],
+    sentenceCount: 6, maxSentenceWords: 22, clozeBlanks: 5, vocabTargets: 11,
+  },
+  C1: {
+    level: "C1", rank: 5, label: "C1 (Advanced)",
+    focus: ["nuance", "stance and tone", "rhetorical choices", "collocation and register"],
+    sentenceCount: 7, maxSentenceWords: 26, clozeBlanks: 6, vocabTargets: 13,
+  },
+  C2: {
+    level: "C2", rank: 6, label: "C2 (Proficiency)",
+    focus: ["subtle inference", "rhetorical control", "register shifts", "precision and connotation"],
+    sentenceCount: 8, maxSentenceWords: 30, clozeBlanks: 7, vocabTargets: 15,
   },
 };
 
-function getProfile(stage?: number): StageProfile {
-  const s = Number(stage || 3);
-  return STAGE_PROFILES[s] || STAGE_PROFILES[3];
+function getProfile(level: CefrLevel): CefrProfile {
+  return CEFR_PROFILES[level] ?? CEFR_PROFILES.B1;
 }
 
 /** ---------- Text utils ---------- */
@@ -160,7 +155,7 @@ function speakText(text: string, voiceChoice: VoiceChoice, rate = 1, pitch = 1) 
   synth.speak(utter);
 }
 
-/** ---------- Game generation (from pack text, stage-aligned) ---------- */
+/** ---------- Game generation (from pack text, CEFR-aligned) ---------- */
 type GameKind = "word_order" | "cloze" | "syllable_clap" | "morphology";
 
 type GameBase = { id: string; kind: GameKind; title: string; skill: string };
@@ -171,8 +166,8 @@ type MorphGame = GameBase & { kind: "morphology"; word: string; split: { prefix?
 
 type AnyGame = WordOrderGame | ClozeGame | SyllableGame | MorphGame;
 
-function buildGames(pack: ReadingPackData, profile: StageProfile): AnyGame[] {
-  const txt = pack?.reading?.standard || pack?.reading?.SUPPORTED || "";
+function buildGames(pack: ReadingPackData, profile: CefrProfile): AnyGame[] {
+  const txt = pack?.reading?.standard || pack?.reading?.supported || "";
   const sentences = splitSentences(txt);
 
   const filtered = sentences
@@ -647,7 +642,7 @@ const fieldStyle: React.CSSProperties = { border: "1px solid rgba(15,23,42,.12)"
 const fieldLabel: React.CSSProperties = { fontSize: 12, fontWeight: 900, color: "#475569", marginBottom: 6 };
 const fieldInput: React.CSSProperties = { width: "100%", padding: "10px 12px", borderRadius: 12, border: "1px solid rgba(15,23,42,.14)", fontWeight: 900 };
 
-function TeacherResources(props: { profile: StageProfile; pack: ReadingPackData }) {
+function TeacherResources(props: { profile: CefrProfile; pack: ReadingPackData }) {
   const title = props.pack?.title || "Reading Pack";
   const focuses = props.profile.focus;
 
@@ -680,9 +675,9 @@ function TeacherResources(props: { profile: StageProfile; pack: ReadingPackData 
         </div>
       </SectionCard>
 
-      <SectionCard title="Oral language prompts" subtitle="Quick discussion questions that match the stage focus">
+      <SectionCard title="Oral language prompts" subtitle="Quick discussion questions that match the CEFR focus">
         <ul style={{ margin: 0, paddingLeft: 18, color: "#0f172a", lineHeight: 1.6 }}>
-          {quickPrompts.slice(0, props.profile.stage >= 4 ? 5 : 4).map((p, i) => (
+          {quickPrompts.slice(0, props.profile.rank >= 4 ? 5 : 4).map((p, i) => (
             <li key={i}>{p}</li>
           ))}
         </ul>
@@ -692,8 +687,8 @@ function TeacherResources(props: { profile: StageProfile; pack: ReadingPackData 
         <ul style={{ margin: 0, paddingLeft: 18, color: "#0f172a", lineHeight: 1.6 }}>
           <li>Clap syllables for 5 target words; sort into 1 / 2 / 3+ syllables.</li>
           <li>Prefix/root/suffix: build a meaning guess, then check in context.</li>
-          {props.profile.stage >= 3 && <li>Tier 2/3 vocab: "replace the word" with a near-synonym - what changes?</li>}
-          {props.profile.stage >= 4 && <li>Stretch: quick etymology curiosity - where might this word come from? (Latin/Greek/Old French?)</li>}
+          {props.profile.rank >= 3 && <li>Tier 2/3 vocab: "replace the word" with a near-synonym - what changes?</li>}
+          {props.profile.rank >= 4 && <li>Stretch: quick etymology curiosity - where might this word come from? (Latin/Greek/Old French?)</li>}
         </ul>
 
         <div style={{ marginTop: 10, color: "#64748b", fontSize: 12 }}>
@@ -714,14 +709,14 @@ function TeacherResources(props: { profile: StageProfile; pack: ReadingPackData 
 
 /** ---------- Main exported component ---------- */
 export default function InAppActivities(props: { pack: ReadingPackData; mode: ReadingMode }) {
-  const profile = useMemo(() => getProfile(props.pack?.stage), [props.pack?.stage]);
+  const profile = useMemo(() => getProfile(props.pack.cefrLevel), [props.pack.cefrLevel]);
 
   // Typography controls (teacher requested)
   const [fontSizePx, setFontSizePx] = useState(18);
   const [lineHeight, setLineHeight] = useState(16); // stored as *10 for easy slider
   const [letterSpacing, setLetterSpacing] = useState(0); // px
 
-  const supported = props.mode === "SUPPORTED";
+  const supported = props.mode === "supported";
 
   // Voice controls (male/female buttons)
   const [voiceChoice, setVoiceChoice] = useState<VoiceChoice>("female");

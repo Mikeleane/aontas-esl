@@ -31,9 +31,6 @@ export type CurriculumTarget = {
   // Pilot mode: warn about potential copyright limits; outputs for internal/pilot use
   pilotMode?: boolean;
 
-  classLevel?: number;
-  stage?: number;
-
   purpose?: string;
   genre?: string;
   form?: string;
@@ -126,12 +123,10 @@ export default function TeacherInputsPanel({ onGenerate }: Props) {
 
   // Curriculum
   const [curriculum, setCurriculum] = useState<CurriculumTarget>({
-    classLevel: 5,
-    stage: 4,
     purpose: "Read to learn",
     genre: "Informational",
     form: "Article",
-    strand: "Oral Language / Reading / Writing",
+    strand: "Reading",
     element: "Comprehension",
     outcome: "",
   });
@@ -659,33 +654,12 @@ export default function TeacherInputsPanel({ onGenerate }: Props) {
           </div>
 
           <div style={styles.card}>
-            <div style={{ fontWeight: 950 }}>Curriculum target</div>
+            <div style={{ fontWeight: 950 }}>Reading target</div>
+            <div style={{ color: "#64748b", fontSize: 12, marginTop: 6 }}>
+              CEFR level and text type are selected above. Add an optional purpose or teaching note here.
+            </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 }}>
-              <label style={{ fontSize: 12, fontWeight: 900, color: "#475569" }}>
-                Class
-                <input
-                  type="number"
-                  value={curriculum.classLevel ?? 5}
-                  min={1}
-                  max={6}
-                  onChange={(e) => setCurriculum((c) => ({ ...c, classLevel: Number(e.target.value) }))}
-                  style={{ width: "100%", marginTop: 6, padding: "10px 12px", borderRadius: 12, border: "1px solid rgba(15,23,42,.16)" }}
-                />
-              </label>
-
-              <label style={{ fontSize: 12, fontWeight: 900, color: "#475569" }}>
-                Stage
-                <input
-                  type="number"
-                  value={curriculum.stage ?? 4}
-                  min={1}
-                  max={4}
-                  onChange={(e) => setCurriculum((c) => ({ ...c, stage: Number(e.target.value) }))}
-                  style={{ width: "100%", marginTop: 6, padding: "10px 12px", borderRadius: 12, border: "1px solid rgba(15,23,42,.16)" }}
-                />
-              </label>
-
               <label style={{ fontSize: 12, fontWeight: 900, color: "#475569" }}>
                 Purpose
                 <input

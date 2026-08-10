@@ -1,19 +1,9 @@
 "use client";
 
 import React from "react";
+import { CEFR_LEVELS, type CefrLevel, type TextType } from "@/lib/cefr";
 
-export type CefrLevel = "A2" | "B1" | "B2" | "C1" | "C2";
-export type TextType =
-  | "story"
-  | "short_message"
-  | "email_informal"
-  | "email_formal"
-  | "article"
-  | "review"
-  | "report"
-  | "essay";
-
-const LEVELS: CefrLevel[] = ["A2", "B1", "B2", "C1", "C2"];
+const LEVELS: readonly CefrLevel[] = CEFR_LEVELS;
 
 const TYPES: { id: TextType; label: string; hint: string }[] = [
   { id: "story", label: "Story", hint: "Clear beginning–middle–end; optional dialogue" },
@@ -44,13 +34,13 @@ function chipStyle(active: boolean): React.CSSProperties {
 }
 
 export default function CefrTextTypeControls(props: {
-  cefrLevel: string;
-  setCefrLevel: (v: string) => void;
-  textType: string;
-  setTextType: (v: string) => void;
+  cefrLevel: CefrLevel;
+  setCefrLevel: (v: CefrLevel) => void;
+  textType: TextType;
+  setTextType: (v: TextType) => void;
 }) {
-  const cefrLevel = (props.cefrLevel || "B1").toUpperCase() as CefrLevel;
-  const textType = (props.textType || "article") as TextType;
+  const cefrLevel = props.cefrLevel;
+  const textType = props.textType;
 
   const activeType = TYPES.find((t) => t.id === textType) || TYPES[4];
 
@@ -69,7 +59,7 @@ export default function CefrTextTypeControls(props: {
           <div style={{ fontWeight: 950, fontSize: 12, color: "#0f172a" }}>CEFR</div>
           <select
             value={cefrLevel}
-            onChange={(e) => props.setCefrLevel(e.target.value)}
+            onChange={(e) => props.setCefrLevel(e.target.value as CefrLevel)}
             style={{
               padding: "6px 8px",
               borderRadius: 10,

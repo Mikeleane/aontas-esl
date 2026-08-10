@@ -1,8 +1,8 @@
-﻿// lib/exporters.ts
+// lib/exporters.ts
 // Central export barrel used by ReadingPackApp.tsx.
 // Provides "compat" wrappers so UI can pass { pack, ... } while core builders may expect (pack, opts).
 
-import type { ReadingPackData } from "@/app/_features/reading/readingPackTypes";
+import type { ReadingPackData } from "@/lib/contracts/reading";
 
 import { buildInteractiveHtml as coreBuildInteractiveHtml } from "@/app/_features/reading/exports/interactiveHtml";
 import { buildPrintablesPdfBytes as coreBuildPrintablesPdfBytes } from "@/app/_features/reading/exports/printablesPdf";

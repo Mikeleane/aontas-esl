@@ -6,8 +6,10 @@ import React, { useCallback, useState } from "react";
 import TeacherInputsPanel, { TeacherInputsPayload } from "./TeacherInputsPanel";
 import ReadingPackApp from "./ReadingPackApp";
 import type { ReadingPackData } from "./readingPackTypes";
+import { normalizeReadingPack } from "@/lib/contracts/reading";
+import type { CefrLevel, TextType } from "@/lib/cefr";
 
-async function postJson<T>(url: string, body: any, signal?: AbortSignal): Promise<T> {
+async function postJson<T>(url: string, body: unknown, signal?: AbortSignal): Promise<T> {
   const res = await fetch(url, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -16,7 +18,7 @@ async function postJson<T>(url: string, body: any, signal?: AbortSignal): Promis
   });
 
   const text = await res.text().catch(() => "");
-  let data: any = null;
+  let data: unknown = null;
   try {
     data = text ? JSON.parse(text) : null;
   } catch {
@@ -24,8 +26,9 @@ async function postJson<T>(url: string, body: any, signal?: AbortSignal): Promis
   }
 
   if (!res.ok) {
-    const msg = data?.error || `HTTP ${res.status}`;
-    const dbg = data?.debug ? `\n\nDebug:\n${JSON.stringify(data.debug, null, 2)}` : "";
+    const obj = data && typeof data === "object" ? data as Record<string, unknown> : {};
+    const msg = typeof obj.error === "string" ? obj.error : `HTTP ${res.status}`;
+    const dbg = obj.debug ? `\n\nDebug:\n${JSON.stringify(obj.debug, null, 2)}` : "";
     throw new Error(`${msg}${dbg}`);
   }
 
@@ -37,8 +40,8 @@ export default function ReadingStudio() {
   const [busy, setBusy] = useState<string>("");
   const [error, setError] = useState<string>("");
 
-  const [cefrLevel, setCefrLevel] = useState<string>("B1");
-  const [textType, setTextType] = useState<string>("article");
+  const [cefrLevel, setCefrLevel] = useState<CefrLevel>("B1");
+  const [textType, setTextType] = useState<TextType>("article");
   const generateFromInputs = useCallback(async (payload: TeacherInputsPayload) => {
     setBusy("generating");
     setError("");
@@ -47,32 +50,45 @@ export default function ReadingStudio() {
       // (materials, primaryMaterialId, teacherContext, etc.)
       const body = {
         cefrLevel,
-        level: cefrLevel,
         textType,
         title: payload.title,
-        stage: payload.curriculum?.stage,
-        schoolClass: payload.curriculum?.classLevel,
 
         // Allow direct primary fields too (optional)
-        primaryText: (payload as any).primaryText,
-        primaryUrl: (payload as any).primaryUrl,
-        primaryImageDataUrl: (payload as any).primaryImageDataUrl,
-
-        materials: (payload as any).materials,
-        primaryMaterialId: (payload as any).primaryMaterialId,
-        teacherContext: (payload as any).teacherContext,
+        primaryText: payload.primaryText,
+        materials: payload.materials.map((material) => ({
+          id: material.id,
+          type: material.kind === "file"
+            ? (material.mimeType === "application/pdf" ? "pdf" : material.fileName?.toLowerCase().endsWith(".docx") ? "docx" : "other")
+            : material.kind,
+          title: material.title,
+          url: material.url,
+          rawText: material.text,
+          fileName: material.fileName,
+          mimeType: material.mimeType,
+          fileDataUrl: material.dataUrl,
+          extractedText: material.extractedText,
+          extractionStatus: material.extractedText?.trim() ? "done" : "none",
+          useAsPrimaryText: Boolean(material.isPrimary),
+        })),
+        primaryMaterialId: payload.primaryMaterialId,
+        teacherContext: {
+          contextTags: payload.enrichment.contextTags,
+          crossCurricularLinks: payload.enrichment.crossCurricularLinks,
+          authenticMaterialTypes: payload.enrichment.authenticMaterialTypes,
+          localVocab: payload.enrichment.localVocabPreferred.join("\n"),
+          localGlossary: payload.enrichment.glossary.map((entry) => ({ term: entry.term, note: entry.definition })),
+          useLocalContextExactly: payload.enrichment.useLocalContextExactly,
+          onlyUseProvidedFacts: payload.enrichment.onlyUseProvidedFacts,
+        },
 
         // PLC / curriculum-ish
-        strand: (payload.curriculum as any)?.strand,
-        element: (payload.curriculum as any)?.element,
-        outcomeLabel: (payload.curriculum as any)?.outcomeLabel,
-        mode: (payload.curriculum as any)?.mode,
-        purpose: (payload.curriculum as any)?.purpose,
-        genre: (payload.curriculum as any)?.genre,
-        form: (payload.curriculum as any)?.form,
-
-        exerciseBlocks: (payload as any).exerciseBlocks,
-        pilotMode: (payload as any).pilotMode ?? payload.curriculum?.pilotMode,
+        strand: payload.curriculum.strand,
+        element: payload.curriculum.element,
+        outcomeLabel: payload.curriculum.outcome,
+        purpose: payload.curriculum.purpose,
+        genre: payload.curriculum.genre,
+        form: payload.curriculum.form,
+        pilotMode: payload.enrichment.pilotMode ?? payload.curriculum.pilotMode,
       };
 
       // Debug: open DevTools console and confirm materials/text are here
@@ -83,7 +99,7 @@ export default function ReadingStudio() {
         body
       );
 
-      const got = (data as any).pack ?? (data as any);
+      const got = normalizeReadingPack(data);
       setPack(got);
 
       try {
@@ -91,9 +107,9 @@ export default function ReadingStudio() {
       } catch {
         // ignore
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error(e);
-      setError(e?.message || "Generate failed");
+      setError(e instanceof Error ? e.message : "Generate failed");
     } finally {
       setBusy("");
     }
@@ -155,7 +171,7 @@ export default function ReadingStudio() {
         </div>
 
         <div style={{ marginTop: 12 }}>
-          <ReadingPackApp pack={pack} crestFallbackPath="/kns-crest.jpg" onPackChange={setPack} />
+          <ReadingPackApp pack={pack} onPackChange={setPack} />
         </div>
       </div>
     </div>
