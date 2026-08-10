@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
+import { checkRateLimit } from "@/lib/server/rateLimit";
 
 export const runtime = "nodejs";
 
@@ -8,6 +9,8 @@ type ExtractBody = {
   fromPublishedMaterial?: boolean;
   pilotOk?: boolean;
 };
+
+const MAX_IMAGE_DATA_URL_CHARS = 8_500_000;
 
 type ExtractResult = {
   title?: string;
@@ -31,6 +34,13 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  const rate = checkRateLimit(req, { bucket: "extract-text", limit: 15 });
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again shortly." },
+      { status: 429, headers: { "Retry-After": String(rate.retryAfterSeconds) } }
+    );
+  }
   try {
     let body: ExtractBody;
     try {
@@ -40,11 +50,14 @@ export async function POST(req: Request) {
     }
 
     const imageDataUrl = (body?.imageDataUrl || "").toString();
-    if (!imageDataUrl.startsWith("data:image/")) {
+    if (!/^data:image\/(png|jpe?g|webp|gif);base64,/i.test(imageDataUrl)) {
       return NextResponse.json(
-        { error: "Missing or invalid imageDataUrl (expected a data:image/* URL)." },
+        { error: "Missing or unsupported imageDataUrl (use PNG, JPEG, WEBP or GIF)." },
         { status: 400 }
       );
+    }
+    if (imageDataUrl.length > MAX_IMAGE_DATA_URL_CHARS) {
+      return NextResponse.json({ error: "Image is too large. Please use a smaller screenshot or photo." }, { status: 413 });
     }
 
     const fromPublishedMaterial = !!body?.fromPublishedMaterial;
@@ -136,7 +149,7 @@ Return JSON ONLY with this shape:
   } catch (err: any) {
     console.error("/api/extract-text error", err);
     return NextResponse.json(
-      { error: err?.message || "Unexpected error while extracting text." },
+      { error: "Unexpected error while extracting text." },
       { status: 500 }
     );
   }

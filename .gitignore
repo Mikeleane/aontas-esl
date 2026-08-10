@@ -21,3 +21,17 @@ tsconfig.json.bak*
 
 repo-files.txt
 
+
+# Local repair / migration artifacts
+*.bak
+*.bak*
+.patch_backups/
+_patch_backups/
+_patch/
+.wordiness_backups/
+_ui_backup_*/
+aontas_esl_v4/
+
+# TypeScript generated build metadata
+*.tsbuildinfo
+_tmp_*.txt

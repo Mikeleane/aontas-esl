@@ -1,37 +1,32 @@
-// app/api/fetch-article/route.ts
 import { NextResponse } from "next/server";
+import { fetchExternalText } from "@/lib/server/fetchExternalText";
+import { checkRateLimit } from "@/lib/server/rateLimit";
 
 export const runtime = "nodejs";
 
 export async function GET() {
-  return NextResponse.json(
-    { ok: true, route: "fetch-article", method: "GET" },
-    { status: 200 }
-  );
+  return NextResponse.json({ ok: true, route: "fetch-article", method: "GET" }, { status: 200 });
 }
 
 export async function POST(req: Request) {
+  const rate = checkRateLimit(req, { bucket: "fetch-article", limit: 30 });
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again shortly." },
+      { status: 429, headers: { "Retry-After": String(rate.retryAfterSeconds) } }
+    );
+  }
   try {
-    // 1. Parse body
     let body: any;
     try {
       body = await req.json();
     } catch {
-      return NextResponse.json(
-        { error: "Invalid JSON body in request." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid JSON body in request." }, { status: 400 });
     }
 
-    const url = (body?.url || "").toString().trim();
-    if (!url) {
-      return NextResponse.json(
-        { error: "Missing 'url' in request body." },
-        { status: 400 }
-      );
-    }
+    const url = String(body?.url || "").trim();
+    if (!url) return NextResponse.json({ error: "Missing 'url' in request body." }, { status: 400 });
 
-    // 2. Dynamic imports so bundler treats them nicely
     let JSDOM: any;
     let Readability: any;
     try {
@@ -41,77 +36,48 @@ export async function POST(req: Request) {
       ]);
       JSDOM = J;
       Readability = R;
-    } catch (e) {
-      console.error("Failed to import jsdom/readability:", e);
-      return NextResponse.json(
-        {
-          error:
-            "Server is missing HTML parsing modules (jsdom/readability). Please contact the site admin.",
+    } catch (error) {
+      console.error("Failed to import jsdom/readability:", error);
+      return NextResponse.json({ error: "Server HTML parsing is unavailable." }, { status: 500 });
+    }
+
+    let upstream;
+    try {
+      upstream = await fetchExternalText(url, {
+        maxBytes: 2 * 1024 * 1024,
+        timeoutMs: 12_000,
+        headers: {
+          "User-Agent": "AontasESL/1.0 (+article reader)",
+          Accept: "text/html,application/xhtml+xml,text/plain;q=0.9,*/*;q=0.5",
         },
-        { status: 500 }
-      );
+      });
+    } catch (error: any) {
+      return NextResponse.json({ error: error?.message || "Could not fetch article URL." }, { status: 400 });
     }
 
-    // 3. Fetch HTML
-    const upstream = await fetch(url, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        Accept:
-          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-      },
-    });
+    if (upstream.status < 200 || upstream.status >= 300) {
+      return NextResponse.json({ error: `Failed to fetch article (status ${upstream.status}).` }, { status: 502 });
+    }
+    if (!upstream.text.trim()) return NextResponse.json({ error: "Empty response from article URL." }, { status: 502 });
 
-    if (!upstream.ok) {
-      console.error(
-        "Upstream fetch failed",
-        url,
-        upstream.status,
-        upstream.statusText
-      );
-      return NextResponse.json(
-        {
-          error: `Failed to fetch article (status ${upstream.status} ${upstream.statusText}).`,
-        },
-        { status: 502 }
-      );
+    const contentType = upstream.contentType.toLowerCase();
+    if (contentType && !contentType.includes("text/html") && !contentType.includes("application/xhtml+xml") && !contentType.includes("text/plain")) {
+      return NextResponse.json({ error: "That URL did not return a supported text/HTML document." }, { status: 415 });
     }
 
-    const html = await upstream.text();
-    if (!html || !html.trim()) {
-      return NextResponse.json(
-        { error: "Empty response from article URL." },
-        { status: 502 }
-      );
+    if (contentType.includes("text/plain")) {
+      return NextResponse.json({ title: null, text: upstream.text.trim() }, { status: 200 });
     }
 
-    // 4. Use Readability via jsdom
-    const dom = new JSDOM(html, { url });
-    const reader = new Readability(dom.window.document);
-    const article = reader.parse();
-
-    if (!article || !article.textContent || !article.textContent.trim()) {
-      return NextResponse.json(
-        {
-          error:
-            "Could not extract readable article text from that page. Try pasting the text manually.",
-        },
-        { status: 422 }
-      );
+    const dom = new JSDOM(upstream.text, { url: upstream.finalUrl });
+    const article = new Readability(dom.window.document).parse();
+    if (!article?.textContent?.trim()) {
+      return NextResponse.json({ error: "Could not extract readable article text from that page. Try pasting the text manually." }, { status: 422 });
     }
 
-    return NextResponse.json(
-      {
-        title: article.title ?? null,
-        text: article.textContent.trim(),
-      },
-      { status: 200 }
-    );
-  } catch (err: any) {
-    console.error("fetch-article route error", err);
-    return NextResponse.json(
-      { error: "Unexpected error while fetching article." },
-      { status: 500 }
-    );
+    return NextResponse.json({ title: article.title ?? null, text: article.textContent.trim() }, { status: 200 });
+  } catch (error) {
+    console.error("fetch-article route error", error);
+    return NextResponse.json({ error: "Unexpected error while fetching article." }, { status: 500 });
   }
 }

@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "cross-env NODE_OPTIONS=--max-old-space-size=6144 next build --webpack",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint app lib",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && npm run lint",
+    "test": "node scripts/verify-phase1.cjs",
+    "verify:phase1": "node scripts/verify-phase1.cjs"
   },
   "dependencies": {
     "@mozilla/readability": "0.5.0",

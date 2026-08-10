@@ -1,2 +1,9 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+# Keep historical repair/import snapshots out of source exports.
+.patch_backups/** export-ignore
+_patch_backups/** export-ignore
+_patch/** export-ignore
+_import_from_kns/** export-ignore
+aontas_esl_v4/** export-ignore
+.wordiness_backups/** export-ignore
+_ui_backup_*/** export-ignore
+*.bak* export-ignore

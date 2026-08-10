@@ -1,5 +1,7 @@
 // app/api/social-thread/route.ts
 import { NextResponse } from "next/server";
+import { cefrStyleGuide, parseCefrLevel } from "@/lib/cefrCambridge";
+import { checkRateLimit } from "@/lib/server/rateLimit";
 
 const API_KEY = process.env.OPENAI_API_KEY;
 
@@ -193,6 +195,13 @@ function forceFinalStarter(pack: any, inputText: string) {
 }
 
 export async function POST(req: Request) {
+  const rate = checkRateLimit(req, { bucket: "social-thread", limit: 20 });
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again shortly." },
+      { status: 429, headers: { "Retry-After": String(rate.retryAfterSeconds) } }
+    );
+  }
   if (!API_KEY) return jsonError("Missing OPENAI_API_KEY in environment.", 500);
 
   const rawBody = await req.text();
@@ -204,9 +213,11 @@ export async function POST(req: Request) {
   }
 
   const text = (body?.text ?? "").toString().trim();
+  const cefrLevel = parseCefrLevel(body?.cefrLevel ?? body?.level ?? "B1");
   const tongueInCheek = !!body?.tongueInCheek;
 
   if (!text) return jsonError("Missing 'text' in JSON body.", 400);
+  if (text.length > 50_000) return jsonError("Source text is too large. Please shorten it before generating.", 413);
 
   // JSON Schema that OpenAI accepts: additionalProperties:false + required includes all properties keys.
   const nullableString = { anyOf: [{ type: "string" }, { type: "null" }] };
@@ -322,7 +333,8 @@ export async function POST(req: Request) {
   };
 
   const system = [
-    "You generate a Social Thread Pack for language learning.",
+    `You generate a CEFR ${cefrLevel} Social Thread Pack for language learning.`,
+    cefrStyleGuide(cefrLevel),
     "Return STRICT JSON only, matching the provided JSON Schema.",
     "No markdown. No extra keys.",
     "Standard and Supported must stay aligned to the same learning target and shared check answers.",
@@ -341,7 +353,7 @@ export async function POST(req: Request) {
     : "Tone: clear, school-appropriate, supportive.";
 
   const userPrompt = [
-    "Create a short social-media-style message thread based on the input text.",
+    `Create a CEFR ${cefrLevel} social-media-style message thread based on the input text.`,
     styleNote,
     "",
     "Constraints:",
@@ -376,7 +388,7 @@ export async function POST(req: Request) {
 
   if (!res.ok) {
     console.error("OpenAI error:", res.status, raw);
-    return jsonError(`OpenAI error ${res.status}: ${raw}`, res.status);
+    return jsonError(`Generation service returned an error (${res.status}).`, 502);
   }
 
   let data: any;

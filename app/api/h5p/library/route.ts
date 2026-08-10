@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 
@@ -16,7 +16,7 @@ function safeReadDirs(dir: string): string[] {
 }
 
 export async function GET() {
-  const root = (process.env.H5P_ROOT ?? "");
+  const root = process.env.H5P_ROOT || path.join(process.cwd(), "public", "h5p");
   const dirs = safeReadDirs(root);
 
   const ids = dirs

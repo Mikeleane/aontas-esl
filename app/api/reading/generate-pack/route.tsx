@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
+import { buildCambridgeConstraints, getWordTarget, parseCefrLevel, parseTextType } from "@/lib/cefrCambridge";
+import { fetchExternalText } from "@/lib/server/fetchExternalText";
+import { checkRateLimit } from "@/lib/server/rateLimit";
 
 // Ensure Node runtime (safer if you later add PDF/DOCX parsing server-side)
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+const MAX_IMAGE_DATA_URL_CHARS = 8_500_000;
 
 /* ---------------- Types ---------------- */
 
@@ -38,6 +43,9 @@ type TeacherContext = {
 
 type GeneratePackBody = {
   title?: string;
+  cefrLevel?: string;
+  level?: string;
+  textType?: string;
   stage?: number;
   schoolClass?: number;
 
@@ -110,12 +118,19 @@ function stripHtmlToText(html: string) {
 }
 
 async function fetchUrlText(url: string): Promise<string> {
-  const res = await fetch(url, { redirect: "follow" });
-  const ct = res.headers.get("content-type") || "";
-  if (!res.ok) throw new Error(`Failed to fetch URL (${res.status})`);
-  const raw = await res.text();
-  if (ct.includes("text/html")) return stripHtmlToText(raw);
-  return raw.trim();
+  const upstream = await fetchExternalText(url, {
+    maxBytes: 2 * 1024 * 1024,
+    timeoutMs: 12_000,
+    headers: {
+      "User-Agent": "AontasESL/1.0 (+reading source fetch)",
+      Accept: "text/html,text/plain;q=0.9,*/*;q=0.5",
+    },
+  });
+  if (upstream.status < 200 || upstream.status >= 300) {
+    throw new Error(`Failed to fetch URL (${upstream.status})`);
+  }
+  if (upstream.contentType.toLowerCase().includes("text/html")) return stripHtmlToText(upstream.text);
+  return upstream.text.trim();
 }
 
 function pickPrimaryMaterial(body: GeneratePackBody): Material | null {
@@ -130,14 +145,6 @@ function pickPrimaryMaterial(body: GeneratePackBody): Material | null {
 
 function clamp(n: number, lo: number, hi: number) {
   return Math.max(lo, Math.min(hi, n));
-}
-
-function stageTargets(stage: number) {
-  // You can tweak these later; this is a solid "not too short" baseline.
-  if (stage <= 1) return { min: 120, max: 220 };
-  if (stage === 2) return { min: 220, max: 360 };
-  if (stage === 3) return { min: 360, max: 600 };
-  return { min: 650, max: 950 }; // stage 4
 }
 
 /**
@@ -374,6 +381,8 @@ function buildJsonSchema() {
       additionalProperties: false,
       required: [
         "title",
+        "cefrLevel",
+        "textType",
         "schoolClass",
         "stage",
         "crest",
@@ -385,6 +394,8 @@ function buildJsonSchema() {
       ],
       properties: {
         title: { type: "string" },
+        cefrLevel: { type: "string", enum: ["A2", "B1", "B2", "C1", "C2"] },
+        textType: { type: "string" },
         schoolClass: { type: "number" },
         stage: { type: "number" },
 
@@ -441,25 +452,24 @@ function buildJsonSchema() {
 /* ---------------- Prompts ---------------- */
 
 function buildSystemPrompt(body: GeneratePackBody) {
-  const stage = body.stage ?? 3;
-  const klass = body.schoolClass ?? 3;
-  const targets = stageTargets(stage);
-
+  const cefrLevel = parseCefrLevel(body.cefrLevel ?? body.level ?? body.stage ?? "B1");
+  const textType = parseTextType(body.textType ?? body.genre ?? "article");
+  const targets = getWordTarget(cefrLevel, textType);
   const tc = body.teacherContext;
 
   const guards = [
-    "Teacher agency first: do not replace local placenames or organisations.",
-    "Do not invent local facts. If something is not provided, omit it or keep it generic.",
-    "STANDARD and SUPPORTED must share ONE answer key (same correct answers).",
-    "SUPPORTED is not 'easier content'-it is access supports: chunking, clearer layout, word banks, sentence frames, etc.",
-    "Keep learning target the same for the whole class.",
-    `Reading length target (Stage ${stage}): about ${targets.min}-${targets.max} words for STANDARD. SUPPORTED should be similar length (not a tiny summary) but with access supports.`,
-    "Return ONLY valid JSON matching the schema. No commentary, no markdown, no code fences.",
+    "Teacher agency first: preserve teacher-provided names, places, organisations, terminology and facts.",
+    "Do not invent facts that are not supported by the teacher-provided material.",
+    "STANDARD and SUPPORTED must share one learning target and one answer key.",
+    "SUPPORTED is access support, not a different lesson: use clearer chunking, scaffolds, word banks and sentence frames without changing correct answers.",
+    `STANDARD target length: about ${targets.target} words (acceptable range ${targets.min}-${targets.max}).`,
+    "SUPPORTED should cover the same core content and remain substantial; do not reduce it to a tiny summary.",
+    "Return only valid JSON matching the schema. No commentary, markdown or code fences.",
   ];
 
   if (body.pilotMode) {
     guards.push(
-      "Pilot mode: do not reproduce long copyrighted text verbatim unless it is clearly teacher-provided; prefer paraphrase, summary, and original writing inspired by the material."
+      "Pilot mode: do not reproduce long copyrighted text verbatim unless it is clearly teacher-provided; prefer transformation, summary and original writing where appropriate."
     );
   }
 
@@ -473,52 +483,50 @@ function buildSystemPrompt(body: GeneratePackBody) {
     if (tc.crossCurricularLinks?.length) contextBits.push(`Cross-curricular: ${tc.crossCurricularLinks.join(", ")}`);
     if (tc.authenticMaterialTypes?.length) contextBits.push(`Authentic material types: ${tc.authenticMaterialTypes.join(", ")}`);
     if (tc.localVocab?.trim()) contextBits.push(`Teacher notes / local vocab:\n${tc.localVocab.trim()}`);
-    if (tc.localGlossary?.length)
-      contextBits.push(`Local glossary:\n${tc.localGlossary.map((g) => `- ${g.term}: ${g.note}`).join("\n")}`);
+    if (tc.localGlossary?.length) contextBits.push(`Local glossary:\n${tc.localGlossary.map((g) => `- ${g.term}: ${g.note}`).join("\n")}`);
   }
 
-  const plcBits: string[] = [];
-  if (body.strand) plcBits.push(`Strand: ${body.strand}`);
-  if (body.element) plcBits.push(`Element: ${body.element}`);
-  if (body.outcomeLabel) plcBits.push(`Outcome label: ${body.outcomeLabel}`);
-  if (body.mode) plcBits.push(`Mode: ${body.mode}`);
-  if (body.purpose) plcBits.push(`Purpose: ${body.purpose}`);
-  if (body.genre) plcBits.push(`Genre/Text type: ${body.genre}`);
-  if (body.form) plcBits.push(`Form: ${body.form}`);
+  const targetBits = [
+    `CEFR level: ${cefrLevel}`,
+    `Text type: ${textType}`,
+    body.mode ? `Mode: ${body.mode}` : "",
+    body.purpose ? `Purpose: ${body.purpose}` : "",
+    body.form ? `Form: ${body.form}` : "",
+    body.strand ? `Strand/context: ${body.strand}` : "",
+    body.element ? `Element/context: ${body.element}` : "",
+    body.outcomeLabel ? `Outcome/context: ${body.outcomeLabel}` : "",
+  ].filter(Boolean);
 
   return [
-    `You generate Irish primary school reading packs.`,
-    `Stage: ${stage}. Class: ${klass}.`,
+    "You generate CEFR-aligned ESL reading packs for teachers and learners.",
+    buildCambridgeConstraints(cefrLevel, textType),
     guards.map((g) => `- ${g}`).join("\n"),
-    plcBits.length ? `\nCurriculum target:\n${plcBits.map((p) => `- ${p}`).join("\n")}` : "",
+    targetBits.length ? `\nTeacher target:\n${targetBits.map((p) => `- ${p}`).join("\n")}` : "",
     contextBits.length ? `\nTeacher context:\n${contextBits.map((c) => `- ${c}`).join("\n")}` : "",
-    `\nOutput MUST match the provided JSON schema exactly.`,
-  ]
-    .filter(Boolean)
-    .join("\n");
+    "\nOutput must match the provided JSON schema exactly.",
+  ].filter(Boolean).join("\n");
 }
 
 function buildUserInstruction(body: GeneratePackBody, primaryTextHint: string) {
-  const stage = body.stage ?? 3;
-  const targets = stageTargets(stage);
+  const cefrLevel = parseCefrLevel(body.cefrLevel ?? body.level ?? body.stage ?? "B1");
+  const textType = parseTextType(body.textType ?? body.genre ?? "article");
+  const targets = getWordTarget(cefrLevel, textType);
 
   return [
-    `Create a reading pack.`,
+    "Create an Aontas ESL reading pack.",
     `Title: ${body.title || "Reading Pack"}`,
-    `Stage: ${stage}`,
-    `Class: ${body.schoolClass ?? 3}`,
-
+    `CEFR: ${cefrLevel}`,
+    `Text type: ${textType}`,
     `\nPrimary material:\n${primaryTextHint}`,
-
-    `\nReading requirements:`,
-    `- Write/produce a coherent STANDARD reading text that is roughly ${targets.min}-${targets.max} words (not a short snippet).`,
-    `- SUPPORTED should cover the same content and be similar length, but with access supports (chunking, clearer sentences, occasional word bank/glossary cues).`,
-    `- If the provided excerpt is short, expand with original writing on the same theme rather than staying tiny.`,
-
-    `\nExercises:`,
-    `- Make ~10-12 exercises.`,
-    `- Ensure the answer key is shared between STANDARD and SUPPORTED.`,
-    `- Use a mix: literal + inferential, vocab in context, sequencing, author craft, short response.`,
+    "\nReading requirements:",
+    `- Produce a coherent STANDARD ${textType} of roughly ${targets.target} words (acceptable range ${targets.min}-${targets.max}).`,
+    "- Keep the source facts locked: do not add unsupported factual claims.",
+    "- SUPPORTED must cover the same content and learning target, using access supports rather than easier answers.",
+    "- If the source is short, expand only with safe, generic connective language or clearly non-factual examples; do not invent source facts.",
+    "\nExercises:",
+    "- Create about 10-12 exercises.",
+    "- STANDARD and SUPPORTED must use the same correct answers.",
+    "- Use a mix of literal and inferential comprehension, vocabulary in context, sequencing/organisation, author craft and short response.",
   ].join("\n");
 }
 
@@ -541,7 +549,8 @@ async function callOpenAIResponses(payload: any) {
 
   if (!res.ok) {
     const errText = await res.text().catch(() => "");
-    throw new Error(`OpenAI error ${res.status}: ${errText.slice(0, 800)}`);
+    console.error("Reading generation upstream error", res.status, errText.slice(0, 800));
+    throw new Error(`Generation service returned an error (${res.status}).`);
   }
 
   return res.json();
@@ -550,6 +559,13 @@ async function callOpenAIResponses(payload: any) {
 /* ---------------- Route ---------------- */
 
 export async function POST(req: Request) {
+  const rate = checkRateLimit(req, { bucket: "reading-generate", limit: 15 });
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again shortly." },
+      { status: 429, headers: { "Retry-After": String(rate.retryAfterSeconds) } }
+    );
+  }
   try {
     const rawBody = await req.json();
     const body = normalizeTeacherRequest(rawBody);
@@ -576,8 +592,23 @@ export async function POST(req: Request) {
       primaryText = await fetchUrlText(primaryMat.url);
     }
 
+    if (primaryText.length > 50_000) {
+      return NextResponse.json({ error: "Source text is too large. Please shorten it before generating." }, { status: 413 });
+    }
+
+    const cefrLevel = parseCefrLevel(body.cefrLevel ?? body.level ?? body.stage ?? "B1");
+    const textType = parseTextType(body.textType ?? body.genre ?? "article");
     const stage = body.stage ?? 3;
     const schoolClass = body.schoolClass ?? 3;
+
+    if (primaryImageDataUrl) {
+      if (!/^data:image\/(png|jpe?g|webp|gif);base64,/i.test(primaryImageDataUrl)) {
+        return NextResponse.json({ error: "Unsupported image format. Use PNG, JPEG, WEBP or GIF." }, { status: 400 });
+      }
+      if (primaryImageDataUrl.length > MAX_IMAGE_DATA_URL_CHARS) {
+        return NextResponse.json({ error: "Image is too large. Please use a smaller screenshot or photo." }, { status: 413 });
+      }
+    }
 
     if (!primaryText && !primaryImageDataUrl) {
       return NextResponse.json(
@@ -679,6 +710,8 @@ export async function POST(req: Request) {
 
     // Normalize defaults and echo helpful fields
     pack.title = String(pack.title || body.title || "Reading Pack");
+    pack.cefrLevel = String(pack.cefrLevel || cefrLevel);
+    pack.textType = String(pack.textType || textType);
     pack.stage = Number(pack.stage ?? stage);
     pack.schoolClass = Number(pack.schoolClass ?? schoolClass);
 

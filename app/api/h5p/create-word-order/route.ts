@@ -80,7 +80,7 @@ function pickSentences(text: string, stage: number, max = 8): string[] {
 function wrapEveryWord(sentence: string) {
   // Wrap word tokens in *...* so DragText makes them draggable+blank.
   // Keep punctuation outside.
-  return sentence.replace(/([\p{L}\p{M}\p{N}\u0027]+)/gu, "**");
+  return sentence.replace(/([\p{L}\p{M}\p{N}\u0027]+)/gu, "*$1*");
 }
 
 function buildDragTextParams(textField: string) {
@@ -163,7 +163,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing readingText" }, { status: 400 });
     }
 
-    const templateDir = path.join((process.env.H5P_ROOT ?? ""), "_templates", "dragtext");
+    const h5pRoot = process.env.H5P_ROOT || path.join(process.cwd(), "public", "h5p");
+    const templateDir = path.join(h5pRoot, "_templates", "dragtext");
     const templateLibDir = path.join(templateDir, "libraries");
     if (!existsSync(templateDir) || !existsSync(templateLibDir)) {
       return NextResponse.json(
@@ -182,7 +183,8 @@ const stage = Number.isFinite(Number(body.stage)) ? Number(body.stage) : cefrToS
     const id =
       safeId(body.id || `${baseTitle}-word-order-${Date.now().toString(36)}`);
 
-    const outDir = path.join((process.env.H5P_WRITE_ROOT ?? (process.env.H5P_ROOT ?? "")), id);
+    const writeRoot = process.env.H5P_WRITE_ROOT || h5pRoot;
+    const outDir = path.join(writeRoot, id);
     if (existsSync(outDir)) {
       return NextResponse.json({ error: `H5P id already exists: ${id}` }, { status: 409 });
     }

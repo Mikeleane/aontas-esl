@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { parseCefrLevel, parseTextType, buildCambridgeConstraints } from "../../../lib/cefrCambridge";
+import { checkRateLimit } from "@/lib/server/rateLimit";
 
 type AdaptRequestBody = {
   inputText: string;
@@ -112,17 +113,26 @@ function simpleFallbackAdaptation(
 }
 
 export async function POST(request: Request) {
+  const rate = checkRateLimit(request, { bucket: "adapt", limit: 20 });
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again shortly." },
+      { status: 429, headers: { "Retry-After": String(rate.retryAfterSeconds) } }
+    );
+  }
   let cambridgeBlock = "";
   try {
     const body = (await request.json()) as AdaptRequestBody;
-    const { inputText, outputLanguage, level, outputType, dyslexiaFriendly } =
-      body;
+    const { inputText, outputLanguage, level, outputType, dyslexiaFriendly } = body;
+    const cefrLevel = parseCefrLevel(level);
+    const textType = parseTextType(body.textType ?? outputType);
+    cambridgeBlock = buildCambridgeConstraints(cefrLevel, textType);
 
     if (!inputText || !outputLanguage || !level || !outputType) {
-      return NextResponse.json(
-        { error: "Missing required fields." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
+    }
+    if (inputText.length > 50_000) {
+      return NextResponse.json({ error: "Source text is too large. Please shorten it before generating." }, { status: 413 });
     }
 
     const apiKey = process.env.OPENAI_API_KEY;
@@ -138,16 +148,13 @@ export async function POST(request: Request) {
     const targets = getLengthTargets(level);
 
     if (!apiKey) {
-      console.warn("OPENAI_API_KEY missing – using fallback adaptation.");
-      const { standardOutput, adaptedOutput } = simpleFallbackAdaptation(
-        inputText,
-        outputLanguage,
-        level,
-        outputType,
-        dyslexiaFriendly,
-        "NO_API_KEY_CONFIGURED"
-      );
-      return NextResponse.json({ standardOutput, adaptedOutput });
+      if (process.env.ALLOW_DEGRADED_FALLBACK === "true") {
+        const { standardOutput, adaptedOutput } = simpleFallbackAdaptation(
+          inputText, outputLanguage, level, outputType, dyslexiaFriendly, "NO_API_KEY_CONFIGURED"
+        );
+        return NextResponse.json({ standardOutput, adaptedOutput, degraded: true, warning: "AI generation is unavailable; showing a clearly marked fallback." });
+      }
+      return NextResponse.json({ error: "AI generation is not configured on the server." }, { status: 503 });
     }
 
     const systemPrompt = `
@@ -352,23 +359,13 @@ Respond ONLY with valid JSON, with this exact structure and no extra text:
     if (!response.ok) {
       const errorText = await response.text();
       console.error("OpenAI API error:", response.status, errorText);
-      const { standardOutput, adaptedOutput } = simpleFallbackAdaptation(
-        inputText,
-        outputLanguage,
-        level,
-        outputType,
-        dyslexiaFriendly,
-        "API_ERROR"
-      );
-      return NextResponse.json(
-        {
-          standardOutput,
-          adaptedOutput,
-          warning:
-            "AI API request failed – returned fallback adaptation instead.",
-        },
-        { status: 200 }
-      );
+      if (process.env.ALLOW_DEGRADED_FALLBACK === "true") {
+        const { standardOutput, adaptedOutput } = simpleFallbackAdaptation(
+          inputText, outputLanguage, level, outputType, dyslexiaFriendly, "API_ERROR"
+        );
+        return NextResponse.json({ standardOutput, adaptedOutput, degraded: true, warning: "AI generation failed; showing a clearly marked fallback." });
+      }
+      return NextResponse.json({ error: "AI generation service failed." }, { status: 502 });
     }
 
     const data: any = await response.json();
@@ -384,23 +381,13 @@ Respond ONLY with valid JSON, with this exact structure and no extra text:
     }
 
     if (!parsed?.standard || !parsed?.adapted) {
-      const { standardOutput, adaptedOutput } = simpleFallbackAdaptation(
-        inputText,
-        outputLanguage,
-        level,
-        outputType,
-        dyslexiaFriendly,
-        "PARSE_ERROR"
-      );
-      return NextResponse.json(
-        {
-          standardOutput,
-          adaptedOutput,
-          warning:
-            "Could not parse AI response JSON – returned fallback adaptation instead.",
-        },
-        { status: 200 }
-      );
+      if (process.env.ALLOW_DEGRADED_FALLBACK === "true") {
+        const { standardOutput, adaptedOutput } = simpleFallbackAdaptation(
+          inputText, outputLanguage, level, outputType, dyslexiaFriendly, "PARSE_ERROR"
+        );
+        return NextResponse.json({ standardOutput, adaptedOutput, degraded: true, warning: "AI response could not be validated; showing a clearly marked fallback." });
+      }
+      return NextResponse.json({ error: "AI response could not be validated." }, { status: 502 });
     }
 
     const standardOutput = parsed.standard;

@@ -97,7 +97,7 @@ export default function ReadingStudio() {
     } finally {
       setBusy("");
     }
-  }, []);
+  }, [cefrLevel, textType]);
 
   return (
     <div style={{ padding: 18, maxWidth: 1100, margin: "0 auto" }}>

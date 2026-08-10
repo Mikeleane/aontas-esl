@@ -1,11 +1,9 @@
-"use client";
-import React from "react";
-import ReadingPackApp from "../../.patch_backups/parity_merge_20260210-210358/app/_features/reading/ReadingPackApp";
+import ReadingStudio from "../_features/reading/ReadingStudio";
 
 export default function PackPage() {
   return (
     <main className="min-h-screen">
-      <ReadingPackApp />
+      <ReadingStudio />
     </main>
   );
 }

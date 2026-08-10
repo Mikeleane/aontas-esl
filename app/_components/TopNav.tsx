@@ -55,7 +55,7 @@ const pill: React.CSSProperties = {
 };
 
 const links: Array<{ href: string; label: string }> = [
-  { href: "/", label: "Reading" },
+  { href: "/pack", label: "Reading" },
   { href: "/exercises", label: "Exercises" },
   { href: "/wordiness", label: "Wordiness" },
   { href: "/social", label: "Social Thread" },
