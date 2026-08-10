@@ -9,10 +9,11 @@
     "lint": "eslint app lib",
     "typecheck": "tsc --noEmit",
     "check": "npm run typecheck && npm run lint",
-    "test": "node scripts/verify-phase1.cjs && node scripts/verify-phase2.cjs && node scripts/verify-phase2b.cjs",
+    "test": "node scripts/verify-phase1.cjs && node scripts/verify-phase2.cjs && node scripts/verify-phase2b.cjs && node scripts/verify-phase2c.cjs",
     "verify:phase1": "node scripts/verify-phase1.cjs",
     "verify:phase2": "node scripts/verify-phase2.cjs",
-    "verify:phase2b": "node scripts/verify-phase2b.cjs"
+    "verify:phase2b": "node scripts/verify-phase2b.cjs",
+    "verify:phase2c": "node scripts/verify-phase2c.cjs"
   },
   "dependencies": {
     "@mozilla/readability": "0.5.0",

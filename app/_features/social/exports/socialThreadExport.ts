@@ -1,40 +1,25 @@
-﻿"use client";
+"use client";
 
-/**
- * Social Thread HTML Export (offline-friendly)
- * - Defaults to 1 comment visible
- * - Highlights the current comment
- * - Next scrolls to fully show the comment (accounts for bottom dock)
- * - Karaoke mode (word highlight while TTS plays; best-effort depending on browser voice support)
- * - Mystery words (click-to-reveal)
- *
- * This file is intentionally self-contained and typed loosely to avoid build breakage.
- */
+import { normalizeSocialPack, type SocialPackData } from "@/lib/contracts/social";
 
 export type ExportHtmlOptions = {
-  defaultLens?: string;                 // "builder" | "debate" etc (future)
+  defaultLens?: string;
   defaultAutoVoices?: boolean;
   defaultSpeakEmojis?: boolean;
   defaultShowEmojis?: boolean;
   defaultPace?: "all" | "step" | string;
-  initialVisibleCount?: number;         // default 1
-  defaultKaraoke?: boolean;             // default false
-  defaultMysteryWordsPerMsg?: number;   // default 0
+  initialVisibleCount?: number;
+  defaultKaraoke?: boolean;
+  defaultMysteryWordsPerMsg?: number;
 };
 
 export type ExportOpts = {
-  pack: any;
+  pack: SocialPackData | unknown;
   filename?: string;
-
-  // Kept for compatibility with existing calls in ReadingPackApp
   precomputeUnpacks?: boolean;
   precomputeLens?: string;
   precomputeLimitPerVariant?: number;
-
   htmlOptions?: ExportHtmlOptions;
-
-  // forward compatible
-  [key: string]: any;
 };
 
 function safeFileBase(s: string) {
@@ -65,38 +50,16 @@ function escapeHtml(s: string) {
     .replace(/>/g, "&gt;");
 }
 
-function pickVariantPack(pack: any, variant: string) {
-  // Try a bunch of likely shapes, then fallback
-  return (
-    pack?.variants?.[variant] ||
-    pack?.[variant] ||
-    pack?.variantPacks?.[variant] ||
-    pack
-  );
-}
-
-function getMessages(variantPack: any): any[] {
-  return (
-    variantPack?.messages ||
-    variantPack?.thread ||
-    variantPack?.chat ||
-    variantPack?.items ||
-    []
-  );
-}
-
-function getConcepts(pack: any): any[] {
-  return pack?.concepts || pack?.vocab || pack?.glossary || [];
+function safeScriptJson(value: unknown): string {
+  return JSON.stringify(value)
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/&/g, "\\u0026");
 }
 
 export async function exportSocialThreadHtml(opts: ExportOpts): Promise<void> {
-  const pack = opts?.pack ?? {};
-  const title =
-    pack?.title ||
-    pack?.topic ||
-    pack?.unitTitle ||
-    pack?.meta?.title ||
-    "Social Thread";
+  const pack = normalizeSocialPack(opts.pack);
+  const title = pack.title || "Social Thread";
 
   const htmlOptions: ExportHtmlOptions = {
     defaultLens: opts?.htmlOptions?.defaultLens ?? "builder",
@@ -109,7 +72,7 @@ export async function exportSocialThreadHtml(opts: ExportOpts): Promise<void> {
     defaultMysteryWordsPerMsg: Math.max(0, Number(opts?.htmlOptions?.defaultMysteryWordsPerMsg ?? 0)),
   };
 
-  const packJson = JSON.stringify(pack);
+  const packJson = safeScriptJson(pack);
 
   const fileBase = safeFileBase(opts?.filename || title);
   const filename = `${fileBase}.html`;
@@ -393,13 +356,20 @@ export async function exportSocialThreadHtml(opts: ExportOpts): Promise<void> {
   </div>
 </div>
 
-<script id="__PACK__" type="application/json">${escapeHtml(packJson)}</script>
+<script id="__PACK__" type="application/json">${packJson}</script>
 
 <script>
 (function(){
   const pack = JSON.parse(document.getElementById("__PACK__").textContent || "{}");
 
-  const opt = ${escapeHtml(JSON.stringify(htmlOptions))};
+  const opt = ${safeScriptJson(htmlOptions)};
+
+  function escapeHtml(value){
+    return String(value == null ? "" : value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
 
   const els = {
     thread: document.getElementById("thread"),
@@ -666,10 +636,9 @@ export async function exportSocialThreadHtml(opts: ExportOpts): Promise<void> {
     const showEmojis = !!els.chkEmojis.checked;
     const mysteryN = parseInt(els.mysterySel.value || "0", 10);
 
-    const vp = (pack.variants && pack.variants[variant]) ? pack.variants[variant] :
-               (pack[variant] ? pack[variant] : pack);
-    const msgs = (vp && (vp.messages || vp.thread || vp.chat || vp.items)) ? (vp.messages || vp.thread || vp.chat || vp.items) : [];
-    const concepts = getConcepts(pack);
+    const vp = pack[variant] || pack.standard;
+    const msgs = (vp && Array.isArray(vp.messages)) ? vp.messages : [];
+    const concepts = Array.isArray(pack.concepts) ? pack.concepts : [];
 
     els.threadMeta.textContent = msgs.length ? (msgs.length + " messages") : "No messages found";
     els.conceptMeta.textContent = concepts.length ? (concepts.length + " items") : "No concepts";
@@ -836,8 +805,8 @@ export async function exportSocialThreadHtml(opts: ExportOpts): Promise<void> {
   // Controls
   els.btnNext.addEventListener("click", () => {
     const variant = els.variantSel.value;
-    const vp = (pack.variants && pack.variants[variant]) ? pack.variants[variant] : (pack[variant] ? pack[variant] : pack);
-    const msgs = (vp && (vp.messages || vp.thread || vp.chat || vp.items)) ? (vp.messages || vp.thread || vp.chat || vp.items) : [];
+    const vp = pack[variant] || pack.standard;
+    const msgs = (vp && Array.isArray(vp.messages)) ? vp.messages : [];
 
     visibleCount = Math.min(msgs.length, visibleCount + 1);
     render();

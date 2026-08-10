@@ -1,62 +1,55 @@
 "use client";
 
 import React, { useMemo, useRef, useState } from "react";
-
-// Use a relative import so you don't get path-alias headaches.
+import { CEFR_LEVELS, type CefrLevel } from "@/lib/cefr";
+import { normalizeSocialPack, type SocialPackData } from "@/lib/contracts/social";
 import { exportSocialThreadHtml } from "../_features/social/exports/socialThreadExport";
 
-type ApiResponse = { pack: any };
+type ApiResponse = { pack?: unknown; error?: string };
 
-async function postJson<T>(url: string, body: any, signal?: AbortSignal): Promise<T> {
-  const res = await fetch(url, {
+async function postJson<T>(url: string, body: Record<string, unknown>, signal?: AbortSignal): Promise<T> {
+  const response = await fetch(url, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(body),
     signal,
   });
-  const txt = await res.text().catch(() => "");
-  if (!res.ok) throw new Error(`HTTP ${res.status}: ${txt || res.statusText}`);
-  return (txt ? JSON.parse(txt) : {}) as T;
+  const text = await response.text().catch(() => "");
+  if (!response.ok) {
+    let message = text || response.statusText;
+    try {
+      const parsed = JSON.parse(text) as { error?: unknown };
+      if (typeof parsed.error === "string") message = parsed.error;
+    } catch {
+      // Keep the plain response text.
+    }
+    throw new Error(message || `HTTP ${response.status}`);
+  }
+  return (text ? JSON.parse(text) : {}) as T;
 }
 
-function downloadTextFile(filename: string, text: string, mime = "text/html;charset=utf-8") {
-  const blob = new Blob([text], { type: mime });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 30_000);
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error || "Unknown error");
 }
 
 export default function SocialPage() {
   const [text, setText] = useState(
-    "Create a school-appropriate class chat about staying organised and doing homework. Include 10-14 messages."
+    "Create a class chat about staying organised and doing homework."
   );
-
-  // ESL: A2-C2
-  const [cefrLevel, setCefrLevel] = useState<string>("B1");
+  const [cefrLevel, setCefrLevel] = useState<CefrLevel>("B1");
   const [tongueInCheek, setTongueInCheek] = useState(false);
-
-  const [pack, setPack] = useState<any | null>(null);
+  const [pack, setPack] = useState<SocialPackData | null>(null);
   const [busy, setBusy] = useState<"" | "generate" | "export">("");
   const [err, setErr] = useState("");
-
   const abortRef = useRef<AbortController | null>(null);
 
-  const preview = useMemo(() => {
-    const msgs = pack?.standard?.messages;
-    if (!Array.isArray(msgs)) return [];
-    return msgs.slice(0, 6);
-  }, [pack]);
+  const preview = useMemo(() => pack?.standard.messages.slice(0, 6) ?? [], [pack]);
 
   async function handleGenerate() {
     setErr("");
     setPack(null);
 
-    const cleaned = String(text || "").trim();
+    const cleaned = text.trim();
     if (!cleaned) {
       setErr("Paste some text first.");
       return;
@@ -64,23 +57,19 @@ export default function SocialPage() {
 
     abortRef.current?.abort();
     abortRef.current = new AbortController();
-
     setBusy("generate");
+
     try {
-      const res = await postJson<ApiResponse>(
+      const response = await postJson<ApiResponse>(
         "/api/social-thread",
-        {
-          text: cleaned,
-          cefrLevel,
-          level: cefrLevel, // back-compat
-          tongueInCheek,
-        },
+        { text: cleaned, cefrLevel, tongueInCheek },
         abortRef.current.signal
       );
-      if (!res?.pack) throw new Error("No pack returned.");
-      setPack(res.pack);
-    } catch (e: any) {
-      setErr(String(e?.message || e || "Unknown error"));
+      if (!response.pack) throw new Error(response.error || "No social thread returned.");
+      setPack(normalizeSocialPack(response.pack, { cefrLevel }));
+    } catch (error: unknown) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      setErr(errorMessage(error));
     } finally {
       setBusy("");
     }
@@ -95,11 +84,8 @@ export default function SocialPage() {
 
     setBusy("export");
     try {
-      const maybeHtml = await (exportSocialThreadHtml as any)({
+      await exportSocialThreadHtml({
         pack,
-        precomputeUnpacks: true,
-        precomputeLens: "builder",
-        precomputeLimitPerVariant: 30,
         htmlOptions: {
           defaultLens: "builder",
           defaultAutoVoices: true,
@@ -109,15 +95,8 @@ export default function SocialPage() {
           initialVisibleCount: 4,
         },
       });
-
-      if (typeof maybeHtml === "string" && maybeHtml.trim().startsWith("<")) {
-        const title = String(pack?.title || "social-thread")
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, "-");
-        downloadTextFile(`aontas-social-${title}.html`, maybeHtml, "text/html;charset=utf-8");
-      }
-    } catch (e: any) {
-      setErr(String(e?.message || e || "Unknown error"));
+    } catch (error: unknown) {
+      setErr(errorMessage(error));
     } finally {
       setBusy("");
     }
@@ -127,7 +106,7 @@ export default function SocialPage() {
     <div style={{ padding: 18, maxWidth: 1100, margin: "0 auto" }}>
       <div style={{ fontWeight: 950, fontSize: 20 }}>Social Thread Generator</div>
       <div style={{ color: "#64748b", marginTop: 8 }}>
-        Generates a Standard + Supported social-media-style chat pack, then exports an offline HTML file.
+        Generates aligned Standard + Supported social-media-style English practice from A1 to C2.
       </div>
 
       <div
@@ -144,7 +123,7 @@ export default function SocialPage() {
         </div>
         <textarea
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(event) => setText(event.target.value)}
           style={{
             width: "100%",
             minHeight: 140,
@@ -160,20 +139,22 @@ export default function SocialPage() {
             <span style={{ fontWeight: 800 }}>CEFR</span>
             <select
               value={cefrLevel}
-              onChange={(e) => setCefrLevel(e.target.value)}
+              onChange={(event) => setCefrLevel(event.target.value as CefrLevel)}
               style={{ padding: "6px 8px", borderRadius: 10, border: "1px solid rgba(15,23,42,.18)" }}
             >
-              {["A2", "B1", "B2", "C1", "C2"].map((L) => (
-                <option key={L} value={L}>
-                  {L}
-                </option>
+              {CEFR_LEVELS.map((level) => (
+                <option key={level} value={level}>{level}</option>
               ))}
             </select>
           </div>
 
           <label style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 13 }}>
-            <input type="checkbox" checked={tongueInCheek} onChange={(e) => setTongueInCheek(e.target.checked)} />
-            Light tongue-in-cheek tone (still school-appropriate)
+            <input
+              type="checkbox"
+              checked={tongueInCheek}
+              onChange={(event) => setTongueInCheek(event.target.checked)}
+            />
+            Light tongue-in-cheek tone
           </label>
         </div>
 
@@ -267,13 +248,15 @@ export default function SocialPage() {
         ) : (
           <div style={{ marginTop: 10 }}>
             <div style={{ color: "#64748b", fontSize: 12, marginBottom: 8 }}>
-              {pack?.title || "Untitled"} {" - "}
-              {Array.isArray(pack?.standard?.messages) ? pack.standard.messages.length : 0} messages
+              {pack.title} - {pack.cefrLevel} - {pack.standard.messages.length} aligned messages - {pack.concepts.length} concepts
             </div>
-            {preview.map((m: any, i: number) => (
-              <div key={i} style={{ padding: "8px 0", borderTop: i === 0 ? "none" : "1px solid rgba(15,23,42,.08)" }}>
-                <div style={{ fontWeight: 900 }}>{m?.speaker || "?"}</div>
-                <div style={{ color: "#0f172a" }}>{m?.text || ""}</div>
+            {preview.map((message, index) => (
+              <div
+                key={message.id}
+                style={{ padding: "8px 0", borderTop: index === 0 ? "none" : "1px solid rgba(15,23,42,.08)" }}
+              >
+                <div style={{ fontWeight: 900 }}>{message.emoji ? `${message.emoji} ` : ""}{message.speaker}</div>
+                <div style={{ color: "#0f172a" }}>{message.text}</div>
               </div>
             ))}
           </div>
