@@ -94,6 +94,12 @@
   details{margin-top:12px;border:1px solid var(--line);border-radius:14px;background:rgba(0,0,0,.10);padding:10px 12px}
   summary{cursor:pointer;font-weight:900;list-style:none}
   summary::-webkit-details-marker{display:none}
+
+.wordiness-game-settings{border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.03);padding:8px 10px}.wordiness-game-settings summary{cursor:pointer;font-weight:900}
+.slot.ready-slot{border-color:rgba(56,189,248,.8)!important;box-shadow:0 0 0 3px rgba(56,189,248,.18);background:rgba(56,189,248,.08)}
+.slot.drag-over{border-color:var(--ok)!important;background:rgba(34,197,94,.12);transform:translateY(-2px)}
+.tile[draggable="true"]{cursor:grab}.tile[draggable="true"]:active{cursor:grabbing}
+.how-strip{margin:0 0 14px;padding:11px 13px;border:1px solid rgba(56,189,248,.35);border-radius:12px;background:rgba(56,189,248,.08);font-weight:800}
 </style>
 <style>
 /* wordiness-ui-polish-v4 */
@@ -148,13 +154,13 @@ input, textarea, select{
     <div class="sub">Build words from prefix + root + suffix. Supported adds labels + reminder notes (same answers).</div>
   </div>
   <div class="row">
-    <label class="row" style="gap:6px;color:var(--muted);font-size:13px">View
-      <select id="variant"><option value="standard">Standard</option><option value="supported">Supported</option></select>
-    </label>
-    <label class="row" style="gap:6px;color:var(--muted);font-size:13px">Voice <select id="voice"></select></label>
     <button class="ghost" id="hearClue">Hear clue</button>
-    <button class="ghost" id="hearWord">Hear word</button>
+    <button class="ghost" id="hearWord">Hear built word</button>
     <button id="next">Next</button>
+    <details class="wordiness-game-settings"><summary>Settings</summary><div class="row" style="margin-top:8px">
+      <label class="row" style="gap:6px;color:var(--muted);font-size:13px">View <select id="variant"><option value="standard">Standard</option><option value="supported">Supported</option></select></label>
+      <label class="row" style="gap:6px;color:var(--muted);font-size:13px">Voice <select id="voice"></select></label>
+    </div></details>
   </div>
 </header>
 
@@ -173,14 +179,15 @@ input, textarea, select{
   </div>
 
   <div class="bd">
+    <div class="how-strip">Read the clue → choose a tile → place it in Prefix, Root or Suffix → press Check.</div>
     <div class="grid">
       <div>
-        <div class="sub" style="margin-bottom:8px">Tiles (tap one, then tap a slot)</div>
+        <div class="sub" style="margin-bottom:8px"><b>1. Choose a part</b> — tap it or drag it</div>
         <div class="bank" id="bank"></div>
       </div>
 
       <div>
-        <div class="sub" style="margin-bottom:8px">Build the word</div>
+        <div class="sub" style="margin-bottom:8px"><b>2. Place it</b> — tap or drop it in the matching slot</div>
         <div class="slots">
           <div class="slot" data-slot="prefix">
             <div><b>Prefix</b><small>start</small></div>
@@ -200,7 +207,7 @@ input, textarea, select{
         </div>
 
         <div class="status">
-          <span>Status: <b id="status">ready</b></span>
+          <span>Status: <b id="status">ready — choose a tile</b></span>
           <span>Built: <b id="built">—</b></span>
         </div>
       </div>
@@ -247,7 +254,13 @@ function speak(text, rate=1.0){
 }
 
 const state = { variant:"standard", i:0, selected:null, slots:{prefix:"",root:"",suffix:""} };
-const builtWord = ()=> (state.slots.prefix||"")+(state.slots.root||"")+(state.slots.suffix||"");
+function joinMorphemes(prefix, root, suffix){
+  prefix=prefix||""; root=root||""; suffix=suffix||"";
+  // Common classroom spelling change: believe + able → believable.
+  if(suffix==="able" && /ieve$/i.test(root)) root=root.slice(0,-1);
+  return prefix+root+suffix;
+}
+const builtWord = ()=> joinMorphemes(state.slots.prefix,state.slots.root,state.slots.suffix);
 const current = ()=> TASKS[state.i];
 
 function setVariant(v){
@@ -288,6 +301,9 @@ function renderBank(){
     const b=document.createElement("button");
     b.type="button";
     b.className="tile";
+    b.draggable=true;
+    b.dataset.type=x.type; b.dataset.value=x.value;
+    b.addEventListener("dragstart",(event)=>{ event.dataTransfer.setData("text/plain",JSON.stringify(x)); event.dataTransfer.effectAllowed="move"; });
     b.innerHTML = `${state.variant==="supported"
       ? `<span class="pill ${x.type==="prefix"?"pref":x.type==="root"?"root":"suf"}">${x.type}</span>`
       : ""}<span>${esc(x.value)}</span>`;
@@ -295,7 +311,8 @@ function renderBank(){
       bank.querySelectorAll(".tile").forEach(n=>n.classList.remove("sel"));
       b.classList.add("sel");
       state.selected=x;
-      setStatus(`<span style="color:var(--acc);font-weight:900">selected</span> — tap a slot to place`);
+      document.querySelectorAll(".slot").forEach(n=>n.classList.toggle("ready-slot",n.dataset.slot===x.type));
+      setStatus(`<span style="color:var(--acc);font-weight:900">${x.value} selected</span> — tap the ${x.type} slot or drag it there`);
     });
     bank.appendChild(b);
   });
@@ -310,6 +327,7 @@ function place(slot){
   state.slots[slot]=state.selected.value;
   state.selected=null;
   $("#bank").querySelectorAll(".tile").forEach(n=>n.classList.remove("sel"));
+  document.querySelectorAll(".slot").forEach(n=>n.classList.remove("ready-slot","drag-over"));
   renderSlots();
   setStatus("ready");
 }
@@ -363,6 +381,15 @@ $("#show").addEventListener("click",showAnswer);
 $("#next").addEventListener("click",next);
 $("#hearClue").addEventListener("click",()=>speak(current().clue,0.95));
 $("#hearWord").addEventListener("click",()=>speak(builtWord()||current().answer,0.92));
+
+document.querySelectorAll(".slot[data-slot]").forEach(slot=>{
+  slot.addEventListener("dragover",event=>{event.preventDefault();slot.classList.add("drag-over");});
+  slot.addEventListener("dragleave",()=>slot.classList.remove("drag-over"));
+  slot.addEventListener("drop",event=>{
+    event.preventDefault(); slot.classList.remove("drag-over");
+    try{const item=JSON.parse(event.dataTransfer.getData("text/plain"));if(item&&item.type===slot.dataset.slot){state.selected=item;place(slot.dataset.slot)}else setStatus(`<span class="no">That part belongs in the ${item.type} slot.</span>`);}catch(error){}
+  });
+});
 
 refreshVoices(); if(window.speechSynthesis) speechSynthesis.onvoiceschanged=refreshVoices;
 render();
@@ -618,7 +645,7 @@ render();
     // Crest fallback (works for /wordiness and file:// exports)
     var crest = document.getElementById("crest");
     if (crest && crest.tagName === "IMG") {
-      crest.addEventListener("error", function(){ crest.src="/wordiness/crest.png"; }, { once:true });
+      crest.addEventListener("error", function(){ crest.src="/wordiness/aontas-esl-mark.svg"; }, { once:true });
     }
 
     if(!isTouch) return;
@@ -665,5 +692,14 @@ render();
 
 <!-- wordiness-seed-bridge-v1 -->
 <script src="wordiness-seed-bridge.js"></script>
+
+<script src="wordiness-bank.js"></script>
+<script src="wordiness-platform.js"></script>
+<!-- wordiness-platform-mount-v1 -->
+<script>
+window.addEventListener("DOMContentLoaded", function () {
+  if (window.WordinessPlatform) window.WordinessPlatform.mountGameBar({gameId:"morpheme-mixer",title:"Morpheme Mixer"});
+});
+</script>
 </body>
 </html>

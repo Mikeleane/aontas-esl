@@ -89,6 +89,11 @@
   table{ width:100%; border-collapse:collapse; font-size:13px; }
   th,td{ border-bottom:1px solid rgba(255,255,255,.10); padding:8px 6px; text-align:left; vertical-align:top; }
   th{ font-weight:950; }
+
+.wordiness-game-settings{border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.03);padding:8px 10px;min-width:120px}
+.wordiness-game-settings summary{cursor:pointer;font-weight:900}
+.wordiness-game-settings[open]{min-width:min(560px,100%)}
+@media(max-width:760px){header{display:block}.wordiness-game-settings{margin-top:10px}.hd{align-items:flex-start}.hd>.row{width:100%}}
 </style>
 <style>
 /* wordiness-ui-polish-v4 */
@@ -142,24 +147,18 @@ input, textarea, select{
       <h1>Wordiness — Morpheme LEGO</h1>
       <div class="sub">Snap <b>prefix</b> + <b>base</b> + <b>suffix</b>. Supported adds cues, but the answer key stays the same.</div>
     </div>
-    <div class="row">
-      <label class="row" style="gap:6px;color:var(--muted);font-size:13px">Mode
-        <select id="mode">
-          <option value="challenge">Challenge</option>
-          <option value="free">Free build</option>
-        </select>
-      </label>
-      <label class="row" style="gap:6px;color:var(--muted);font-size:13px">View
-        <select id="variant">
-          <option value="standard">Standard</option>
-          <option value="supported">Supported</option>
-        </select>
-      </label>
-      <label class="row" style="gap:6px;color:var(--muted);font-size:13px">Voice
-        <select id="voice"></select>
-      </label>
-      <button class="ghost" id="nextTop">Next</button>
-    </div>
+    <details class="wordiness-game-settings">
+      <summary>Settings</summary>
+      <div class="row" style="margin-top:10px">
+        <label class="row" style="gap:6px;color:var(--muted);font-size:13px">Mode
+          <select id="mode"><option value="challenge">Challenge</option><option value="free">Free build</option></select>
+        </label>
+        <label class="row" style="gap:6px;color:var(--muted);font-size:13px">View
+          <select id="variant"><option value="standard">Standard</option><option value="supported">Supported</option></select>
+        </label>
+        <label class="row" style="gap:6px;color:var(--muted);font-size:13px">Voice <select id="voice"></select></label>
+      </div>
+    </details>
   </header>
 
   <section class="card">
@@ -171,9 +170,10 @@ input, textarea, select{
       </div>
       <div class="row">
         <span class="pill">Score <b id="score">0</b>/<b id="total">0</b></span>
-        <button class="ghost" id="speakWord">Speak</button>
-        <button class="ghost" id="speakChunks">Speak chunks</button>
+        <button class="ghost" id="speakWord">Hear word</button>
+        <button class="ghost" id="speakChunks">Hear part rhythm</button>
         <button class="ghost" id="showAnswer">Show answer</button>
+        <button class="ghost" id="nextTop">Next</button>
         <button class="ghost" id="clear">Clear</button>
         <button class="good" id="check">Check</button>
       </div>
@@ -185,8 +185,8 @@ input, textarea, select{
           <div class="note" id="supportNote" style="display:none"></div>
 
           <div class="board">
-            <div class="sub">Assembly board</div>
-            <div class="hint" style="margin-top:6px">Tap a piece to select it, then tap a slot to place it.</div>
+            <div class="sub">Build the new word</div>
+            <div class="hint" style="margin-top:6px"><b>1.</b> Read the clue. <b>2.</b> Tap a prefix or suffix. <b>3.</b> Tap its matching slot. <b>4.</b> Press Check.</div>
 
             <div class="slots">
               <div class="slot">
@@ -234,7 +234,7 @@ input, textarea, select{
             Structure reduces working-memory load, and TTS gives fast feedback without shame-spirals.
           </div>
 
-          <details open>
+          <details>
             <summary>Teacher Key (same for both views)</summary>
             <div class="hint" style="margin-top:10px" id="key"></div>
           </details>
@@ -304,17 +304,10 @@ function speak(text, rate=1.0){
   u.rate=Math.max(0.7, Math.min(1.1, rate));
   speechSynthesis.cancel(); speechSynthesis.speak(u);
 }
-async function speakChunks(chunks){
-  if(!window.speechSynthesis) return;
-  const rate = state.variant==="supported" ? 0.86 : 0.95;
-  speechSynthesis.cancel();
-  for(const ch of chunks){
-    const u=new SpeechSynthesisUtterance(ch);
-    const idx=parseInt($("#voice").value,10);
-    if(Number.isFinite(idx) && voices[idx]) u.voice=voices[idx];
-    u.rate=rate;
-    speechSynthesis.speak(u);
-    await new Promise(res=>{ u.onend=()=>setTimeout(res,140); u.onerror=()=>setTimeout(res,140); });
+function speakChunks(chunks){
+  const count=(chunks||[]).filter(Boolean).length;
+  if(window.WordinessPlatform && WordinessPlatform.playRhythm){
+    WordinessPlatform.playRhythm(Array.from({length:count},()=>false),{interval:430});
   }
 }
 
@@ -748,7 +741,7 @@ function check(){
     // Crest fallback (works for /wordiness and file:// exports)
     var crest = document.getElementById("crest");
     if (crest && crest.tagName === "IMG") {
-      crest.addEventListener("error", function(){ crest.src="/wordiness/crest.png"; }, { once:true });
+      crest.addEventListener("error", function(){ crest.src="/wordiness/aontas-esl-mark.svg"; }, { once:true });
     }
 
     if(!isTouch) return;
@@ -795,5 +788,14 @@ function check(){
 
 <!-- wordiness-seed-bridge-v1 -->
 <script src="wordiness-seed-bridge.js"></script>
+
+<script src="wordiness-bank.js"></script>
+<script src="wordiness-platform.js"></script>
+<!-- wordiness-platform-mount-v1 -->
+<script>
+window.addEventListener("DOMContentLoaded", function () {
+  if (window.WordinessPlatform) window.WordinessPlatform.mountGameBar({gameId:"morpheme-lego",title:"Morpheme LEGO"});
+});
+</script>
 </body>
 </html>

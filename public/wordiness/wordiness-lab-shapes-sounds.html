@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-    <title>Wordiness Lab â€” Shapes &amp; Sounds</title>
+    <title>Wordiness Lab — Shapes &amp; Sounds</title>
     <style>
       /* Basic reset and typography */
       * {
@@ -249,7 +249,10 @@
       button {
         font-size: 1em;
       }
-    </style>
+    
+.small-note{margin-top:14px;padding:10px 12px;border-radius:12px;background:rgba(255,214,102,.12);border:1px solid rgba(255,214,102,.35);line-height:1.45}
+body{padding-bottom:120px!important}
+</style>
   <style>
 /* wordiness-ui-polish-v4 */
 :root{
@@ -297,7 +300,7 @@ input, textarea, select{
 </head>
   <body>
     <div id="crestContainer"></div>
-    <h1>Wordiness Lab â€” Shapes &amp; Sounds</h1>
+    <h1>Wordiness Lab — Shapes &amp; Sounds</h1>
     <p>
       Welcome to the Wordiness Lab! This playful language centre helps you explore
       the shapes and sounds of words. Choose a tab to begin.
@@ -345,12 +348,13 @@ input, textarea, select{
     <section id="sound" class="section">
       <h2>Sound Shapes</h2>
       <p>
-        Build a word by dragging letters onto the board. Listen to each letter
-        as you place it and watch the vowel vs. consonant graph grow.
+        Build a letter pattern by dragging letters onto the board. Watch the vowel vs. consonant graph grow.
+        This activity uses visual letter categories; it does not pretend that a single vowel has one fixed sound.
       </p>
       <div id="letterBag"></div>
       <div id="shapeZone"></div>
       <div id="soundGraph"></div>
+      <p class="small-note"><b>Audio note:</b> letter names and speech sounds are different. Hear sounds inside complete example words, not from isolated browser TTS.</p>
     </section>
     <!-- Teacher Key Section -->
     <section id="teacher" class="section" aria-labelledby="teacherHeading">
@@ -366,7 +370,7 @@ input, textarea, select{
       // Preload crest if available
       (function () {
         const crest = new Image();
-        crest.src = '/wordiness/crest.png';
+        crest.src = '/wordiness/aontas-esl-mark.svg';
         crest.onload = () => {
           document.getElementById('crestContainer').style.backgroundImage =
             'url(' + crest.src + ')';
@@ -668,8 +672,7 @@ input, textarea, select{
         const rect = shapeZone.getBoundingClientRect();
         letterEl.style.left = e.clientX - rect.left - 12 + 'px';
         letterEl.style.top = e.clientY - rect.top - 12 + 'px';
-        // speak letter
-        speak(ch);
+        // Pronunciation safety: do not send isolated letters to TTS as if they were phonemes.
         shapeZone.appendChild(letterEl);
         updateGraph();
         // allow dragging of placed letters within the zone
@@ -703,7 +706,7 @@ input, textarea, select{
         ul1.style.paddingLeft = '0';
         wordList.forEach((word) => {
           const li = document.createElement('li');
-          li.textContent = word + ' â†’ ' + splitIntoSyllables(word).join(' | ');
+          li.textContent = word + ' → ' + splitIntoSyllables(word).join(' | ');
           ul1.appendChild(li);
         });
         syllableList.appendChild(ul1);
@@ -718,7 +721,7 @@ input, textarea, select{
         ul2.style.paddingLeft = '0';
         rhymeGroups.forEach((g) => {
           const li = document.createElement('li');
-          li.textContent = g.label + ' â†’ ' + g.words.join(', ');
+          li.textContent = g.label + ' → ' + g.words.join(', ');
           ul2.appendChild(li);
         });
         rhymeList.appendChild(ul2);
@@ -977,7 +980,7 @@ input, textarea, select{
     // Crest fallback (works for /wordiness and file:// exports)
     var crest = document.getElementById("crest");
     if (crest && crest.tagName === "IMG") {
-      crest.addEventListener("error", function(){ crest.src="/wordiness/crest.png"; }, { once:true });
+      crest.addEventListener("error", function(){ crest.src="/wordiness/aontas-esl-mark.svg"; }, { once:true });
     }
 
     if(!isTouch) return;
@@ -1024,5 +1027,14 @@ input, textarea, select{
 
 <!-- wordiness-seed-bridge-v1 -->
 <script src="wordiness-seed-bridge.js"></script>
+
+<script src="wordiness-bank.js"></script>
+<script src="wordiness-platform.js"></script>
+<!-- wordiness-platform-mount-v1 -->
+<script>
+window.addEventListener("DOMContentLoaded", function () {
+  if (window.WordinessPlatform) window.WordinessPlatform.mountGameBar({gameId:"shapes-sounds",title:"Shapes & Sounds Lab"});
+});
+</script>
 </body>
 </html>

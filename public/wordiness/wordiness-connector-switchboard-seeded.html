@@ -40,7 +40,7 @@
 <div class="wrap">
   <div class="top">
     <div class="brand">
-      <img src="crest.png" onerror="this.style.display='none'"/>
+      <img src="aontas-esl-mark.svg" onerror="this.style.display='none'"/>
       <div>
         <h1>Connector Switchboard (Seeded)</h1>
         <div class="sub">Pick the connector that best links the two parts. Seeded games use your Reading Pack text.</div>
@@ -143,38 +143,42 @@
     return { before: before, after: after, correct: connector.toLowerCase(), full: (before+" "+connector+" "+after).replace(/\s+/g," ").trim() };
   }
 
-  function buildRounds(){
-    var base = [];
-    if (seed && seed.text) base = cleanSentences(seed.text);
-    if (!base.length) {
-      base = [
-        "We wore coats because it was cold.",
-        "I like football but my sister prefers music.",
-        "Wash your hands so you don’t spread germs.",
-        "When the bell rings, we line up quietly.",
-        "If you finish early, you can help a friend.",
-        "Although it rained, we still went outside."
-      ];
-    }
-
-    // find sentences that actually contain connectors
+  function buildConnectorRounds(base){
     var rounds = [];
     for (var i=0;i<base.length;i++){
-      var s = base[i];
+      var sentence = String(base[i] || "").trim();
+      var wordCount = sentence.split(/\s+/).filter(Boolean).length;
+      if (wordCount < 5 || wordCount > 24) continue;
+
       for (var j=0;j<CONNECTORS.length;j++){
-        var c = CONNECTORS[j];
-        var sp = splitOnConnector(s, c);
-        if (sp) { rounds.push(sp); break; }
+        var connector = CONNECTORS[j];
+        var split = splitOnConnector(sentence, connector);
+        if (split) { rounds.push(split); break; }
       }
       if (rounds.length >= 25) break;
     }
-    if (!rounds.length) {
-      // fallback: make artificial splits from any sentence
-      rounds = base.slice(0,10).map(function(s){
-        return {before:s, after:"", correct:"", full:s};
-      });
-    }
     return rounds;
+  }
+
+  function buildRounds(){
+    var seededSentences = [];
+    if (seed && Array.isArray(seed.sentences)) seededSentences = seed.sentences.slice();
+    if (!seededSentences.length && seed && seed.text) seededSentences = cleanSentences(seed.text);
+
+    var rounds = buildConnectorRounds(seededSentences);
+    if (rounds.length) return rounds;
+
+    // A connector activity needs a real connector and two meaningful clauses.
+    // If the pack has no suitable examples, use the safe curated set instead
+    // of inventing an incorrect answer from an arbitrary sentence.
+    return buildConnectorRounds([
+      "We wore coats because it was cold.",
+      "I like football but my sister prefers music.",
+      "Wash your hands so you don’t spread germs.",
+      "When the bell rings, we line up quietly.",
+      "If you finish early, you can help a friend.",
+      "Although it rained, we still went outside."
+    ]);
   }
 
   var rounds = buildRounds();
@@ -276,6 +280,15 @@
   document.getElementById("stopBtn").addEventListener("click", function(){ stopSpeak(); });
 
 })();
+</script>
+
+<script src="wordiness-bank.js"></script>
+<script src="wordiness-platform.js"></script>
+<!-- wordiness-platform-mount-v1 -->
+<script>
+window.addEventListener("DOMContentLoaded", function () {
+  if (window.WordinessPlatform) window.WordinessPlatform.mountGameBar({gameId:"connector-switchboard",title:"Connector Switchboard"});
+});
 </script>
 </body>
 </html>

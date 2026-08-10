@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Wordiness: Confusables Hunt</title>
+  <title>Wordiness: Visual Target Hunt</title>
   <style>
     :root{
       --bg:#070a12;
@@ -249,9 +249,9 @@
   <div class="wrap">
     <header>
       <div class="brand">
-        <img id="crest" src="/wordiness/crest.png" alt="Crest" />
+        <img id="crest" src="/wordiness/aontas-esl-mark.svg" alt="Crest" />
         <div>
-          <h1>Confusables Hunt</h1>
+          <h1>Visual Target Hunt</h1>
           <div class="sub">
             Dyslexia support game: some letters look similar (mirror letters). Scan like reading and tap the correct words.
           </div>
@@ -362,6 +362,7 @@
     </div>
   </div>
 
+<script src="wordiness-seed-bridge.js"></script>
 <script>
 (function(){
   const grid = document.getElementById('grid');
@@ -429,7 +430,36 @@
     "castle","forest","river","mountain","teacher","classroom","library","planet","comet","orange","yellow","window","kitchen","picture"
   ];
 
-  let targets = sets[0].letters.slice();
+  const packWords = (()=>{
+    try{
+      const api = window.__WORDINESS_SEED_BRIDGE__;
+      const seed = api && api.getSeed ? api.getSeed() : null;
+      if(!seed) return [];
+      return (api.getWords ? api.getWords(seed) : (seed.words || []))
+        .map(word => String(word || "").toLowerCase().replace(/[^a-z'-]/g, ""))
+        .filter(word => word.length >= 2 && word.length <= 18)
+        .slice(0, 140);
+    }catch(e){ return []; }
+  })();
+
+  function bestPackSetId(){
+    if(packWords.length < 8) return "bdpq";
+    let best = sets[0], bestScore = -1;
+    sets.forEach(set=>{
+      const targetCount = packWords.filter(word=>set.letters.some(letter=>word.includes(letter))).length;
+      const nonCount = packWords.length - targetCount;
+      const score = Math.min(targetCount, nonCount);
+      if(targetCount >= 3 && nonCount >= 3 && score > bestScore){
+        best = set;
+        bestScore = score;
+      }
+    });
+    return best.id;
+  }
+
+  const initialSetId = bestPackSetId();
+  const initialSet = sets.find(set=>set.id===initialSetId) || sets[0];
+  let targets = initialSet.letters.slice();
   let speakOnClick = false;
   let rowScan = false;
   let hintMode = false;
@@ -501,8 +531,15 @@
 
   function pickWords(n){
     let pool = [];
-    // keep it classroom friendly
-    pool = easyWords.concat(hardWords.slice(0, 12)).concat(distractors);
+    // Use Reading Pack vocabulary when it has enough targets and distractors.
+    const packTargets = packWords.filter(containsAnyTarget);
+    const packNonTargets = packWords.filter(word => !containsAnyTarget(word));
+    if(packTargets.length >= 3 && packNonTargets.length >= 3){
+      pool = packWords.slice();
+    }else{
+      pool = packWords.concat(easyWords, hardWords.slice(0, 12), distractors);
+      pool = Array.from(new Set(pool));
+    }
 
     // ensure targets appear (about 40%)
     const targetPool = pool.filter(containsAnyTarget);
@@ -673,7 +710,7 @@
       opt.textContent = s.name;
       setSelect.appendChild(opt);
     });
-    setSelect.value = "bdpq";
+    setSelect.value = initialSetId;
   }
 
   function applySet(id){
@@ -726,15 +763,21 @@
 
   // crest fallback
   const crest = document.getElementById('crest');
-  crest.addEventListener('error', () => { crest.src = "/wordiness/crest.png"; }, { once:true });
+  crest.addEventListener('error', () => { crest.src = "/wordiness/aontas-esl-mark.svg"; }, { once:true });
 
   populateSets();
-  applySet("bdpq");
+  applySet(initialSetId);
   setMode("supported"); // sensible default for dyslexia
 })();
 </script>
 
-<!-- wordiness-seed-bridge-v1 -->
-<script src="wordiness-seed-bridge.js"></script>
+<script src="wordiness-bank.js"></script>
+<script src="wordiness-platform.js"></script>
+<!-- wordiness-platform-mount-v1 -->
+<script>
+window.addEventListener("DOMContentLoaded", function () {
+  if (window.WordinessPlatform) window.WordinessPlatform.mountGameBar({gameId:"focus-confusables",title:"Visual Target Hunt: p/b/d/q"});
+});
+</script>
 </body>
 </html>

@@ -1,0 +1,50 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Wordiness — Pace & Phrase Reader</title><link rel="stylesheet" href="wordiness-game-v11.css"></head><body>
+<div class="wrap">
+  <div class="topline"><div><div class="kicker">Fluency & expression</div><h1>Pace & Phrase Reader</h1><div class="subtitle">Reveal one meaningful phrase at a time, pause naturally, and read the whole sentence smoothly.</div></div><button id="demoBtn" class="secondary">Show me</button></div>
+  <div id="demo" class="demo" hidden><strong>Example:</strong> After the rain stopped <span class="slash">/</span> the children explored the garden. <br><span class="small">Tap <b>Next phrase</b> after reading each group. The slash marks a natural pause, not a full stop.</span></div>
+  <details class="settings"><summary>Settings</summary><div class="settings-inner"><label>Mode <select id="mode"><option value="manual">Tap to reveal</option><option value="auto">Automatic pace</option></select></label><label>Pause <select id="pause"><option value="2600">Comfortable</option><option value="1900">Brisk</option><option value="3400">Extra thinking time</option></select></label><button id="newSentence" class="ghost">New sentence</button></div></details>
+  <section class="panel">
+    <div class="panel-head"><div><div class="kicker">Your sentence</div><div id="counter" class="small"></div></div><div class="toolbar"><button id="hear" class="ghost">Hear whole sentence</button><button id="start" class="primary">Start</button></div></div>
+    <div class="panel-body">
+      <div id="phraseDisplay" class="phrase" aria-live="polite">Press Start.</div>
+      <div class="choices"><button id="nextPhrase" class="big-action primary" disabled>Next phrase</button><button id="whole" class="big-action ghost" disabled>Show whole sentence</button><button id="again" class="big-action ghost" disabled>Read again</button></div>
+      <div class="status"><span id="status">Ready</span><span id="progress">0 / 0 phrases</span></div>
+    </div>
+  </section>
+</div>
+<script src="wordiness-seed-bridge.js"></script><script src="wordiness-bank.js"></script><script src="wordiness-platform.js"></script>
+<!-- wordiness-platform-mount-v1 -->
+<script>
+(function(){
+  const $=s=>document.querySelector(s); const FALLBACK=[
+    "After the rain stopped, the children explored the garden together.",
+    "Although the path was steep, everyone reached the top safely.",
+    "Before the lesson began, Mia organised her books and took a slow breath.",
+    "The old woman smiled because the children listened carefully to her story.",
+    "When the bell rang, the class finished the final sentence and packed away."
+  ];
+  let sentences=[], index=0, chunks=[], shown=0, timer=null;
+  const seed=window.WordinessPlatform&&WordinessPlatform.getActiveSeed();
+  function countWords(s){return (s.match(/[\p{L}\p{M}]+(?:[’'-][\p{L}\p{M}]+)*/gu)||[]).length}
+  function loadSentences(){const source=seed&&Array.isArray(seed.sentences)?seed.sentences:[];sentences=source.filter(s=>countWords(s)>=6&&countWords(s)<=30).slice(0,50);if(sentences.length<3)sentences=[...sentences,...FALLBACK];}
+  function chunk(s){
+    const cleaned=String(s).replace(/\s+/g," ").trim(); const words=cleaned.split(" "); const out=[]; let current=[];
+    const starters=/^(because|although|though|when|while|after|before|if|but|so|who|which|that|and)$/i;
+    words.forEach((w,i)=>{const bare=w.replace(/[^A-Za-z]/g,""); if(current.length>=3&&starters.test(bare)){out.push(current.join(" "));current=[];} current.push(w); if(/[,:;—]$/.test(w)||current.length>=7){out.push(current.join(" "));current=[];}}); if(current.length)out.push(current.join(" "));
+    if(out.length===1&&words.length>8){const mid=Math.ceil(words.length/2);return [words.slice(0,mid).join(" "),words.slice(mid).join(" ")];} return out;
+  }
+  function current(){return sentences[index%sentences.length]||FALLBACK[0]}
+  function render(){chunks=chunk(current());shown=0;clearInterval(timer);timer=null;$("#counter").textContent=`Sentence ${index+1} of ${sentences.length}`;$("#phraseDisplay").textContent="Press Start.";$("#progress").textContent=`0 / ${chunks.length} phrases`;$("#nextPhrase").disabled=true;$("#whole").disabled=true;$("#again").disabled=true;$("#status").textContent="Ready";$("#start").textContent="Start";}
+  function display(){const parts=chunks.map((c,i)=>`<span class="${i<shown?'shown':'hidden-part'}">${escapeHtml(c)}</span>${i<chunks.length-1?'<span class="slash"> / </span>':''}`);$("#phraseDisplay").innerHTML=parts.join("");$("#progress").textContent=`${shown} / ${chunks.length} phrases`;}
+  function escapeHtml(v){return String(v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+  function reveal(){if(shown<chunks.length){shown++;display();$("#status").textContent=shown===chunks.length?"Now read the complete sentence smoothly.":"Read the phrase, then continue.";}if(shown>=chunks.length){$("#nextPhrase").disabled=true;$("#again").disabled=false;clearInterval(timer);timer=null;$("#start").textContent="Start";}}
+  function start(){clearInterval(timer);shown=0;display();$("#nextPhrase").disabled=false;$("#whole").disabled=false;$("#again").disabled=true;$("#status").textContent="Read the first phrase.";reveal();if($("#mode").value==="auto"){timer=setInterval(reveal,Number($("#pause").value));$("#start").textContent="Pause";}}
+  $("#start").onclick=()=>{if(timer){clearInterval(timer);timer=null;$("#start").textContent="Continue";$("#status").textContent="Paused.";}else start();};
+  $("#nextPhrase").onclick=reveal;$("#whole").onclick=()=>{shown=chunks.length;display();$("#nextPhrase").disabled=true;$("#again").disabled=false;$("#status").textContent="Read the complete sentence with natural pauses.";};
+  $("#again").onclick=start;$("#newSentence").onclick=()=>{index=(index+1)%sentences.length;render();};
+  $("#hear").onclick=()=>WordinessPlatform&&WordinessPlatform.speak(current(),{rate:.9});
+  $("#demoBtn").onclick=()=>{$("#demo").hidden=!$("#demo").hidden;};
+  loadSentences();render();
+  window.addEventListener("DOMContentLoaded",()=>WordinessPlatform&&WordinessPlatform.mountGameBar({gameId:"pace-phrase-reader",title:"Pace & Phrase Reader"}));
+})();
+</script></body></html>

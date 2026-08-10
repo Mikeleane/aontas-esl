@@ -11,5 +11,15 @@
     })();
   </script>
 </head>
-<body>Redirecting...</body>
+<body>Redirecting...
+<script src="wordiness-seed-bridge.js"></script>
+<script src="wordiness-bank.js"></script>
+<script src="wordiness-platform.js"></script>
+<!-- wordiness-platform-mount-v1 -->
+<script>
+window.addEventListener("DOMContentLoaded", function () {
+  if (window.WordinessPlatform) window.WordinessPlatform.mountGameBar({gameId:"word-order-rails",title:"Word Order Rails"});
+});
+</script>
+</body>
 </html>

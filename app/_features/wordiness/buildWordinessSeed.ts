@@ -1,67 +1,35 @@
-export type WordinessSeed = {
-  seedText: string;
-  sentences: string[];
-  words: string[];
-  structures?: {
-    connectors?: { sentence: string; connector: string }[];
-  };
-  meta?: {
-    createdAt: string;
-    source?: string;
-  };
-};
+import type { CefrLevel, TextType } from "@/lib/cefr";
+import type { OutputVariant } from "@/lib/contracts/generation";
+import {
+  buildWordinessSeedFromVariants,
+  normalizeWordinessSeed,
+  selectWordinessSeedVariant,
+  type WordinessGameSeed,
+  type WordinessSeed,
+  type WordinessSeedMeta,
+} from "@/lib/contracts/wordiness";
 
-function splitSentences(text: string): string[] {
-  const t = (text || "").replace(/\s+/g, " ").trim();
-  if (!t) return [];
-  const parts = t.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [];
-  return parts
-    .map(s => s.trim())
-    .filter(Boolean)
-    .map(s => s.replace(/\s+/g, " "))
-    .slice(0, 80);
-}
+export type { WordinessGameSeed, WordinessSeed, WordinessSeedMeta };
+export { buildWordinessSeedFromVariants, normalizeWordinessSeed, selectWordinessSeedVariant };
 
-function extractWords(text: string): string[] {
-  const t = (text || "").toLowerCase();
-  const m = t.match(/[a-z]+(?:'[a-z]+)?/g) || [];
-  // de-dupe but keep order
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const w of m) {
-    if (!seen.has(w)) { seen.add(w); out.push(w); }
-    if (out.length >= 250) break;
-  }
-  return out;
-}
-
-function extractConnectors(sentences: string[]) {
-  const cs = ["because","but","so","when","if","although","then","and"];
-  const out: { sentence: string; connector: string }[] = [];
-  for (const s of sentences) {
-    const low = s.toLowerCase();
-    for (const c of cs) {
-      if (low.includes(" " + c + " ")) {
-        out.push({ sentence: s, connector: c });
-        break;
-      }
-    }
-    if (out.length >= 60) break;
-  }
-  return out;
-}
-
-export function buildWordinessSeedFromText(text: string, source?: string): WordinessSeed {
-  const seedText = (text || "").replace(/\s+/g, " ").trim();
-  const sentences = splitSentences(seedText);
-  const words = extractWords(seedText);
-  const connectors = extractConnectors(sentences);
-
-  return {
-    seedText,
-    sentences,
-    words,
-    structures: { connectors },
-    meta: { createdAt: new Date().toISOString(), source }
-  };
+export function buildWordinessSeedFromText(
+  text: string,
+  sourceOrMeta?: string | Partial<WordinessSeedMeta>,
+  options: {
+    cefrLevel?: CefrLevel;
+    textType?: TextType;
+    activeVariant?: OutputVariant;
+  } = {},
+): WordinessSeed {
+  const source = typeof sourceOrMeta === "string" ? sourceOrMeta : sourceOrMeta?.source;
+  const title = typeof sourceOrMeta === "object" ? sourceOrMeta.title : undefined;
+  return buildWordinessSeedFromVariants({
+    standard: text,
+    supported: text,
+    source,
+    title,
+    cefrLevel: options.cefrLevel,
+    textType: options.textType,
+    activeVariant: options.activeVariant,
+  });
 }

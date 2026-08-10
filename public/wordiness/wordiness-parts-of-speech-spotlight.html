@@ -113,7 +113,7 @@ button.primary{
 <div class="wrap">
   <div class="top">
     <div class="brand">
-      <img src="crest.png" onerror="this.onerror=null; this.src='kns-crest.jpg';">
+      <img src="aontas-esl-mark.svg" onerror="this.onerror=null; this.src='aontas-esl-mark.svg';">
       <div>
         <div class="h1">Wordiness - Parts of Speech Spotlight</div>
         <div class="sub">Find verbs, nouns, adjectives, adverbs (tap-to-select).</div>
@@ -411,5 +411,14 @@ window.__WORDINESS__.initTopbar();
 
 <!-- wordiness-seed-bridge-v1 -->
 <script src="wordiness-seed-bridge.js"></script>
+
+<script src="wordiness-bank.js"></script>
+<script src="wordiness-platform.js"></script>
+<!-- wordiness-platform-mount-v1 -->
+<script>
+window.addEventListener("DOMContentLoaded", function () {
+  if (window.WordinessPlatform) window.WordinessPlatform.mountGameBar({gameId:"parts-of-speech",title:"Parts of Speech Spotlight"});
+});
+</script>
 </body>
 </html>

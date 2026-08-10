@@ -113,7 +113,7 @@ button.primary{
 <div class="wrap">
   <div class="top">
     <div class="brand">
-      <img src="crest.png" onerror="this.onerror=null; this.src='kns-crest.jpg';">
+      <img src="aontas-esl-mark.svg" onerror="this.onerror=null; this.src='aontas-esl-mark.svg';">
       <div>
         <div class="h1">Wordiness - Sentence Builder Studio</div>
         <div class="sub">Tap-to-build sentences (structure + parts of speech).</div>
@@ -299,9 +299,9 @@ window.__WORDINESS__.initTopbar();
 
   const BANK = {
     S: ["I","We","You","The child","My friend","The class","A dog","The teacher","The team","My family"],
-    V: ["run","play","build","find","write","carry","choose","enjoy","remember","finish"],
+    V: ["can run","can play","can build","can find","can write","can carry","can choose","can enjoy","can remember","can finish"],
     O: ["a game","the book","my lunch","a plan","the homework","a puzzle","the ball","a story","a word","the project"],
-    Adj:["quick","careful","brave","tiny","curious","helpful","noisy","quiet","colourful","different"],
+    Adj:["can be quick","can be careful","can be brave","can be tiny","can be curious","can be helpful","can be noisy","can be quiet","can be colourful","can be different"],
     Adv:["today","slowly","together","outside","again","carefully","quietly","now","later","always"],
     Con:["and","but","because","so","when","if","although"]
   };
@@ -309,7 +309,7 @@ window.__WORDINESS__.initTopbar();
   const GOALS = [
     {t:"Build: Subject + Verb", need:["S","V"], order:["S","V"]},
     {t:"Build: Subject + Verb + Object", need:["S","V","O"], order:["S","V","O"]},
-    {t:"Add: Adjective", need:["S","V","Adj"], order:["S","Adj","V"]},
+    {t:"Describe the subject with an adjective", need:["S","Adj"], order:["S","Adj"]},
     {t:"Add: Adverb", need:["S","V","Adv"], order:["S","V","Adv"]},
     {t:"Use a connector to add a second idea", need:["S","V","Con"], order:["S","V","Con","S","V"]}
   ];
@@ -384,12 +384,8 @@ window.__WORDINESS__.initTopbar();
 
   function hasCat(cat){ return sentence.some(t=>t.cat===cat); }
   function orderOk(order){
-    let i=0;
-    for(const tok of sentence){
-      if(tok.cat===order[i]) i++;
-      if(i>=order.length) return true;
-    }
-    return false;
+    if(sentence.length!==order.length) return false;
+    return sentence.every((tok,index)=>tok.cat===order[index]);
   }
 
   function check(){
@@ -403,8 +399,8 @@ window.__WORDINESS__.initTopbar();
     }
     if(goal.order && !orderOk(goal.order)){
       streak=0; elStreak.textContent=String(streak);
-      toast("Try the order in the goal", "bad");
-      speak("Try the order", {slow:true});
+      toast("Use exactly the pattern shown in the goal", "bad");
+      speak("Use exactly the pattern shown", {slow:true});
       return;
     }
     score += 10 + Math.min(10, streak*2);
@@ -447,5 +443,14 @@ window.__WORDINESS__.initTopbar();
 
 <!-- wordiness-seed-bridge-v1 -->
 <script src="wordiness-seed-bridge.js"></script>
+
+<script src="wordiness-bank.js"></script>
+<script src="wordiness-platform.js"></script>
+<!-- wordiness-platform-mount-v1 -->
+<script>
+window.addEventListener("DOMContentLoaded", function () {
+  if (window.WordinessPlatform) window.WordinessPlatform.mountGameBar({gameId:"sentence-builder",title:"Sentence Builder Studio"});
+});
+</script>
 </body>
 </html>

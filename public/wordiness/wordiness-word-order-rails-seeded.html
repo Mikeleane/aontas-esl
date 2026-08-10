@@ -33,7 +33,7 @@
 <div class="wrap">
   <div class="top">
     <div class="brand">
-      <img src="crest.png" onerror="this.style.display='none'"/>
+      <img src="aontas-esl-mark.svg" onerror="this.style.display='none'"/>
       <div>
         <h1>Word Order Rails (Seeded)</h1>
         <div class="sub">Tap tiles to rebuild the sentence in the correct order (no drag needed).</div>
@@ -103,7 +103,8 @@
   }
 
   var bank = [];
-  if(seed && seed.text) bank = cleanSentences(seed.text);
+  if(seed && Array.isArray(seed.sentences)) bank = seed.sentences.slice();
+  if(!bank.length && seed && seed.text) bank = cleanSentences(seed.text);
   if(!bank.length){
     bank = [
       "The children read quietly in the library.",
@@ -113,8 +114,11 @@
     ];
   }
 
-  // Keep sentences that look usable
-  bank = bank.filter(function(s){ return s.split(/\s+/).length >= 4; });
+  // Keep rounds short enough to rebuild without overloading working memory.
+  bank = bank.filter(function(s){
+    var count = String(s || "").split(/\s+/).filter(Boolean).length;
+    return count >= 4 && count <= 14;
+  }).slice(0, 30);
   if(!bank.length) bank = ["We learn new words every day."];
 
   function shuffle(a){
@@ -210,6 +214,15 @@
   document.getElementById("stopBtn").addEventListener("click", stopSpeak);
 
 })();
+</script>
+
+<script src="wordiness-bank.js"></script>
+<script src="wordiness-platform.js"></script>
+<!-- wordiness-platform-mount-v1 -->
+<script>
+window.addEventListener("DOMContentLoaded", function () {
+  if (window.WordinessPlatform) window.WordinessPlatform.mountGameBar({gameId:"word-order-rails",title:"Word Order Rails"});
+});
 </script>
 </body>
 </html>

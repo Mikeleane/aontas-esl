@@ -1,199 +1,526 @@
 [
-    {
-        "file":  "syllable-tiles.html",
-        "title":  "Syllable Tiles",
-        "desc":  "",
-        "tags":  "syllables",
-        "seedable":  false,
-        "order":  100
-    },
-    {
-        "file":  "syllable-tiles-smart.html",
-        "title":  "Syllable Tiles Smart",
-        "desc":  "",
-        "tags":  "syllables",
-        "seedable":  false,
-        "order":  105
-    },
-    {
-        "file":  "wordiness-calm-spell-lab.htm",
-        "title":  "Calm Spell Lab",
-        "desc":  "",
-        "tags":  {
-
-                 },
-        "seedable":  false,
-        "order":  110
-    },
-    {
-        "file":  "wordiness-connector-switchboard.html",
-        "title":  "Connector Switchboard",
-        "desc":  "",
-        "tags":  "connectors",
-        "seedable":  false,
-        "order":  115
-    },
-    {
-        "file":  "wordiness-connector-switchboard-seeded.html",
-        "title":  "Connector Switchboard",
-        "desc":  "",
-        "tags":  [
-                     "connectors",
-                     "seeded"
-                 ],
-        "seedable":  true,
-        "order":  120
-    },
-    {
-        "file":  "wordiness-focus-confusables-pbdq.html",
-        "title":  "Focus Confusables Pbdq",
-        "desc":  "",
-        "tags":  [
-                     "attention",
-                     "dyslexia"
-                 ],
-        "seedable":  false,
-        "order":  125
-    },
-    {
-        "file":  "wordiness-focus-finder.htm",
-        "title":  "Focus Finder",
-        "desc":  "",
-        "tags":  "attention",
-        "seedable":  false,
-        "order":  130
-    },
-    {
-        "file":  "wordiness-focus-order-finder.html",
-        "title":  "Focus Order Finder",
-        "desc":  "",
-        "tags":  [
-                     "attention",
-                     "word-order"
-                 ],
-        "seedable":  false,
-        "order":  135
-    },
-    {
-        "file":  "wordiness-lab-shapes-sounds.html",
-        "title":  "Lab Shapes Sounds",
-        "desc":  "",
-        "tags":  {
-
-                 },
-        "seedable":  false,
-        "order":  140
-    },
-    {
-        "file":  "wordiness-morpheme-lego.htm",
-        "title":  "Morpheme Lego",
-        "desc":  "",
-        "tags":  "morphology",
-        "seedable":  false,
-        "order":  145
-    },
-    {
-        "file":  "wordiness-morpheme-mixer.htm",
-        "title":  "Morpheme Mixer",
-        "desc":  "",
-        "tags":  "morphology",
-        "seedable":  false,
-        "order":  150
-    },
-    {
-        "file":  "wordiness-next-tiny-step-builder.html",
-        "title":  "Next Tiny Step Builder",
-        "desc":  "",
-        "tags":  {
-
-                 },
-        "seedable":  false,
-        "order":  155
-    },
-    {
-        "file":  "wordiness-parts-of-speech-spotlight.html",
-        "title":  "Parts OF Speech Spotlight",
-        "desc":  "",
-        "tags":  "grammar",
-        "seedable":  false,
-        "order":  160
-    },
-    {
-        "file":  "wordiness-sentence-builder-studio.html",
-        "title":  "Sentence Builder Studio",
-        "desc":  "",
-        "tags":  "grammar",
-        "seedable":  false,
-        "order":  165
-    },
-    {
-        "file":  "wordiness-start-stop-reader.html",
-        "title":  "Start Stop Reader",
-        "desc":  "",
-        "tags":  "fluency",
-        "seedable":  false,
-        "order":  170
-    },
-    {
-        "file":  "wordiness-wh-question-picker.html",
-        "title":  "WH Question Picker",
-        "desc":  "",
-        "tags":  "questions",
-        "seedable":  false,
-        "order":  175
-    },
-    {
-        "file":  "wordiness-wh-question-picker-seeded.html",
-        "title":  "WH Question Picker",
-        "desc":  "",
-        "tags":  [
-                     "questions",
-                     "seeded"
-                 ],
-        "seedable":  true,
-        "order":  180
-    },
-    {
-        "file":  "wordiness-word-order-rails.html",
-        "title":  "Word Order Rails",
-        "desc":  "",
-        "tags":  "word-order",
-        "seedable":  false,
-        "order":  185
-    },
-    {
-        "file":  "wordiness-word-order-rails-seeded.html",
-        "title":  "Word Order Rails",
-        "desc":  "",
-        "tags":  [
-                     "word-order",
-                     "seeded"
-                 ],
-        "seedable":  true,
-        "order":  190
-    },
-    {
-        "file":  "wordiness-word-stress-dj.htm",
-        "title":  "Word Stress DJ",
-        "desc":  "",
-        "tags":  "pronunciation",
-        "seedable":  false,
-        "order":  195
-    },
-    {
-        "file":  "wordiness-word-stress-dj-remix.htm",
-        "title":  "Word Stress DJ Remix",
-        "desc":  "",
-        "tags":  "pronunciation",
-        "seedable":  false,
-        "order":  200
-    },
-    {
-        "file":  "wordiness-working-memory-relay.html",
-        "title":  "Working Memory Relay",
-        "desc":  "",
-        "tags":  "working-memory",
-        "seedable":  false,
-        "order":  205
-    }
+  {
+    "id": "syllable-tiles-manual",
+    "file": "syllable-tiles.html",
+    "title": "Syllable Tiles",
+    "desc": "Teacher-marked syllable chunks for careful listen, tap and blend practice.",
+    "tags": [
+      "syllables",
+      "teacher-input",
+      "tts"
+    ],
+    "strand": "Word structure & decoding",
+    "seedable": false,
+    "teacherInput": true,
+    "duration": "5–10 min",
+    "use": "Small group or individual",
+    "sound": true,
+    "touch": true,
+    "order": 100
+  },
+  {
+    "id": "syllable-tiles-smart",
+    "file": "syllable-tiles-smart.html",
+    "title": "Syllable Tiles Smart",
+    "desc": "Build words from the selected content source with guided syllable marking.",
+    "tags": [
+      "syllables",
+      "supported",
+      "pack-text",
+      "tts"
+    ],
+    "strand": "Word structure & decoding",
+    "seedable": true,
+    "packData": "multisyllabic words",
+    "duration": "5–10 min",
+    "use": "Small group or individual",
+    "sound": true,
+    "touch": true,
+    "order": 105
+  },
+  {
+    "id": "calm-spell-lab",
+    "file": "wordiness-calm-spell-lab.htm",
+    "title": "Calm Spell Lab",
+    "desc": "Hear, chunk and rebuild selected words without overloading working memory.",
+    "tags": [
+      "spelling",
+      "attention",
+      "pack-text",
+      "tts"
+    ],
+    "strand": "Word structure & decoding",
+    "seedable": true,
+    "packData": "spelling words",
+    "duration": "5–8 min",
+    "use": "Individual or paired",
+    "sound": true,
+    "touch": true,
+    "order": 110
+  },
+  {
+    "id": "connector-switchboard",
+    "file": "wordiness-connector-switchboard.html",
+    "title": "Connector Switchboard",
+    "desc": "Choose connectors that restore cause, contrast, time, condition or sequence.",
+    "tags": [
+      "connectors",
+      "sentences"
+    ],
+    "strand": "Sentence & language organisation",
+    "seedable": false,
+    "duration": "5–10 min",
+    "use": "Whole class, pair or individual",
+    "sound": true,
+    "touch": true,
+    "order": 115
+  },
+  {
+    "id": "connector-switchboard",
+    "file": "wordiness-connector-switchboard-seeded.html",
+    "title": "Connector Switchboard",
+    "desc": "Choose connectors inside sentences from the selected class content.",
+    "tags": [
+      "connectors",
+      "sentences",
+      "pack-text"
+    ],
+    "strand": "Sentence & language organisation",
+    "seedable": true,
+    "packData": "connector sentences",
+    "duration": "5–10 min",
+    "use": "Whole class, pair or individual",
+    "sound": true,
+    "touch": true,
+    "order": 120
+  },
+  {
+    "id": "focus-confusables",
+    "file": "wordiness-focus-confusables-pbdq.html",
+    "title": "Visual Target Hunt: p/b/d/q",
+    "desc": "Scan words for selected letter shapes and practise careful visual attention.",
+    "tags": [
+      "attention",
+      "dyslexia",
+      "pack-text"
+    ],
+    "strand": "Attention & visual processing",
+    "seedable": true,
+    "packData": "target-letter words",
+    "duration": "3–6 min",
+    "use": "Individual or paired",
+    "sound": true,
+    "touch": true,
+    "order": 125
+  },
+  {
+    "id": "focus-finder",
+    "file": "wordiness-focus-finder.htm",
+    "title": "Focus Finder",
+    "desc": "Search a complete text for spelling and word-pattern targets.",
+    "tags": [
+      "attention",
+      "word-patterns",
+      "pack-text"
+    ],
+    "strand": "Attention & visual processing",
+    "seedable": true,
+    "packData": "full text",
+    "duration": "5–8 min",
+    "use": "Individual or paired",
+    "sound": true,
+    "touch": true,
+    "order": 130
+  },
+  {
+    "id": "focus-order-finder",
+    "file": "wordiness-focus-order-finder.html",
+    "title": "Letter Order Finder",
+    "desc": "Find exact letter sequences inside words from the selected source.",
+    "tags": [
+      "attention",
+      "letter-order",
+      "pack-text"
+    ],
+    "strand": "Attention & visual processing",
+    "seedable": true,
+    "packData": "words of four letters or more",
+    "duration": "3–6 min",
+    "use": "Individual or paired",
+    "sound": true,
+    "touch": true,
+    "order": 135
+  },
+  {
+    "id": "shapes-sounds",
+    "file": "wordiness-lab-shapes-sounds.html",
+    "title": "Shapes & Sounds Lab",
+    "desc": "Build syllables, sort rhyme families and explore vowels and consonants.",
+    "tags": [
+      "sounds",
+      "visual",
+      "phonics"
+    ],
+    "strand": "Word structure & decoding",
+    "seedable": false,
+    "duration": "8–12 min",
+    "use": "Small group or individual",
+    "sound": true,
+    "touch": true,
+    "order": 140
+  },
+  {
+    "id": "morpheme-lego",
+    "file": "wordiness-morpheme-lego.htm",
+    "title": "Morpheme LEGO",
+    "desc": "Build words from meaningful prefixes, roots and suffixes.",
+    "tags": [
+      "morphology",
+      "vocabulary"
+    ],
+    "strand": "Word structure & decoding",
+    "seedable": false,
+    "duration": "8–12 min",
+    "use": "Small group or individual",
+    "sound": true,
+    "touch": true,
+    "order": 145
+  },
+  {
+    "id": "morpheme-mixer",
+    "file": "wordiness-morpheme-mixer.htm",
+    "title": "Morpheme Mixer",
+    "desc": "Solve meaning clues by joining verified word parts.",
+    "tags": [
+      "morphology",
+      "vocabulary"
+    ],
+    "strand": "Word structure & decoding",
+    "seedable": false,
+    "duration": "6–10 min",
+    "use": "Small group or individual",
+    "sound": true,
+    "touch": true,
+    "order": 150
+  },
+  {
+    "id": "next-tiny-step",
+    "file": "wordiness-next-tiny-step-builder.html",
+    "title": "Next Tiny Step Builder",
+    "desc": "Turn an overwhelming task into Now, Next and Later actions.",
+    "tags": [
+      "executive-function",
+      "planning",
+      "wellbeing"
+    ],
+    "strand": "Executive function & working memory",
+    "seedable": false,
+    "duration": "5–12 min",
+    "use": "Individual planning",
+    "sound": true,
+    "touch": true,
+    "order": 155
+  },
+  {
+    "id": "parts-of-speech",
+    "file": "wordiness-parts-of-speech-spotlight.html",
+    "title": "Parts of Speech Spotlight",
+    "desc": "Identify nouns, verbs, adjectives and adverbs in verified sentences.",
+    "tags": [
+      "grammar",
+      "sentences"
+    ],
+    "strand": "Sentence & language organisation",
+    "seedable": false,
+    "duration": "5–8 min",
+    "use": "Whole class, pair or individual",
+    "sound": true,
+    "touch": true,
+    "order": 160
+  },
+  {
+    "id": "sentence-builder",
+    "file": "wordiness-sentence-builder-studio.html",
+    "title": "Sentence Builder Studio",
+    "desc": "Build complete sentences from verified patterns and improve them step by step.",
+    "tags": [
+      "grammar",
+      "sentences"
+    ],
+    "strand": "Sentence & language organisation",
+    "seedable": false,
+    "duration": "8–12 min",
+    "use": "Small group or individual",
+    "sound": true,
+    "touch": true,
+    "order": 165
+  },
+  {
+    "id": "start-stop-reader",
+    "file": "wordiness-start-stop-reader.html",
+    "title": "Start–Stop Word Scanner",
+    "desc": "Use a GO/NO-GO rule to practise inhibition and rapid word scanning.",
+    "tags": [
+      "attention",
+      "inhibition",
+      "pack-text"
+    ],
+    "strand": "Attention & visual processing",
+    "seedable": true,
+    "packData": "usable words",
+    "duration": "3–6 min",
+    "use": "Whole class, pair or individual",
+    "sound": true,
+    "touch": true,
+    "order": 170
+  },
+  {
+    "id": "wh-question-picker",
+    "file": "wordiness-wh-question-picker.html",
+    "title": "WH-Question Picker",
+    "desc": "Choose Who, What, Where, When or Why for highlighted information.",
+    "tags": [
+      "questions",
+      "sentences"
+    ],
+    "strand": "Sentence & language organisation",
+    "seedable": false,
+    "duration": "5–8 min",
+    "use": "Whole class, pair or individual",
+    "sound": true,
+    "touch": true,
+    "order": 175
+  },
+  {
+    "id": "wh-question-picker",
+    "file": "wordiness-wh-question-picker-seeded.html",
+    "title": "WH-Question Picker",
+    "desc": "Choose the question word that matches information in the selected text.",
+    "tags": [
+      "questions",
+      "sentences",
+      "pack-text"
+    ],
+    "strand": "Sentence & language organisation",
+    "seedable": true,
+    "packData": "suitable sentences",
+    "duration": "5–8 min",
+    "use": "Whole class, pair or individual",
+    "sound": true,
+    "touch": true,
+    "order": 180
+  },
+  {
+    "id": "word-order-rails",
+    "file": "wordiness-word-order-rails.html",
+    "title": "Word Order Rails",
+    "desc": "Rebuild clear sentences from scrambled words.",
+    "tags": [
+      "word-order",
+      "sentences"
+    ],
+    "strand": "Sentence & language organisation",
+    "seedable": false,
+    "duration": "5–10 min",
+    "use": "Whole class, pair or individual",
+    "sound": true,
+    "touch": true,
+    "order": 185
+  },
+  {
+    "id": "word-order-rails",
+    "file": "wordiness-word-order-rails-seeded.html",
+    "title": "Word Order Rails",
+    "desc": "Rebuild short sentences from the selected class content.",
+    "tags": [
+      "word-order",
+      "sentences",
+      "pack-text"
+    ],
+    "strand": "Sentence & language organisation",
+    "seedable": true,
+    "packData": "short sentences",
+    "duration": "5–10 min",
+    "use": "Whole class, pair or individual",
+    "sound": true,
+    "touch": true,
+    "order": 190
+  },
+  {
+    "id": "word-stress-dj",
+    "file": "wordiness-word-stress-dj.htm",
+    "title": "Word Stress DJ",
+    "desc": "Hear a curated word and identify its stressed syllable.",
+    "tags": [
+      "pronunciation",
+      "stress",
+      "tts"
+    ],
+    "strand": "Word structure & decoding",
+    "seedable": false,
+    "duration": "5–8 min",
+    "use": "Small group or individual",
+    "sound": true,
+    "touch": true,
+    "order": 195
+  },
+  {
+    "id": "word-stress-remix",
+    "file": "wordiness-word-stress-dj-remix.htm",
+    "title": "Word Stress DJ Remix",
+    "desc": "Compare words with contrasting stress patterns and match the rhythm.",
+    "tags": [
+      "pronunciation",
+      "stress",
+      "tts"
+    ],
+    "strand": "Word structure & decoding",
+    "seedable": false,
+    "duration": "5–8 min",
+    "use": "Small group or individual",
+    "sound": true,
+    "touch": true,
+    "order": 200
+  },
+  {
+    "id": "working-memory-relay",
+    "file": "wordiness-working-memory-relay.html",
+    "title": "Working Memory Relay",
+    "desc": "Hold, recall and rebuild a short sequence of selected words.",
+    "tags": [
+      "working-memory",
+      "executive-function",
+      "pack-text"
+    ],
+    "strand": "Executive function & working memory",
+    "seedable": true,
+    "packData": "short familiar words",
+    "duration": "4–8 min",
+    "use": "Individual or paired",
+    "sound": true,
+    "touch": true,
+    "order": 205
+  },
+  {
+    "id": "pace-phrase-reader",
+    "file": "wordiness-pace-phrase-reader.html",
+    "title": "Pace & Phrase Reader",
+    "desc": "Reveal meaningful phrases one at a time and practise fluent, expressive reading.",
+    "tags": [
+      "fluency",
+      "phrasing",
+      "pack-text",
+      "tts"
+    ],
+    "strand": "Fluency, speaking & expression",
+    "seedable": true,
+    "packData": "sentences and phrases",
+    "duration": "5–8 min",
+    "use": "Whole class, pair or individual",
+    "sound": true,
+    "touch": true,
+    "order": 210
+  },
+  {
+    "id": "calm-speech",
+    "file": "wordiness-calm-speech.html",
+    "title": "Calm Speech",
+    "desc": "Prepare and rehearse useful sentences at a comfortable speaking pace.",
+    "tags": [
+      "speaking",
+      "confidence",
+      "phrasing",
+      "pack-text",
+      "tts"
+    ],
+    "strand": "Fluency, speaking & expression",
+    "seedable": true,
+    "packData": "short sentences",
+    "duration": "5–8 min",
+    "use": "Pair or individual",
+    "sound": true,
+    "touch": true,
+    "order": 215
+  },
+  {
+    "id": "mystery-words",
+    "file": "wordiness-mystery-words.html",
+    "title": "Mystery Words",
+    "desc": "Use context and gradual clues to uncover vocabulary from the current text.",
+    "tags": [
+      "vocabulary",
+      "prediction",
+      "spelling",
+      "pack-text"
+    ],
+    "strand": "Sentence & language organisation",
+    "seedable": true,
+    "packData": "keywords in context",
+    "duration": "5–10 min",
+    "use": "Whole class, pair or individual",
+    "sound": true,
+    "touch": true,
+    "order": 220
+  },
+  {
+    "id": "karaoke-reader",
+    "file": "wordiness-karaoke-reader.html",
+    "title": "Karaoke Reader",
+    "desc": "Follow highlighted text with pause, replay and adjustable whole-sentence TTS.",
+    "tags": [
+      "fluency",
+      "tracking",
+      "repeated-reading",
+      "pack-text",
+      "tts"
+    ],
+    "strand": "Fluency, speaking & expression",
+    "seedable": true,
+    "packData": "paragraphs and sentences",
+    "duration": "5–10 min",
+    "use": "Whole class or individual",
+    "sound": true,
+    "touch": true,
+    "order": 225
+  },
+  {
+    "id": "phrase-chunker",
+    "file": "wordiness-phrase-chunker.html",
+    "title": "Phrase Chunker",
+    "desc": "Place meaningful pause points in sentences and compare possible phrasing.",
+    "tags": [
+      "phrasing",
+      "syntax",
+      "fluency",
+      "pack-text"
+    ],
+    "strand": "Fluency, speaking & expression",
+    "seedable": true,
+    "packData": "sentences",
+    "duration": "5–8 min",
+    "use": "Whole class, pair or individual",
+    "sound": true,
+    "touch": true,
+    "order": 230
+  },
+  {
+    "id": "rule-switch",
+    "file": "wordiness-rule-switch.html",
+    "title": "Rule Switch",
+    "desc": "Apply changing word rules to practise cognitive flexibility and inhibition.",
+    "tags": [
+      "executive-function",
+      "flexibility",
+      "attention",
+      "pack-text"
+    ],
+    "strand": "Executive function & working memory",
+    "seedable": true,
+    "packData": "word bank",
+    "duration": "5–8 min",
+    "use": "Whole class, pair or individual",
+    "sound": false,
+    "touch": true,
+    "order": 235
+  }
 ]

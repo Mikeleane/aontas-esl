@@ -1,237 +1,315 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
-import { buildWordinessSeedFromText } from "../_features/wordiness/buildWordinessSeed";
+import { useEffect, useMemo, useState } from "react";
+import CefrTextTypeControls from "@/app/_components/CefrTextTypeControls";
+import { parseCefrLevel, parseTextType, type CefrLevel, type TextType } from "@/lib/cefr";
+import type { OutputVariant } from "@/lib/contracts/generation";
+import {
+  buildWordinessSeedFromVariants,
+  normalizeWordinessSeed,
+} from "@/lib/contracts/wordiness";
+import styles from "./wordiness.module.css";
 
-type Game = {
+type ApiGame = {
   file: string;
-  title?: string;
-  desc?: string;
-  description?: string;
-  tags?: any; // <- intentionally loose, we normalize it
-  seedable?: boolean;
-  order?: any;
+  title: string;
+  desc: string;
+  tags: string[];
+  seedable: boolean;
+  order: number;
 };
 
-function b64UrlEncodeUtf8(s: string) {
-  const bytes = encodeURIComponent(s).replace(/%([0-9A-F]{2})/g, (_, p1) =>
-    String.fromCharCode(parseInt(p1, 16))
-  );
-  const b64 = btoa(bytes);
-  return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+type ApiResponse = {
+  files?: ApiGame[];
+  fileCount?: number;
+};
+
+type GameGroup = {
+  key: string;
+  title: string;
+  desc: string;
+  tags: string[];
+  order: number;
+  files: string[];
+  base?: ApiGame;
+  seeded?: ApiGame;
+};
+
+function cleanTitle(value: string): string {
+  return value
+    .replace(/\bPbdq\b/gi, "p/b/d/q")
+    .replace(/\bLego\b/g, "LEGO")
+    .replace(/\bWh\b/g, "WH")
+    .replace(/\bTts\b/g, "TTS")
+    .replace(/\bDj\b/g, "DJ")
+    .replace(/\bStart Stop\b/gi, "Start–Stop")
+    .replace(/\bWH Question\b/gi, "WH-Question")
+    .trim();
 }
 
-function asStringArray(v: any): string[] {
-  if (!v) return [];
-  if (Array.isArray(v)) return v.map((x) => String(x)).map((t) => t.trim()).filter(Boolean);
-
-  // common case: "grammar seeded" or "grammar,seeded"
-  if (typeof v === "string") {
-    return v
-      .split(/[,\n\r\t ]+/g)
-      .map((t) => t.trim())
-      .filter(Boolean);
+function groupGames(games: ApiGame[]): GameGroup[] {
+  const groups = new Map<string, GameGroup>();
+  for (const game of games) {
+    const dedicatedSeed = /-seeded\.(html|htm)$/i.test(game.file);
+    const key = cleanTitle(game.title).toLocaleLowerCase();
+    const group = groups.get(key) ?? {
+      key,
+      title: cleanTitle(game.title),
+      desc: game.desc,
+      tags: [],
+      order: game.order,
+      files: [],
+    };
+    group.order = Math.min(group.order, game.order);
+    group.desc = group.desc || game.desc;
+    group.tags = Array.from(new Set([...group.tags, ...game.tags].filter((tag) => tag !== "seeded")));
+    group.files.push(game.file);
+    if (!dedicatedSeed && (!group.base || game.order < group.base.order)) group.base = game;
+    if ((game.seedable || dedicatedSeed) && (!group.seeded || game.order < group.seeded.order)) group.seeded = game;
+    groups.set(key, group);
   }
-
-  // sometimes ConvertTo-Json / hand edits create objects
-  if (typeof v === "object") {
-    try {
-      return Object.values(v)
-        .map((x) => String(x))
-        .map((t) => t.trim())
-        .filter(Boolean);
-    } catch {
-      return [];
-    }
-  }
-
-  return [String(v)].map((t) => t.trim()).filter(Boolean);
+  return Array.from(groups.values()).sort((a, b) => a.order - b.order || a.title.localeCompare(b.title));
 }
 
-function asNumber(v: any, fallback = 9999) {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : fallback;
+function tagLabel(tag: string): string {
+  return tag
+    .split("-")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 export default function WordinessHubPage() {
-  const [games, setGames] = useState<Game[]>([]);
-  const [seedText, setSeedText] = useState("");
-  const [q, setQ] = useState("");
-  const [tag, setTag] = useState("");
+  const [games, setGames] = useState<ApiGame[]>([]);
+  const [loadError, setLoadError] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [cefrLevel, setCefrLevel] = useState<CefrLevel>("B1");
+  const [textType, setTextType] = useState<TextType>("article");
+  const [variant, setVariant] = useState<OutputVariant>("standard");
+  const [standardText, setStandardText] = useState("");
+  const [supportedText, setSupportedText] = useState("");
+  const [seedTitle, setSeedTitle] = useState("");
+  const [query, setQuery] = useState("");
+  const [selectedTag, setSelectedTag] = useState("");
 
   useEffect(() => {
-    fetch("/wordiness/manifest.json?ts=" + Date.now())
-      .then((r) => r.json())
-      .then((data) => {
-        const arr: Game[] = Array.isArray(data) ? data : (data?.games ?? []);
-        // normalize minimally so the rest of the page is safe
-        const cleaned = (arr || []).filter(Boolean).map((g: any) => ({
-          ...g,
-          file: String(g.file || ""),
-          title: g.title ?? g.name ?? "",
-          desc: g.desc ?? g.description ?? "",
-          tags: asStringArray(g.tags),
-          seedable: !!g.seedable,
-          order: asNumber(g.order, 9999),
-        }));
-        setGames(cleaned.filter((g) => !!g.file));
-      })
-      .catch(() => setGames([]));
+    try {
+      const raw = localStorage.getItem("wordiness_seed_json");
+      if (raw) {
+        const seed = normalizeWordinessSeed(JSON.parse(raw));
+        setCefrLevel(parseCefrLevel(seed.cefrLevel));
+        setTextType(parseTextType(seed.textType));
+        setVariant(seed.activeVariant);
+        setStandardText(seed.variants.standard.text);
+        setSupportedText(seed.variants.supported.text);
+        setSeedTitle(seed.meta.title || "");
+      }
+    } catch {
+      // A damaged old seed must not block Wordiness.
+    } finally {
+      setLoaded(true);
+    }
   }, []);
 
-  const allTags = useMemo(() => {
-    const s = new Set<string>();
-    for (const g of games) {
-      for (const t of asStringArray((g as any).tags)) s.add(String(t));
-    }
-    return Array.from(s).sort((a, b) => a.localeCompare(b));
-  }, [games]);
-
-  const filtered = useMemo(() => {
-    const qq = q.trim().toLowerCase();
-    return (games || [])
-      .filter((g) => g && g.file)
-      .filter((g) => (tag ? asStringArray(g.tags).includes(tag) : true))
-      .filter((g) => {
-        if (!qq) return true;
-        const hay = `${g.title || ""} ${g.file} ${g.desc || ""} ${asStringArray(g.tags).join(" ")}`.toLowerCase();
-        return hay.includes(qq);
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch(`/api/wordiness?ts=${Date.now()}`, { signal: controller.signal })
+      .then((response) => {
+        if (!response.ok) throw new Error(`Wordiness library request failed: ${response.status}`);
+        return response.json() as Promise<ApiResponse>;
       })
-      .sort((a, b) => asNumber(a.order) - asNumber(b.order));
-  }, [games, q, tag]);
+      .then((data) => {
+        setGames(Array.isArray(data.files) ? data.files : []);
+        setLoadError(false);
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setGames([]);
+        setLoadError(true);
+      });
+    return () => controller.abort();
+  }, []);
 
-  const seedHash = useMemo(() => {
-    if (!seedText.trim()) return "";
-    try {
-      const seedObj = buildWordinessSeedFromText(seedText);
-      return "#seed=" + b64UrlEncodeUtf8(JSON.stringify(seedObj));
-    } catch {
-      return "#seed=" + b64UrlEncodeUtf8(JSON.stringify({ seedText }));
+  useEffect(() => {
+    if (!loaded) return;
+    if (!standardText.trim() && !supportedText.trim()) {
+      try { localStorage.removeItem("wordiness_seed_json"); } catch {}
+      return;
     }
-  }, [seedText]);
+    const seed = buildWordinessSeedFromVariants({
+      standard: standardText,
+      supported: supportedText,
+      cefrLevel,
+      textType,
+      activeVariant: variant,
+      source: "wordiness-hub",
+      title: seedTitle || undefined,
+    });
+    try { localStorage.setItem("wordiness_seed_json", JSON.stringify(seed)); } catch {}
+  }, [cefrLevel, loaded, seedTitle, standardText, supportedText, textType, variant]);
 
-  function launch(g: Game) {
-    const isSeededFile = /seeded\.(html|htm)$/i.test(g.file);
-    const wantsSeed = (!!g.seedable || isSeededFile) && !!seedHash;
-    const url = "/wordiness/" + g.file + (wantsSeed ? seedHash : "");
-    window.open(url, "_blank", "noopener,noreferrer");
+  const groupedGames = useMemo(() => groupGames(games), [games]);
+  const allTags = useMemo(() => {
+    const tags = new Set<string>();
+    groupedGames.forEach((game) => game.tags.forEach((tag) => tags.add(tag)));
+    return Array.from(tags).sort((a, b) => tagLabel(a).localeCompare(tagLabel(b)));
+  }, [groupedGames]);
+  const filteredGames = useMemo(() => {
+    const search = query.trim().toLocaleLowerCase();
+    return groupedGames.filter((game) => {
+      if (selectedTag && !game.tags.includes(selectedTag)) return false;
+      if (!search) return true;
+      return [game.title, game.desc, ...game.tags, ...game.files].join(" ").toLocaleLowerCase().includes(search);
+    });
+  }, [groupedGames, query, selectedTag]);
+
+  const activeText = variant === "standard"
+    ? (standardText || supportedText)
+    : (supportedText || standardText);
+  const hasActiveSeed = Boolean(activeText.trim());
+
+  function setActiveText(value: string) {
+    if (variant === "standard") setStandardText(value);
+    else setSupportedText(value);
+  }
+
+  function saveSeed(activeVariant = variant) {
+    const seed = buildWordinessSeedFromVariants({
+      standard: standardText,
+      supported: supportedText,
+      cefrLevel,
+      textType,
+      activeVariant,
+      source: "wordiness-hub",
+      title: seedTitle || undefined,
+    });
+    try { localStorage.setItem("wordiness_seed_json", JSON.stringify(seed)); } catch {}
+  }
+
+  function launch(game: ApiGame, includeSeed = false) {
+    if (includeSeed && hasActiveSeed) saveSeed(variant);
+    const hash = includeSeed ? `#use-seed=1&variant=${variant}` : "#standalone=1";
+    window.open(`/wordiness/${game.file}${hash}`, "_blank", "noopener,noreferrer");
   }
 
   return (
-    <div style={{ minHeight: "100vh", padding: 18, background: "linear-gradient(135deg, #dff1ff 0%, #fff5d6 100%)" }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
-          <img src="/wordiness/crest.png" alt="crest" style={{ width: 46, height: 46, objectFit: "contain" }} />
+    <main className={styles.page}>
+      <div className={styles.shell}>
+        <header className={styles.header}>
+          <img className={styles.mark} src="/wordiness/aontas-esl-mark.svg" alt="Aontas ESL" />
           <div>
-            <div style={{ fontSize: 22, fontWeight: 800 }}>Wordiness Hub</div>
-            <div style={{ opacity: 0.75, fontSize: 13 }}>
-              Launch Wordiness games. Seeded games use your Reading Pack text.
-            </div>
+            <a className={styles.back} href="/pack">← Reading Studio</a>
+            <h1 className={styles.title}>Wordiness Hub</h1>
+            <p className={styles.subtitle}>
+              Focused language games from the KNS Wordiness suite, adapted to the Aontas ESL CEFR spine.
+              Open a standalone game or carry the current Standard/Supported Reading text straight into a seeded activity.
+            </p>
           </div>
-          <div style={{ marginLeft: "auto", fontSize: 12, opacity: 0.7 }}>
-            Files found: <b>{games.length}</b>
+          <div className={styles.count} aria-label={`${groupedGames.length} activities from ${games.length} game files`}>
+            <strong>{groupedGames.length}</strong>
+            <span>activities</span>
           </div>
-        </div>
+        </header>
 
-        <div
-          style={{
-            background: "rgba(255,255,255,0.75)",
-            border: "1px solid rgba(0,0,0,0.08)",
-            borderRadius: 14,
-            padding: 14,
-            boxShadow: "0 10px 24px rgba(0,0,0,0.06)",
-          }}
-        >
-          <div style={{ fontWeight: 700, marginBottom: 6 }}>Current seed</div>
-          <div style={{ fontSize: 12, opacity: 0.75, marginBottom: 8 }}>
-            Paste Reading Pack text here (optional). Seeded games open with #seed=... attached.
+        <section className={styles.panel} aria-labelledby="wordiness-seed-heading">
+          <div className={styles.seedTop}>
+            <div>
+              <h2 id="wordiness-seed-heading">Use the current text</h2>
+              <p>Reading Studio loads both routes automatically. Choose which route a seeded game should use, or paste/replace the text here.</p>
+            </div>
+            <span className={`${styles.status} ${hasActiveSeed ? styles.ready : ""}`}>
+              {hasActiveSeed ? `Ready · ${cefrLevel} · ${variant === "supported" ? "Supported" : "Standard"}` : "No text added"}
+            </span>
           </div>
-          <textarea
-            value={seedText}
-            onChange={(e) => setSeedText(e.target.value)}
-            placeholder="Paste text from Reading Pack (optional)..."
-            style={{
-              width: "100%",
-              minHeight: 110,
-              borderRadius: 10,
-              border: "1px solid rgba(0,0,0,0.15)",
-              padding: 10,
-              fontSize: 14,
-              lineHeight: 1.35,
-            }}
+
+          <CefrTextTypeControls
+            cefrLevel={cefrLevel}
+            setCefrLevel={setCefrLevel}
+            textType={textType}
+            setTextType={setTextType}
           />
-          <div style={{ display: "flex", gap: 10, marginTop: 10, alignItems: "center", flexWrap: "wrap" }}>
-            <input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Search games..."
-              style={{ flex: "1 1 260px", borderRadius: 999, border: "1px solid rgba(0,0,0,0.15)", padding: "10px 12px" }}
-            />
-            <select
-              value={tag}
-              onChange={(e) => setTag(e.target.value)}
-              style={{ flex: "0 0 220px", borderRadius: 999, border: "1px solid rgba(0,0,0,0.15)", padding: "10px 12px" }}
-            >
-              <option value="">All tags</option>
-              {allTags.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-            <button
-              onClick={() => setSeedText("")}
-              style={{
-                borderRadius: 999,
-                border: "1px solid rgba(0,0,0,0.12)",
-                padding: "10px 14px",
-                background: "white",
-                cursor: "pointer",
-              }}
-            >
-              Clear seed
+
+          <div className={styles.routeRow}>
+            <strong>Game text:</strong>
+            {(["standard", "supported"] as const).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                className={`${styles.routeButton} ${variant === mode ? styles.routeActive : ""}`}
+                onClick={() => setVariant(mode)}
+                aria-pressed={variant === mode}
+              >
+                {mode === "standard" ? "Standard" : "Supported"}
+              </button>
+            ))}
+            <button type="button" className={styles.secondary} onClick={() => setSupportedText(standardText)} disabled={!standardText.trim()}>
+              Copy Standard → Supported
+            </button>
+            <button type="button" className={styles.secondary} onClick={() => { setStandardText(""); setSupportedText(""); setSeedTitle(""); }} disabled={!standardText && !supportedText}>
+              Clear both
             </button>
           </div>
+
+          <textarea
+            className={styles.textarea}
+            value={activeText}
+            onChange={(event) => setActiveText(event.target.value)}
+            placeholder={`Paste ${variant} text here…`}
+            aria-label={`${variant} text for seeded Wordiness games`}
+          />
+          {variant === "supported" && !supportedText.trim() && standardText.trim() && (
+            <div className={styles.hint}>Supported text is currently falling back to Standard. Type here to create a separate Supported route.</div>
+          )}
+
+          <div className={styles.toolbar} role="search" aria-label="Find a Wordiness activity">
+            <input className={styles.input} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search activities…" />
+            <select className={styles.select} value={selectedTag} onChange={(event) => setSelectedTag(event.target.value)}>
+              <option value="">All skills</option>
+              {allTags.map((tag) => <option key={tag} value={tag}>{tagLabel(tag)}</option>)}
+            </select>
+            <button type="button" className={styles.secondary} onClick={() => { setQuery(""); setSelectedTag(""); }} disabled={!query && !selectedTag}>
+              Clear filters
+            </button>
+          </div>
+        </section>
+
+        <div className={styles.results}>
+          <span>Showing <strong>{filteredGames.length}</strong> of {groupedGames.length} activities</span>
+          <span>{games.length} live game files detected</span>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 14, marginTop: 14 }}>
-          {filtered.map((g) => (
-            <div
-              key={g.file}
-              style={{
-                background: "rgba(255,255,255,0.85)",
-                border: "1px solid rgba(0,0,0,0.08)",
-                borderRadius: 16,
-                padding: 14,
-                boxShadow: "0 10px 22px rgba(0,0,0,0.05)",
-              }}
-            >
-              <div style={{ fontWeight: 800, marginBottom: 4 }}>{g.title || g.file}</div>
-              <div style={{ fontSize: 12, opacity: 0.75, minHeight: 32 }}>{g.desc || ""}</div>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
-                {asStringArray(g.tags).slice(0, 8).map((t) => (
-                  <span key={t} style={{ fontSize: 11, padding: "4px 8px", borderRadius: 999, background: "rgba(0,0,0,0.06)" }}>
-                    {t}
-                  </span>
-                ))}
-              </div>
-              <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 12 }}>
-                <button
-                  onClick={() => launch(g)}
-                  style={{ borderRadius: 999, border: "1px solid rgba(0,0,0,0.12)", padding: "10px 14px", background: "white", cursor: "pointer" }}
-                >
-                  Launch
-                </button>
-                <div style={{ fontSize: 11, opacity: 0.6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {g.file}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div style={{ marginTop: 14, fontSize: 12, opacity: 0.7 }}>Seeded games read a #seed=... hash.</div>
+        {loadError ? (
+          <section className={styles.empty} role="alert">
+            <h2>Wordiness library could not be loaded</h2>
+            <p>Check the imported files under public/wordiness and retry.</p>
+          </section>
+        ) : filteredGames.length === 0 ? (
+          <section className={styles.empty}><h2>No matching activities</h2><p>Try a different search word or skill filter.</p></section>
+        ) : (
+          <section className={styles.grid} aria-label="Wordiness activities">
+            {filteredGames.map((game) => {
+              const base = game.base;
+              const seeded = game.seeded;
+              return (
+                <article className={styles.card} key={game.key}>
+                  <h2>{game.title}</h2>
+                  <p>{game.desc || "Focused language practice activity."}</p>
+                  <div className={styles.tags}>{game.tags.slice(0, 7).map((tag) => <span className={styles.tag} key={tag}>{tagLabel(tag)}</span>)}</div>
+                  <div className={styles.actions}>
+                    {base && <button type="button" className={styles.button} onClick={() => launch(base)}>Open game</button>}
+                    {seeded && (
+                      <button type="button" className={`${styles.button} ${styles.seeded}`} onClick={() => launch(seeded, true)} disabled={!hasActiveSeed}>
+                        Use {variant === "supported" ? "Supported" : "Standard"} text
+                      </button>
+                    )}
+                    {!base && seeded && !hasActiveSeed && <span className={styles.hint}>Add text above to unlock</span>}
+                  </div>
+                  <div className={styles.fileCount}>{game.files.length} file{game.files.length === 1 ? "" : "s"}</div>
+                </article>
+              );
+            })}
+          </section>
+        )}
       </div>
-    </div>
+    </main>
   );
 }

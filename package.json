@@ -1,49 +1,50 @@
 {
-  "name": "aontas-10",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "cross-env NODE_OPTIONS=--max-old-space-size=6144 next build --webpack",
-    "start": "next start",
-    "lint": "eslint app lib",
-    "typecheck": "tsc --noEmit",
-    "check": "npm run typecheck && npm run lint",
-    "test": "node scripts/verify-phase1.cjs && node scripts/verify-phase2.cjs && node scripts/verify-phase2b.cjs && node scripts/verify-phase2c.cjs",
-    "verify:phase1": "node scripts/verify-phase1.cjs",
-    "verify:phase2": "node scripts/verify-phase2.cjs",
-    "verify:phase2b": "node scripts/verify-phase2b.cjs",
-    "verify:phase2c": "node scripts/verify-phase2c.cjs"
-  },
-  "dependencies": {
-    "@mozilla/readability": "0.5.0",
-    "docx": "^8.5.0",
-    "jsdom": "21.1.2",
-    "jspdf": "^2.5.1",
-    "next": "^16.0.10",
-    "openai": "^4.69.0",
-    "parse5": "6.0.1",
-    "pdf-lib": "^1.17.1",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
-  },
-  "devDependencies": {
-    "@tailwindcss/postcss": "^4.1.17",
-    "@types/jsdom": "^21.1.7",
-    "@types/node": "^20.14.11",
-    "@types/react": "^18.3.3",
-    "@types/react-dom": "^18.3.0",
-    "autoprefixer": "^10.4.22",
-    "baseline-browser-mapping": "^2.9.19",
-    "cross-env": "^10.1.0",
-    "eslint": "^9.39.1",
-    "eslint-config-next": "16.0.7",
-    "postcss": "^8.5.6",
-    "tailwindcss": "^4.1.17",
-    "typescript": "^5.5.4"
-  },
-  "overrides": {
-    "jsdom": "21.1.2",
-    "parse5": "6.0.1"
-  }
+    "name":  "aontas-10",
+    "version":  "0.1.0",
+    "private":  true,
+    "scripts":  {
+                    "dev":  "next dev",
+                    "build":  "cross-env NODE_OPTIONS=--max-old-space-size=6144 next build --webpack",
+                    "start":  "next start",
+                    "lint":  "eslint app lib",
+                    "typecheck":  "tsc --noEmit",
+                    "check":  "npm run typecheck \u0026\u0026 npm run lint",
+                    "test":  "node scripts/verify-phase1.cjs \u0026\u0026 node scripts/verify-phase2.cjs \u0026\u0026 node scripts/verify-phase2b.cjs \u0026\u0026 node scripts/verify-phase2c.cjs \u0026\u0026 node scripts/verify-phase2d.cjs",
+                    "verify:phase1":  "node scripts/verify-phase1.cjs",
+                    "verify:phase2":  "node scripts/verify-phase2.cjs",
+                    "verify:phase2b":  "node scripts/verify-phase2b.cjs",
+                    "verify:phase2c":  "node scripts/verify-phase2c.cjs",
+                    "verify:phase2d":  "node scripts/verify-phase2d.cjs"
+                },
+    "dependencies":  {
+                         "@mozilla/readability":  "0.5.0",
+                         "docx":  "^8.5.0",
+                         "jsdom":  "21.1.2",
+                         "jspdf":  "^2.5.1",
+                         "next":  "^16.0.10",
+                         "openai":  "^4.69.0",
+                         "parse5":  "6.0.1",
+                         "pdf-lib":  "^1.17.1",
+                         "react":  "^18.3.1",
+                         "react-dom":  "^18.3.1"
+                     },
+    "devDependencies":  {
+                            "@tailwindcss/postcss":  "^4.1.17",
+                            "@types/jsdom":  "^21.1.7",
+                            "@types/node":  "^20.14.11",
+                            "@types/react":  "^18.3.3",
+                            "@types/react-dom":  "^18.3.0",
+                            "autoprefixer":  "^10.4.22",
+                            "baseline-browser-mapping":  "^2.9.19",
+                            "cross-env":  "^10.1.0",
+                            "eslint":  "^9.39.1",
+                            "eslint-config-next":  "16.0.7",
+                            "postcss":  "^8.5.6",
+                            "tailwindcss":  "^4.1.17",
+                            "typescript":  "^5.5.4"
+                        },
+    "overrides":  {
+                      "jsdom":  "21.1.2",
+                      "parse5":  "6.0.1"
+                  }
 }

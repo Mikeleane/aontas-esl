@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-labelledby="title desc">
+  <title id="title">Aontas ESL</title>
+  <desc id="desc">A simple Aontas ESL language-learning mark</desc>
+  <rect width="240" height="240" rx="48" fill="#0f172a"/>
+  <circle cx="120" cy="96" r="58" fill="#ffffff" opacity="0.12"/>
+  <path d="M73 119c15-34 31-56 47-68 16 12 32 34 47 68h-24l-9-20h-28l-9 20H73zm41-39-8 19h16l-8-19z" fill="#ffffff"/>
+  <text x="120" y="161" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="32" font-weight="700" fill="#ffffff">AONTAS</text>
+  <text x="120" y="191" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="600" fill="#cbd5e1">ESL</text>
+</svg>

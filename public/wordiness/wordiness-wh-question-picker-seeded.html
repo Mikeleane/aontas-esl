@@ -34,7 +34,7 @@
 <div class="wrap">
   <div class="top">
     <div class="brand">
-      <img src="crest.png" onerror="this.style.display='none'"/>
+      <img src="aontas-esl-mark.svg" onerror="this.style.display='none'"/>
       <div>
         <h1>WH Question Picker (Seeded)</h1>
         <div class="sub">Pick the WH word that fits the highlighted answer chunk.</div>
@@ -95,7 +95,8 @@
   }
 
   var bank = [];
-  if(seed && seed.text) bank = cleanSentences(seed.text);
+  if(seed && Array.isArray(seed.sentences)) bank = seed.sentences.slice();
+  if(!bank.length && seed && seed.text) bank = cleanSentences(seed.text);
   if(!bank.length){
     bank = [
       "We went to the library after lunch.",
@@ -105,7 +106,10 @@
       "They played in the school hall."
     ];
   }
-  bank = bank.filter(function(s){return s.split(/\s+/).length >= 5;});
+  bank = bank.filter(function(s){
+    var count = String(s || "").split(/\s+/).filter(Boolean).length;
+    return count >= 5 && count <= 22;
+  }).slice(0, 30);
   if(!bank.length) bank=["We learn in many different ways."];
 
   function pickChunk(s){
@@ -221,6 +225,15 @@
   });
   document.getElementById("stopBtn").addEventListener("click", stopSpeak);
 })();
+</script>
+
+<script src="wordiness-bank.js"></script>
+<script src="wordiness-platform.js"></script>
+<!-- wordiness-platform-mount-v1 -->
+<script>
+window.addEventListener("DOMContentLoaded", function () {
+  if (window.WordinessPlatform) window.WordinessPlatform.mountGameBar({gameId:"wh-question-picker",title:"WH-Question Picker"});
+});
 </script>
 </body>
 </html>

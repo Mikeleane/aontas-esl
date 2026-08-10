@@ -9,7 +9,7 @@ export type { ReadingMode, ReadingPackData, ExerciseItem, ExerciseSide } from ".
 
 // If your real helper lives somewhere else, adjust this ONE import.
 // (Your error was from using "./wordiness/..." which doesn't exist under /reading)
-import { buildWordinessSeedFromText } from "../wordiness/buildWordinessSeed";
+import { buildWordinessSeedFromVariants } from "../wordiness/buildWordinessSeed";
 
 // If you already have exporters wired up, keep these imports.
 // If you don't, comment them out + the export buttons below.
@@ -107,13 +107,21 @@ export default function ReadingPackApp({ pack, crestFallbackPath = "", onPackCha
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Wordiness seed derived from reading text so Wordiness is always "about this pack".
+  // Keep Wordiness tied to this Reading Pack while preserving both CEFR routes.
+  // The v2 seed bridge exposes a flat text/seedText view to legacy games at launch time.
   useEffect(() => {
     try {
       if (!packAny) return;
-      const textForSeed = readingStandard || readingSupported || "";
-      if (!textForSeed.trim()) return;
-      const seed = buildWordinessSeedFromText(textForSeed, "reading-pack");
+      if (!readingStandard.trim() && !readingSupported.trim()) return;
+      const seed = buildWordinessSeedFromVariants({
+        standard: readingStandard || readingSupported,
+        supported: readingSupported || readingStandard,
+        cefrLevel: packAny.cefrLevel,
+        textType: packAny.textType,
+        activeVariant: "standard",
+        source: "reading-pack",
+        title: packAny.title,
+      });
       localStorage.setItem("wordiness_seed_json", JSON.stringify(seed));
     } catch {}
   }, [packAny, readingStandard, readingSupported]);

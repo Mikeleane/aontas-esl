@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Wordiness: Order Finder</title>
+  <title>Wordiness: Letter Letter Order Finder</title>
   <style>
     :root{
       --bg:#070a12;
@@ -229,9 +229,9 @@
   <div class="wrap">
     <header>
       <div class="brand">
-        <img id="crest" src="/wordiness/crest.png" alt="Crest" />
+        <img id="crest" src="/wordiness/aontas-esl-mark.svg" alt="Crest" />
         <div>
-          <h1>Order Finder</h1>
+          <h1>Letter Order Finder</h1>
           <div class="sub">Executive-function focus game: scan and tap items that match the pattern rule.</div>
         </div>
       </div>
@@ -343,6 +343,7 @@
     </div>
   </div>
 
+<script src="wordiness-seed-bridge.js"></script>
 <script>
 (function(){
   const grid = document.getElementById('grid');
@@ -401,13 +402,53 @@
   let score = 0, correct = 0, misses = 0;
   let matched = 0, totalTargets = 0;
 
-  const wordList = [
+  const defaultWordList = [
     "bacon","back","backup","backpack","basket","banana","cab","cabin","brace","bracket","crab",
     "reading","teacher","school","classroom","library","garden","winter","summer","music","family","friend",
     "station","motion","nation","action","fraction","traction","fiction","caution","caption",
     "string","strong","street","stripe","strange","strategy",
     "undo","unfair","unhappy","unknown","unlock","rewrite","rebuild","review","return","prepare","preview"
   ];
+
+  const packWords = (()=>{
+    try{
+      const api = window.__WORDINESS_SEED_BRIDGE__;
+      const seed = api && api.getSeed ? api.getSeed() : null;
+      if(!seed) return [];
+      return (api.getWords ? api.getWords(seed) : (seed.words || []))
+        .map(word => String(word || "").toLowerCase().replace(/[^a-z'-]/g, ""))
+        .filter(word => word.length >= 3 && word.length <= 18)
+        .slice(0, 120);
+    }catch(e){ return []; }
+  })();
+
+  const wordList = packWords.length >= 10 ? packWords : defaultWordList;
+
+  function choosePackPattern(words){
+    const candidates = ["tion","ing","ed","re","un","th","ch","sh","ea","oo","st","tr"];
+    words.forEach(word=>{
+      for(let i=0;i<word.length-1;i++) candidates.push(word.slice(i,i+2));
+      for(let i=0;i<word.length-2;i++) candidates.push(word.slice(i,i+3));
+    });
+
+    let best = "";
+    let bestScore = -1;
+    Array.from(new Set(candidates)).forEach(pattern=>{
+      if(pattern.length < 2) return;
+      const count = words.filter(word=>word.includes(pattern)).length;
+      if(count < 2 || count >= words.length) return;
+      const balance = Math.min(count, words.length-count);
+      if(balance > bestScore){ bestScore = balance; best = pattern; }
+    });
+    return best || "ing";
+  }
+
+  if(packWords.length >= 10){
+    currentPattern = choosePackPattern(wordList);
+    rule = "exact";
+    contentMode = "words";
+    patternInput.value = currentPattern;
+  }
 
   function escapeHtml(s){
     return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -768,7 +809,7 @@
 
   // Crest fallback
   const crest = document.getElementById("crest");
-  crest.addEventListener("error", () => { crest.src = "/wordiness/crest.png"; }, { once:true });
+  crest.addEventListener("error", () => { crest.src = "/wordiness/aontas-esl-mark.svg"; }, { once:true });
 
   // Init
   updateLabels();
@@ -777,7 +818,13 @@
 })();
 </script>
 
-<!-- wordiness-seed-bridge-v1 -->
-<script src="wordiness-seed-bridge.js"></script>
+<script src="wordiness-bank.js"></script>
+<script src="wordiness-platform.js"></script>
+<!-- wordiness-platform-mount-v1 -->
+<script>
+window.addEventListener("DOMContentLoaded", function () {
+  if (window.WordinessPlatform) window.WordinessPlatform.mountGameBar({gameId:"focus-order-finder",title:"Letter Letter Order Finder"});
+});
+</script>
 </body>
 </html>

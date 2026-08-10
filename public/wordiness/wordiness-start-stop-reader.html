@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
-<title>Wordiness — Start–Stop Reader</title>
+<title>Wordiness — Start–Stop Word Scanner</title>
 <style>
 :root{--bg:#070a12;--panel:rgba(255,255,255,.06);--stroke:rgba(255,255,255,.12);--text:rgba(238,242,255,.92);--muted:rgba(238,242,255,.70);--tap:48px;--shadow:rgba(0,0,0,.42);--primaryStroke:rgba(34,197,94,.55);--warnStroke:rgba(245,158,11,.45);}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
-body{margin:0;background:radial-gradient(1200px 700px at 20% -10%, rgba(99,102,241,.24), transparent 55%),radial-gradient(900px 600px at 90% 10%, rgba(56,189,248,.18), transparent 55%),var(--bg);color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;min-height:100dvh;padding:16px 12px calc(104px + env(safe-area-inset-bottom,0px))}
+body{margin:0;padding-bottom:170px;background:radial-gradient(1200px 700px at 20% -10%, rgba(99,102,241,.24), transparent 55%),radial-gradient(900px 600px at 90% 10%, rgba(56,189,248,.18), transparent 55%),var(--bg);color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;min-height:100dvh;padding:16px 12px calc(104px + env(safe-area-inset-bottom,0px))}
 .wrap{max-width:1100px;margin:0 auto}
 header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
 .brand{display:flex;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--stroke);background:linear-gradient(to bottom, rgba(255,255,255,.07), rgba(255,255,255,.03));border-radius:20px;box-shadow:0 18px 50px var(--shadow);backdrop-filter:blur(10px)}
@@ -61,7 +61,7 @@ select{padding-right:34px}
 .feedback.bad{border-color: rgba(239,68,68,.35)}
 .feedback.warn{border-color: rgba(245,158,11,.35)}
 
-.sticky{position:fixed;left:0;right:0;bottom:0;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));background:linear-gradient(to top, rgba(7,10,18,.92), rgba(7,10,18,.35));backdrop-filter:blur(10px);border-top:1px solid rgba(255,255,255,.10)}
+.sticky{position:fixed;left:0;right:0;bottom:64px;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));background:linear-gradient(to top, rgba(7,10,18,.92), rgba(7,10,18,.35));backdrop-filter:blur(10px);border-top:1px solid rgba(255,255,255,.10)}
 .stickyInner{max-width:1100px;margin:0 auto;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
 .bigStart{flex:1;min-width:220px;display:flex;gap:10px;align-items:center;justify-content:center;font-size:16px;font-weight:950;letter-spacing:.35px}
 .toast{flex:2;min-width:260px;padding:10px 12px;border-radius:16px;border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.18);color:var(--muted);font-weight:850;font-size:13px}
@@ -84,8 +84,8 @@ select{padding-right:34px}
 <div class="wrap">
 <header>
   <div class="brand">
-    <img id="crest" src="crest.png" alt="Crest"/>
-    <div><h1>Start–Stop Reader</h1><div class="sub">A calm “GO / NO-GO” game for focus, scanning, and self-control.</div></div>
+    <img id="crest" src="aontas-esl-mark.svg" alt="Crest"/>
+    <div><h1>Start–Stop Word Scanner</h1><div class="sub">A calm “GO / NO-GO” game for focus, scanning, and self-control.</div></div>
   </div>
   <div class="brand" style="align-items:flex-end"><div style="text-align:right"><div class="sub">Wordiness</div><div style="font-weight:950;font-size:14px">Focus + Executive Function</div></div></div>
 </header>
@@ -232,6 +232,7 @@ select{padding-right:34px}
   </div>
 </div>
 
+<script src="wordiness-seed-bridge.js"></script>
 <script>
 (()=>{const $=id=>document.getElementById(id);
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
@@ -247,7 +248,21 @@ if(/[^aeiouy]le$/.test(w))c++;
 return clamp(c||1,1,6);
 }
 
-const WORDS=["trap","tree","train","trip","truck","track","trick","treat","trend","trumpet","shop","ship","shut","shell","shine","shock","dish","wish","brush","shampoo","chip","chin","chop","chill","church","peach","teacher","catch","watch","lunch","thin","thick","thump","thunder","bath","math","with","three","think","tooth","phone","photo","graph","elephant","alphabet","dolphin","sphinx","trophy","rain","paint","main","plain","brain","stain","chain","snail","boat","coat","goat","soap","float","road","toast","oatmeal","coach","moon","soon","spoon","school","book","cook","foot","good","wood","pie","tie","field","chief","brief","thief","piece","believe","action","station","nation","fraction","traction","fiction","motion","caption","because","before","between","behind","without","inside","outside","family","friend","garden","winter","summer","music","library","classroom","different","vegetable","factory","chocolate","camera","comfortable","separate","memory","average","favourite","temperature","interesting","chicken","pencil","animal","transport","triangle","traditional","translate","telephone","photograph","understanding","pebble","quad","dig"];
+const DEFAULT_WORDS=["trap","tree","train","trip","truck","track","trick","treat","trend","trumpet","shop","ship","shut","shell","shine","shock","dish","wish","brush","shampoo","chip","chin","chop","chill","church","peach","teacher","catch","watch","lunch","thin","thick","thump","thunder","bath","math","with","three","think","tooth","phone","photo","graph","elephant","alphabet","dolphin","sphinx","trophy","rain","paint","main","plain","brain","stain","chain","snail","boat","coat","goat","soap","float","road","toast","oatmeal","coach","moon","soon","spoon","school","book","cook","foot","good","wood","pie","tie","field","chief","brief","thief","piece","believe","action","station","nation","fraction","traction","fiction","motion","caption","because","before","between","behind","without","inside","outside","family","friend","garden","winter","summer","music","library","classroom","different","vegetable","factory","chocolate","camera","comfortable","separate","memory","average","favourite","temperature","interesting","chicken","pencil","animal","transport","triangle","traditional","translate","telephone","photograph","understanding","pebble","quad","dig"];
+
+const PACK_WORDS=(()=>{
+  try{
+    const api=window.__WORDINESS_SEED_BRIDGE__;
+    const seed=api&&api.getSeed?api.getSeed():null;
+    if(!seed) return [];
+    return (api.getWords?api.getWords(seed):(seed.words||[]))
+      .map(word=>String(word||"").toLowerCase().replace(/[^a-z'-]/g,""))
+      .filter(word=>word.length>=2&&word.length<=20)
+      .slice(0,180);
+  }catch(e){return [];}
+})();
+
+const WORDS=PACK_WORDS.length>=10?PACK_WORDS:DEFAULT_WORDS;
 
 const PRESETS=[
  {rule:"starts",target:"tr",label:"Starts with tr"},
@@ -289,7 +304,7 @@ const el={
 
 const crest=$("crest");
 crest.addEventListener("error",()=>{
-  crest.src="/wordiness/crest.png";
+  crest.src="/wordiness/aontas-esl-mark.svg";
   crest.addEventListener("error",()=>{crest.style.display="none";},{once:true});
 },{once:true});
 
@@ -359,6 +374,24 @@ function isTargetWord(w){
     return syll(w)===n;
   }
   return false;
+}
+
+function choosePackRule(words){
+  const candidates=["tion","ing","ed","re","un","tr","sh","ch","th","oo","ea"];
+  words.forEach(word=>{
+    for(let i=0;i<word.length-1;i++) candidates.push(word.slice(i,i+2));
+    for(let i=0;i<word.length-2;i++) candidates.push(word.slice(i,i+3));
+  });
+
+  let best="",bestScore=-1;
+  Array.from(new Set(candidates)).forEach(pattern=>{
+    if(pattern.length<2) return;
+    const count=words.filter(word=>word.includes(pattern)).length;
+    if(count<2||count>=words.length) return;
+    const score=Math.min(count,words.length-count);
+    if(score>bestScore){bestScore=score;best=pattern;}
+  });
+  return best?{rule:"contains",target:best}:null;
 }
 
 const shuf=a=>{for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];}return a;};
@@ -562,6 +595,13 @@ function apply(view){
 }
 
 load();
+if(PACK_WORDS.length>=10){
+  const currentMatchCount=WORDS.filter(isTargetWord).length;
+  if(currentMatchCount<2||currentMatchCount>=WORDS.length){
+    const suggested=choosePackRule(WORDS);
+    if(suggested){state.rule=suggested.rule;state.target=suggested.target;}
+  }
+}
 el.ruleSelect.value=state.rule; el.targetInput.value=state.target;
 updSliders(); updBtns(); validate(); updRuleUI(); build();
 setStatus("", "Ready"); setWord("Press START"); updScore(); updTime();
@@ -605,7 +645,13 @@ document.addEventListener("visibilitychange",()=>{
 })();
 </script>
 
-<!-- wordiness-seed-bridge-v1 -->
-<script src="wordiness-seed-bridge.js"></script>
+<script src="wordiness-bank.js"></script>
+<script src="wordiness-platform.js"></script>
+<!-- wordiness-platform-mount-v1 -->
+<script>
+window.addEventListener("DOMContentLoaded", function () {
+  if (window.WordinessPlatform) window.WordinessPlatform.mountGameBar({gameId:"start-stop-reader",title:"Start–Stop Word Scanner"});
+});
+</script>
 </body>
 </html>

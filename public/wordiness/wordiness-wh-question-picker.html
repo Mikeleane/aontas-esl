@@ -38,7 +38,7 @@ button.primary{border-color:rgba(94,231,255,.35);background:linear-gradient(180d
 <div class="wrap">
   <div class="top">
     <div class="brand">
-      <img src="crest.png" onerror="this.style.display='none'">
+      <img src="aontas-esl-mark.svg" onerror="this.style.display='none'">
       <div>
         <div class="h1">WH Question Picker</div>
         <div class="sub">Pick the best WH word for the answer (Why / When / Where / Who / What).</div>
@@ -226,6 +226,15 @@ button.primary{border-color:rgba(94,231,255,.35);background:linear-gradient(180d
 
   render();
 })();
+</script>
+
+<script src="wordiness-bank.js"></script>
+<script src="wordiness-platform.js"></script>
+<!-- wordiness-platform-mount-v1 -->
+<script>
+window.addEventListener("DOMContentLoaded", function () {
+  if (window.WordinessPlatform) window.WordinessPlatform.mountGameBar({gameId:"wh-question-picker",title:"WH-Question Picker"});
+});
 </script>
 </body>
 </html>

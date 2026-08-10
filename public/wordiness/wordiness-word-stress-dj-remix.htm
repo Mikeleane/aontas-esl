@@ -108,6 +108,9 @@
     font-size:12px; padding:2px 6px; border-radius:8px; border:1px solid rgba(238,242,255,.16);
     background:rgba(0,0,0,.18); color:rgba(238,242,255,.86); }
   .hidden{ display:none !important; }
+
+.wordiness-game-settings{border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.03);padding:8px 10px}.wordiness-game-settings summary{cursor:pointer;font-weight:900}.wordiness-game-settings[open]{min-width:min(760px,100%)}
+@media(max-width:760px){header{display:block}.wordiness-game-settings{margin-top:10px}.hd{display:block}.pillRow{margin-top:10px}}
 </style>
 <style>
 /* wordiness-ui-polish-v4 */
@@ -162,27 +165,18 @@ input, textarea, select{
       <div class="sub">Practice (pick stress) + Remix (A/B stress pattern match). Supported adds cues without changing answers.</div>
     </div>
     <div class="row">
-      <label class="row" style="gap:6px;color:var(--muted);font-size:13px">Mode
-        <select id="mode">
-          <option value="practice">Practice</option>
-          <option value="remix">Remix</option>
-        </select>
+      <label class="row" style="gap:6px;color:var(--muted);font-size:13px">Game
+        <select id="mode"><option value="practice">Practice: tap stress</option><option value="remix">Remix: compare words</option></select>
       </label>
-      <label class="row" style="gap:6px;color:var(--muted);font-size:13px">View
-        <select id="variant">
-          <option value="standard">Standard</option>
-          <option value="supported">Supported</option>
-        </select>
-      </label>
-      <label class="row" style="gap:6px;color:var(--muted);font-size:13px">Voice
-        <select id="voice"></select>
-      </label>
-      <label class="row" style="gap:6px;color:var(--muted);font-size:13px">Tempo
-        <input id="tempo" type="range" min="70" max="140" value="108" />
-      </label>
-      <button class="ghost" id="toggleMetro">Metronome</button>
-      <button class="ghost" id="reduceMotion">Reduce motion</button>
+      <button class="ghost" id="speakWord">Hear word(s)</button>
+      <button class="ghost" id="speakSylls">Hear stress rhythm</button>
       <button id="nextTop">Next</button>
+      <details class="wordiness-game-settings"><summary>Settings</summary><div class="row" style="margin-top:8px">
+        <label class="row" style="gap:6px;color:var(--muted);font-size:13px">View <select id="variant"><option value="standard">Standard</option><option value="supported">Supported</option></select></label>
+        <label class="row" style="gap:6px;color:var(--muted);font-size:13px">Voice <select id="voice"></select></label>
+        <label class="row" style="gap:6px;color:var(--muted);font-size:13px">Tempo <input id="tempo" type="range" min="70" max="140" value="108" /></label>
+        <button class="ghost" id="toggleMetro">Metronome</button><button class="ghost" id="reduceMotion">Reduce motion</button>
+      </div></details>
     </div>
   </header>
 
@@ -197,8 +191,6 @@ input, textarea, select{
         <span class="pill">Score <b id="score">0</b>/<b id="total">∞</b></span>
         <span class="pill">Tempo <b id="tempoText">108</b> BPM</span>
         <span class="pill">Metronome <b id="metroState">off</b></span>
-        <button class="ghost" id="speakWord">Speak</button>
-        <button class="ghost" id="speakSylls">Speak syllables</button>
         <button class="ghost" id="showAnswer">Show answer</button>
         <button class="ghost" id="clear">Clear</button>
       </div>
@@ -208,7 +200,7 @@ input, textarea, select{
       <div class="grid">
         <div>
           <div id="practicePane">
-            <div class="sub">Tap the stressed syllable</div>
+            <div class="sub"><b>Practice:</b> hear the whole word, then tap its strongest syllable.</div>
             <div class="syllables" id="syllables"></div>
             <div class="note" id="supportNote" style="display:none"></div>
             <div class="status">
@@ -220,7 +212,7 @@ input, textarea, select{
           </div>
 
           <div id="remixPane" class="hidden">
-            <div class="sub">Match the stress pattern</div>
+            <div class="sub"><b>Remix:</b> hear both whole words, compare their rhythms, then choose A or B.</div>
             <div class="note">Target: the main stress lands on <b>syllable #<span id="targetN">—</span></b>. Preview A/B then choose.</div>
             <div class="meter" id="meterTarget"></div>
 
@@ -328,21 +320,10 @@ function speak(text, rate=1.0){
   speechSynthesis.cancel();
   speechSynthesis.speak(u);
 }
-async function speakSyllables(item){
-  if(!window.speechSynthesis) return;
-  const baseRate = (state.variant==="supported") ? 0.85 : 0.95;
-  speechSynthesis.cancel();
-  for(let i=0;i<item.syll.length;i++){
-    const s = item.syll[i].replace(/[^\w]/g,"");
-    const u=new SpeechSynthesisUtterance(s);
-    const idx=parseInt($("#voice").value,10);
-    if(Number.isFinite(idx) && voices[idx]) u.voice=voices[idx];
-    u.rate=baseRate;
-    speechSynthesis.speak(u);
-    await new Promise(res=>{
-      u.onend = ()=>setTimeout(res, 120);
-      u.onerror = ()=>setTimeout(res, 120);
-    });
+function speakSyllables(item){
+  const pattern=item.syll.map((_,index)=>index===item.stress);
+  if(window.WordinessPlatform&&WordinessPlatform.playRhythm){
+    WordinessPlatform.playRhythm(pattern,{interval:Math.round(60000/(Number($("#tempo").value)||108))});
   }
 }
 
@@ -487,7 +468,7 @@ function renderPractice(){
   const item=current();
   $("#titleBig").textContent=item.word;
   $("#taskHint").textContent = state.variant==="supported"
-    ? "Support: tap the chunk that sounds strongest. Try Speak → Speak syllables → Tap."
+    ? "Support: hear the whole word, tap the strongest chunk, then hear the stress rhythm."
     : "Tap the stressed syllable.";
 
   const box=$("#syllables"); box.innerHTML="";
@@ -517,8 +498,6 @@ function pick(idx){
     n.classList.remove("sel","ok","no");
     if(i===idx) n.classList.add("sel");
   });
-
-  if(state.variant==="supported") speak(current().syll[idx], 0.92);
 
   if(idx===current().stress){
     state.locked=true;
@@ -682,14 +661,10 @@ function speakCurrent(){
   }
 }
 function speakSyllsCurrent(){
-  if(state.mode==="practice") speakSyllables(current());
-  else {
-    (async ()=>{
-      await speakSyllables(WORDS[state.remix.a]);
-      await new Promise(r=>setTimeout(r, 220));
-      await speakSyllables(WORDS[state.remix.b]);
-    })();
-  }
+  if(state.mode==="practice") { speakSyllables(current()); return; }
+  speakSyllables(WORDS[state.remix.a]);
+  const aLen=WORDS[state.remix.a].syll.length;
+  setTimeout(()=>speakSyllables(WORDS[state.remix.b]),aLen*520+260);
 }
 function render(){
   $("#tempoText").textContent=String($("#tempo").value||108);
@@ -999,7 +974,7 @@ render();
     // Crest fallback (works for /wordiness and file:// exports)
     var crest = document.getElementById("crest");
     if (crest && crest.tagName === "IMG") {
-      crest.addEventListener("error", function(){ crest.src="/wordiness/crest.png"; }, { once:true });
+      crest.addEventListener("error", function(){ crest.src="/wordiness/aontas-esl-mark.svg"; }, { once:true });
     }
 
     if(!isTouch) return;
@@ -1046,5 +1021,14 @@ render();
 
 <!-- wordiness-seed-bridge-v1 -->
 <script src="wordiness-seed-bridge.js"></script>
+
+<script src="wordiness-bank.js"></script>
+<script src="wordiness-platform.js"></script>
+<!-- wordiness-platform-mount-v1 -->
+<script>
+window.addEventListener("DOMContentLoaded", function () {
+  if (window.WordinessPlatform) window.WordinessPlatform.mountGameBar({gameId:"word-stress-remix",title:"Word Stress DJ Remix"});
+});
+</script>
 </body>
 </html>
