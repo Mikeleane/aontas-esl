@@ -1,77 +1,65 @@
-# Aontas ESL — Reading Pack route restore (gpt-4.1-mini)
+# Aontas ESL
 
-This patch restores a known-good `/api/reading/generate-pack` route.
+Aontas ESL is a teacher-facing English language learning platform built around the CEFR A1-C2 framework.
 
-- Uses OpenAI **Responses API**
-- Uses **Structured Outputs** (JSON schema) via `text.format`
-- Returns `{ pack }` (what the frontend expects)
+The application generates and adapts learning material through a shared set of canonical contracts. The principal workflows are Reading, Exercises, Social Thread, Wordiness and H5P activities.
 
-## Files included
+## Development
 
-- `app/api/reading/generate-pack/route.tsx`
-- `scripts/patches/overwrite-reading-generate-pack-route.gpt41mini.js`
+Install dependencies and start the local development server:
 
-## Apply it (Option A: unzip)
+    npm install
+    npm run dev
 
-1) Download the zip and copy it into your repo root:
+Run the full local quality checks with:
 
-`C:\Users\mikel\OneDrive\Documents\GitHub\aontas-esl`
+    npm run typecheck
+    npm run lint:strict
+    npm run test
+    npm run build
 
-2) Unzip (merges folders):
+`lint:strict` must complete with zero errors and zero warnings.
 
-```powershell
-Expand-Archive -Force .\aontas-esl-generate-pack-route-gpt41mini.patch.zip .
-```
+## Architecture
 
-3) Restart dev server:
+CEFR definitions live in `lib/cefr.ts`.
 
-```powershell
-npm run dev
-```
+Canonical generation contracts live under `lib/contracts/` and use lowercase `standard` and `supported` variants.
 
-## Apply it (Option B: run overwrite script)
+The principal application routes are:
 
-If you don't want to unzip, you can copy just the overwrite script into:
+- `/pack` - Reading
+- `/exercises` - Exercises
+- `/social` - Social Thread
+- `/wordiness` - Wordiness activity suite
+- `/h5p` - H5P activities
 
-`scripts/patches/overwrite-reading-generate-pack-route.gpt41mini.js`
+Historical output aliases and school-stage data are handled only at explicit compatibility boundaries.
 
-Then run:
+## Wordiness
 
-```powershell
-node .\scripts\patches\overwrite-reading-generate-pack-route.gpt41mini.js
-```
+The Wordiness suite is stored in `public/wordiness/` and contains the expanded activity library migrated from the KNS implementation.
 
-The script backs up your current route and writes the fixed one.
+Reading Packs can seed Wordiness activities using the shared CEFR-aware Standard/Supported seed contract.
 
-## Required env
+## H5P
 
-In `.env.local`:
+The H5P Word Order generator uses the canonical DragText template at:
 
-```bash
-OPENAI_API_KEY=...
-OPENAI_MODEL=gpt-4.1-mini
-```
+`public/h5p/_templates/dragtext`
 
-`OPENAI_MODEL` is optional (the route defaults to `gpt-4.1-mini`).
+Only the dependency closure required by DragText is retained in the repository.
 
-## Quick API test
+Generated Reading Pack H5P instances are runtime artifacts and are ignored by Git.
 
-```powershell
-$body = @{
-  meta = @{ stage = 3; schoolClass = 3; title = "Rain + Umbrellas" }
-  primaryText = "A short text about rain and umbrellas."
-  pilotMode = $true
-} | ConvertTo-Json -Depth 10
+## Environment
 
-Invoke-RestMethod -Method Post -Uri http://localhost:3000/api/reading/generate-pack `
-  -ContentType "application/json" -Body $body | ConvertTo-Json -Depth 6
-```
+Local secrets belong in `.env.local`.
 
+Do not commit API keys or other credentials to the repository.
 
-## Emergency switch
+## Verification
 
-If OpenAI ever rejects the strict JSON schema (rare, but it can happen when APIs tighten validation), set:
+Regression suites under `scripts/verify-phase*.cjs` protect the CEFR spine, generation contracts, Wordiness bridge, H5P behavior and compatibility boundaries.
 
-- `OPENAI_TEXT_FORMAT=json_object`
-
-This disables the schema and just enforces valid JSON.
+A production-ready change should pass TypeScript, strict ESLint, all regression suites and the Next.js production build.
