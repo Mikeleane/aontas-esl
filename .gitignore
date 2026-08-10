@@ -36,3 +36,5 @@ aontas_esl_v4/
 *.tsbuildinfo
 _tmp_*.txt
 
+
+_import_from_kns/
