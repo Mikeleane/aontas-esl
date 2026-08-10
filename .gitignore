@@ -38,3 +38,6 @@ _tmp_*.txt
 
 
 _import_from_kns/
+
+# Generated H5P Reading Pack activities
+public/h5p/reading-pack-word-order-*/
