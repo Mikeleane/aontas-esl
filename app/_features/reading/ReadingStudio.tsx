@@ -1,4 +1,3 @@
-
 "use client";
 
 import CefrTextTypeControls from "../../_components/CefrTextTypeControls";
@@ -39,21 +38,17 @@ export default function ReadingStudio() {
   const [pack, setPack] = useState<ReadingPackData | null>(null);
   const [busy, setBusy] = useState<string>("");
   const [error, setError] = useState<string>("");
-
   const [cefrLevel, setCefrLevel] = useState<CefrLevel>("B1");
   const [textType, setTextType] = useState<TextType>("article");
+
   const generateFromInputs = useCallback(async (payload: TeacherInputsPayload) => {
     setBusy("generating");
     setError("");
     try {
-      // IMPORTANT: forward what TeacherInputsPanel collected
-      // (materials, primaryMaterialId, teacherContext, etc.)
       const body = {
         cefrLevel,
         textType,
         title: payload.title,
-
-        // Allow direct primary fields too (optional)
         primaryText: payload.primaryText,
         materials: payload.materials.map((material) => ({
           id: material.id,
@@ -80,25 +75,14 @@ export default function ReadingStudio() {
           useLocalContextExactly: payload.enrichment.useLocalContextExactly,
           onlyUseProvidedFacts: payload.enrichment.onlyUseProvidedFacts,
         },
-
-        // PLC / curriculum-ish
-        strand: payload.curriculum.strand,
-        element: payload.curriculum.element,
-        outcomeLabel: payload.curriculum.outcome,
         purpose: payload.curriculum.purpose,
-        genre: payload.curriculum.genre,
-        form: payload.curriculum.form,
+        outcomeLabel: payload.curriculum.outcome,
         pilotMode: payload.enrichment.pilotMode ?? payload.curriculum.pilotMode,
       };
 
-      // Debug: open DevTools console and confirm materials/text are here
       console.log("GENERATE payload (client -> API):", body);
 
-      const data = await postJson<{ pack: ReadingPackData }>(
-        "/api/reading/generate-pack",
-        body
-      );
-
+      const data = await postJson<{ pack: ReadingPackData }>("/api/reading/generate-pack", body);
       const got = normalizeReadingPack(data);
       setPack(got);
 
@@ -115,65 +99,58 @@ export default function ReadingStudio() {
     }
   }, [cefrLevel, textType]);
 
+  const card: React.CSSProperties = {
+    background: "white",
+    border: "1px solid rgba(15,23,42,.12)",
+    borderRadius: 20,
+    padding: 18,
+    boxShadow: "0 8px 28px rgba(15,23,42,.06)",
+  };
+
   return (
-    <div style={{ padding: 18, maxWidth: 1100, margin: "0 auto" }}>
-      <div style={{ marginBottom: 12 }}>
+    <div style={{ padding: "18px 18px 40px", maxWidth: 1100, margin: "0 auto", display: "grid", gap: 16 }}>
+      <section style={card}>
+        <div style={{ color: "#166534", fontSize: 12, fontWeight: 950, letterSpacing: ".08em", textTransform: "uppercase" }}>Step 1</div>
+        <div style={{ fontWeight: 1000, fontSize: 22, color: "#0f172a", marginTop: 4 }}>Choose the level and format</div>
+        <div style={{ color: "#64748b", fontSize: 13, marginTop: 5, marginBottom: 14 }}>
+          Set the target CEFR level and the kind of text you want students to work with.
+        </div>
+        <CefrTextTypeControls
+          cefrLevel={cefrLevel}
+          setCefrLevel={setCefrLevel}
+          textType={textType}
+          setTextType={setTextType}
+        />
+      </section>
 
-        <CefrTextTypeControls cefrLevel={cefrLevel} setCefrLevel={setCefrLevel} textType={textType} setTextType={setTextType} />
+      <TeacherInputsPanel onGenerate={generateFromInputs} busy={busy === "generating"} />
 
-      </div>
-
-      <TeacherInputsPanel onGenerate={generateFromInputs} />
-
-      <div style={{ height: 12 }} />
+      {busy === "generating" && (
+        <div style={{ ...card, background: "#f0fdf4", borderColor: "rgba(22,101,52,.22)", display: "flex", gap: 10, alignItems: "center" }}>
+          <div style={{ width: 10, height: 10, borderRadius: 999, background: "#16a34a" }} />
+          <div>
+            <div style={{ fontWeight: 950, color: "#166534" }}>Generating your reading pack...</div>
+            <div style={{ color: "#64748b", fontSize: 12, marginTop: 3 }}>Creating Standard and Supported routes with aligned exercises.</div>
+          </div>
+        </div>
+      )}
 
       {error && (
-        <div
-          style={{
-            background: "#fff7ed",
-            border: "1px solid rgba(251,146,60,.45)",
-            color: "#7c2d12",
-            padding: 12,
-            borderRadius: 14,
-            whiteSpace: "pre-wrap",
-            fontSize: 12,
-            fontWeight: 700,
-          }}
-        >
+        <div style={{ ...card, background: "#fff7ed", borderColor: "rgba(251,146,60,.45)", color: "#7c2d12", whiteSpace: "pre-wrap", fontSize: 13, fontWeight: 700 }}>
+          <div style={{ fontWeight: 1000, marginBottom: 5 }}>Generation problem</div>
           {error}
         </div>
       )}
 
-      <div style={{ height: 16 }} />
-
-      <div
-        style={{
-          background: "white",
-          border: "1px solid rgba(15,23,42,.12)",
-          borderRadius: 18,
-          padding: 14,
-          boxShadow: "0 6px 20px rgba(2,6,23,.06)",
-        }}
-      >
-        <div style={{ display: "flex", gap: 12, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
+      {pack && (
+        <section style={{ display: "grid", gap: 10 }}>
           <div>
-            <div style={{ fontWeight: 950, fontSize: 16 }}>Exports</div>
-            <div style={{ color: "#64748b", fontSize: 12, marginTop: 6 }}>
-              Generate a pack from Teacher Inputs above, then export Interactive HTML / Printables (HTML/PDF/DOCX) here.
-            </div>
+            <div style={{ color: "#166534", fontSize: 12, fontWeight: 950, letterSpacing: ".08em", textTransform: "uppercase" }}>Step 4</div>
+            <div style={{ fontWeight: 1000, fontSize: 22, color: "#0f172a", marginTop: 4 }}>Your reading pack</div>
           </div>
-
-          {busy && (
-            <div style={{ fontSize: 12, fontWeight: 900, color: "#475569" }}>
-              {busy === "generating" ? "Generating pack..." : busy}
-            </div>
-          )}
-        </div>
-
-        <div style={{ marginTop: 12 }}>
           <ReadingPackApp pack={pack} onPackChange={setPack} />
-        </div>
-      </div>
+        </section>
+      )}
     </div>
   );
 }

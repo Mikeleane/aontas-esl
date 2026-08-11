@@ -6,22 +6,21 @@ import { CEFR_LEVELS, type CefrLevel, type TextType } from "@/lib/cefr";
 const LEVELS: readonly CefrLevel[] = CEFR_LEVELS;
 
 const TYPES: { id: TextType; label: string; hint: string }[] = [
-  { id: "story", label: "Story", hint: "Clear beginning–middle–end; optional dialogue" },
-  { id: "short_message", label: "Short message", hint: "Text/note style; direct purpose" },
-  { id: "email_informal", label: "Email (informal)", hint: "Subject + greeting + sign-off; friendly tone" },
-  { id: "email_formal", label: "Email (formal)", hint: "Subject + formal greeting + polite closing" },
-  { id: "article", label: "Article", hint: "Title + clear paragraphs; optional subheadings" },
-  { id: "review", label: "Review", hint: "Features + opinion + recommendation" },
-  { id: "report", label: "Report", hint: "Headings: Intro / Findings / Recommendations" },
-  { id: "essay", label: "Essay", hint: "Intro + 2–3 body paragraphs + conclusion" },
+  { id: "story", label: "Story", hint: "Clear beginning, middle and end; optional dialogue" },
+  { id: "short_message", label: "Short message", hint: "Short, direct and practical" },
+  { id: "email_informal", label: "Informal email", hint: "Friendly greeting, message and sign-off" },
+  { id: "email_formal", label: "Formal email", hint: "Formal greeting, clear purpose and polite close" },
+  { id: "article", label: "Article", hint: "Title and clear paragraphs; optional subheadings" },
+  { id: "review", label: "Review", hint: "Features, opinion and recommendation" },
+  { id: "report", label: "Report", hint: "Clear headings, findings and recommendations" },
+  { id: "essay", label: "Essay", hint: "Introduction, developed paragraphs and conclusion" },
 ];
 
 function chipStyle(active: boolean): React.CSSProperties {
   return {
     display: "inline-flex",
     alignItems: "center",
-    gap: 8,
-    padding: "8px 10px",
+    padding: "9px 12px",
     borderRadius: 999,
     border: "1px solid rgba(15,23,42,.14)",
     background: active ? "#0f172a" : "white",
@@ -39,60 +38,50 @@ export default function CefrTextTypeControls(props: {
   textType: TextType;
   setTextType: (v: TextType) => void;
 }) {
-  const cefrLevel = props.cefrLevel;
-  const textType = props.textType;
-
-  const activeType = TYPES.find((t) => t.id === textType) || TYPES[4];
+  const activeType = TYPES.find((t) => t.id === props.textType) || TYPES[4];
 
   return (
-    <div
-      style={{
-        marginTop: 10,
-        border: "1px solid rgba(15,23,42,.12)",
-        borderRadius: 16,
-        padding: 12,
-        background: "rgba(255,255,255,.9)",
-      }}
-    >
-      <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <div style={{ fontWeight: 950, fontSize: 12, color: "#0f172a" }}>CEFR</div>
+    <div style={{ display: "grid", gap: 14 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "160px minmax(0,1fr)", gap: 18, alignItems: "end" }}>
+        <label style={{ display: "grid", gap: 6, fontSize: 12, fontWeight: 900, color: "#475569" }}>
+          Learner level
           <select
-            value={cefrLevel}
+            value={props.cefrLevel}
             onChange={(e) => props.setCefrLevel(e.target.value as CefrLevel)}
             style={{
-              padding: "6px 8px",
-              borderRadius: 10,
+              width: "100%",
+              padding: "10px 11px",
+              borderRadius: 12,
               border: "1px solid rgba(15,23,42,.18)",
-              fontWeight: 900,
+              background: "white",
+              color: "#0f172a",
+              fontWeight: 1000,
+              fontSize: 15,
             }}
           >
-            {LEVELS.map((L) => (
-              <option key={L} value={L}>
-                {L}
-              </option>
-            ))}
+            {LEVELS.map((level) => <option key={level} value={level}>{level}</option>)}
           </select>
-        </div>
+        </label>
 
-        <div style={{ fontSize: 12, color: "#475569" }}>
-          <span style={{ fontWeight: 900, color: "#0f172a" }}>Text type:</span>{" "}
-          <span style={{ color: "#0f172a", fontWeight: 900 }}>{activeType.label}</span>{" "}
-          <span style={{ color: "#64748b" }}>— {activeType.hint}</span>
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 900, color: "#475569" }}>Text format</div>
+          <div style={{ fontSize: 13, color: "#64748b", marginTop: 5 }}>
+            <strong style={{ color: "#0f172a" }}>{activeType.label}:</strong> {activeType.hint}
+          </div>
         </div>
       </div>
 
-      <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
-        {TYPES.map((t) => (
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        {TYPES.map((type) => (
           <button
-            key={t.id}
+            key={type.id}
             type="button"
-            onClick={() => props.setTextType(t.id)}
-            style={chipStyle(t.id === textType)}
-            aria-pressed={t.id === textType}
-            title={t.hint}
+            onClick={() => props.setTextType(type.id)}
+            style={chipStyle(type.id === props.textType)}
+            aria-pressed={type.id === props.textType}
+            title={type.hint}
           >
-            {t.label}
+            {type.label}
           </button>
         ))}
       </div>

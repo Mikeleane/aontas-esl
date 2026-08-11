@@ -212,62 +212,22 @@ export default function ReadingPackApp({ pack, crestFallbackPath = "", onPackCha
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             {pillBtn("reading", "Reading")}
             {pillBtn("exercises", "Exercises")}
-            {pillBtn("exports", "Exports")}
-            <button
-              onClick={() => window.open("/wordiness", "_blank")}
-              style={{
-                padding: "10px 14px",
-                borderRadius: 999,
-                border: "1px solid rgba(15,23,42,.16)",
-                background: "white",
-                color: "#0f172a",
-                fontWeight: 900,
-                cursor: "pointer",
-              }}
-            >
-              Wordiness
-            </button>
-            <button
-              onClick={() => window.open("/social", "_blank")}
-              style={{
-                padding: "10px 14px",
-                borderRadius: 999,
-                border: "1px solid rgba(15,23,42,.16)",
-                background: "white",
-                color: "#0f172a",
-                fontWeight: 900,
-                cursor: "pointer",
-              }}
-            >
-              Social
-            </button>
-            <button
-              onClick={() => window.open("/h5p", "_blank")}
-              style={{
-                padding: "10px 14px",
-                borderRadius: 999,
-                border: "1px solid rgba(15,23,42,.16)",
-                background: "white",
-                color: "#0f172a",
-                fontWeight: 900,
-                cursor: "pointer",
-              }}
-            >
-              H5P
-            </button>
+            {pillBtn("exports", "Downloads")}
           </div>
         </div>
       </div>
 
       {view === "reading" && (
         <div style={{ display: "grid", gap: 14 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))", gap: 14 }}>
             <div style={{ padding: 16, borderRadius: 18, border: "1px solid rgba(15,23,42,.10)", background: "white" }}>
-              <div style={{ fontWeight: 1000, marginBottom: 10 }}>STANDARD</div>
+              <div style={{ fontWeight: 1000, marginBottom: 4 }}>Standard version</div>
+              <div style={{ color: "#64748b", fontSize: 12, marginBottom: 10 }}>Target-level reading for the class.</div>
               {renderParagraphs(readingStandard)}
             </div>
             <div style={{ padding: 16, borderRadius: 18, border: "1px solid rgba(15,23,42,.10)", background: "white" }}>
-              <div style={{ fontWeight: 1000, marginBottom: 10 }}>SUPPORTED</div>
+              <div style={{ fontWeight: 1000, marginBottom: 4 }}>Supported version</div>
+              <div style={{ color: "#64748b", fontSize: 12, marginBottom: 10 }}>Same learning target with additional language support.</div>
               {renderParagraphs(readingSupported)}
             </div>
           </div>
@@ -301,7 +261,7 @@ export default function ReadingPackApp({ pack, crestFallbackPath = "", onPackCha
                       <span style={{ color: "#64748b", fontWeight: 800 }}>{type}</span>
                     </div>
 
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 12 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))", gap: 12, marginTop: 12 }}>
                       <div style={{ background: "rgba(2,6,23,.03)", borderRadius: 14, padding: 12 }}>
                         <div style={{ fontWeight: 1000, marginBottom: 8 }}>STANDARD</div>
                         <div style={{ whiteSpace: "pre-wrap" }}>{stdPrompt || "No prompt."}</div>
@@ -343,7 +303,7 @@ export default function ReadingPackApp({ pack, crestFallbackPath = "", onPackCha
 
       {view === "exports" && (
         <div style={{ padding: 16, borderRadius: 18, border: "1px solid rgba(15,23,42,.10)", background: "white" }}>
-          <div style={{ fontWeight: 1000, marginBottom: 10 }}>Exports</div>
+          <div style={{ fontWeight: 1000, marginBottom: 10 }}>Downloads</div>
           <div style={{ color: "#64748b", fontSize: 13, marginBottom: 12 }}>
             Interactive export is separate. Printables can export as HTML (quick print), PDF, or DOCX.
           </div>
@@ -367,6 +327,20 @@ export default function ReadingPackApp({ pack, crestFallbackPath = "", onPackCha
           </div>
 
           {busy === "exporting" && <div style={{ marginTop: 10, color: "#64748b" }}>Exporting...</div>}
+        </div>
+      )}
+
+      {packAny && (
+        <div style={{ padding: 16, borderRadius: 18, border: "1px solid rgba(15,23,42,.10)", background: "#f8fafc" }}>
+          <div style={{ fontWeight: 1000, color: "#0f172a" }}>Continue with this pack</div>
+          <div style={{ color: "#64748b", fontSize: 12, marginTop: 4, marginBottom: 10 }}>
+            Use the same reading in another activity without starting again.
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button onClick={() => window.open("/wordiness", "_blank")} style={{ padding: "9px 12px", borderRadius: 999, border: "1px solid rgba(15,23,42,.16)", background: "white", fontWeight: 900, cursor: "pointer" }}>Wordiness</button>
+            <button onClick={() => window.open("/social", "_blank")} style={{ padding: "9px 12px", borderRadius: 999, border: "1px solid rgba(15,23,42,.16)", background: "white", fontWeight: 900, cursor: "pointer" }}>Social Thread</button>
+            <button onClick={() => window.open("/h5p", "_blank")} style={{ padding: "9px 12px", borderRadius: 999, border: "1px solid rgba(15,23,42,.16)", background: "white", fontWeight: 900, cursor: "pointer" }}>H5P Word Order</button>
+          </div>
         </div>
       )}
     </div>

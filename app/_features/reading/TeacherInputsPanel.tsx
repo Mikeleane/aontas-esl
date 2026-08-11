@@ -66,6 +66,7 @@ export type TeacherInputsPayload = {
 
 type Props = {
   onGenerate?: (payload: TeacherInputsPayload) => Promise<void> | void;
+  busy?: boolean;
 };
 
 function uid() {
@@ -107,14 +108,14 @@ function scanHeadsUp(text: string) {
   return hits;
 }
 
-export default function TeacherInputsPanel({ onGenerate }: Props) {
+export default function TeacherInputsPanel({ onGenerate, busy = false }: Props) {
   const [title, setTitle] = useState<string>("");
 
   const [materials, setMaterials] = useState<TeacherMaterial[]>([]);
   const [activeId, setActiveId] = useState<string>("");
 
   // Add material inputs
-  const [addKind, setAddKind] = useState<MaterialKind>("link");
+  const [addKind, setAddKind] = useState<MaterialKind>("text");
   const [linkUrl, setLinkUrl] = useState("");
   const [textPaste, setTextPaste] = useState("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -347,426 +348,357 @@ export default function TeacherInputsPanel({ onGenerate }: Props) {
     const card: React.CSSProperties = {
       background: "white",
       border: "1px solid rgba(15,23,42,.12)",
-      borderRadius: 18,
-      padding: 14,
-      boxShadow: "0 6px 20px rgba(2,6,23,.06)",
+      borderRadius: 20,
+      padding: 18,
+      boxShadow: "0 8px 28px rgba(15,23,42,.06)",
+    };
+    const input: React.CSSProperties = {
+      width: "100%",
+      padding: "11px 12px",
+      borderRadius: 12,
+      border: "1px solid rgba(15,23,42,.16)",
+      background: "white",
+      color: "#0f172a",
+      fontWeight: 700,
+    };
+    const textarea: React.CSSProperties = {
+      ...input,
+      resize: "vertical",
+      fontFamily: "inherit",
+      lineHeight: 1.5,
     };
     const btnBase: React.CSSProperties = {
       cursor: "pointer",
       borderRadius: 12,
-      padding: "10px 12px",
+      padding: "10px 13px",
       fontWeight: 900,
       fontSize: 13,
       border: "1px solid rgba(15,23,42,.14)",
-      background: "#f1f5f9",
-    };
-    const btnGhost: React.CSSProperties = { ...btnBase, background: "white" };
-    const pill: React.CSSProperties = {
-      border: "1px solid rgba(15,23,42,.14)",
-      borderRadius: 999,
-      padding: "6px 10px",
-      fontSize: 12,
-      fontWeight: 800,
       background: "#f8fafc",
-      color: "#334155",
+      color: "#0f172a",
     };
-    return { card, btnBase, btnGhost, pill };
+    const label: React.CSSProperties = {
+      display: "block",
+      fontSize: 12,
+      fontWeight: 900,
+      color: "#475569",
+    };
+    return { card, input, textarea, btnBase, label };
   }, []);
 
+  const purposeOptions = [
+    "Read to learn",
+    "Practise comprehension",
+    "Build vocabulary",
+    "Focus on grammar",
+    "Discuss ideas",
+    "Exam-style reading",
+  ];
+
   return (
-    <div onPasteCapture={onPasteCapture}>
-      <div style={{ display: "flex", gap: 12, alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap" }}>
-        <div>
-          <div style={{ fontWeight: 950, fontSize: 18 }}>Teacher Inputs</div>
-          <div style={{ color: "#475569", marginTop: 6, fontSize: 13 }}>
-            Add a link, paste text, paste a screenshot, or upload files. Choose one Primary material for generation.
+    <div onPasteCapture={onPasteCapture} style={{ display: "grid", gap: 16 }}>
+      <section style={styles.card}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+          <div>
+            <div style={{ color: "#166534", fontSize: 12, fontWeight: 950, letterSpacing: ".08em", textTransform: "uppercase" }}>
+              Step 2
+            </div>
+            <div style={{ fontWeight: 1000, fontSize: 22, color: "#0f172a", marginTop: 4 }}>Add your source</div>
+            <div style={{ color: "#64748b", marginTop: 6, fontSize: 13, maxWidth: 680 }}>
+              Paste text, add a link, upload a file, or paste a screenshot. The text shown below is what the generator will use.
+            </div>
           </div>
-          <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <span style={styles.pill}>Local context is allowed</span>
-            <span style={styles.pill}>No invented facts</span>
-            <span style={styles.pill}>Primary material drives outputs</span>
-          </div>
+          {primary && (
+            <div style={{ borderRadius: 999, background: "#ecfdf5", color: "#166534", padding: "7px 11px", fontSize: 12, fontWeight: 900 }}>
+              Source ready
+            </div>
+          )}
         </div>
 
-        <div style={{ minWidth: 260 }}>
-          <div style={{ fontSize: 12, color: "#475569", fontWeight: 900, marginBottom: 6 }}>Pack title (optional)</div>
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g. Wildfires & Forests"
-            style={{
-              width: "100%",
-              padding: "10px 12px",
-              borderRadius: 12,
-              border: "1px solid rgba(15,23,42,.16)",
-              fontWeight: 700,
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 16 }}>
+          {([
+            ["text", "Paste text"],
+            ["link", "Link"],
+            ["file", "Upload file"],
+            ["image", "Image / screenshot"],
+          ] as const).map(([kind, label]) => (
+            <button
+              key={kind}
+              type="button"
+              onClick={() => setAddKind(kind)}
+              aria-pressed={addKind === kind}
+              style={{
+                ...styles.btnBase,
+                borderRadius: 999,
+                background: addKind === kind ? "#0f172a" : "white",
+                color: addKind === kind ? "white" : "#0f172a",
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {addKind === "text" && (
+          <div style={{ marginTop: 14 }}>
+            <textarea
+              id="a10_textpaste"
+              value={textPaste}
+              onChange={(e) => setTextPaste(e.target.value)}
+              placeholder="Paste the source text here..."
+              style={{ ...styles.textarea, minHeight: 150 }}
+            />
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+              <button type="button" style={styles.btnBase} onClick={addText} disabled={!textPaste.trim()}>
+                Use this text
+              </button>
+            </div>
+          </div>
+        )}
+
+        {addKind === "link" && (
+          <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", gap: 8, marginTop: 14 }}>
+            <input value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="Paste a URL..." style={styles.input} />
+            <button type="button" style={styles.btnBase} onClick={addLink} disabled={!linkUrl.trim()}>
+              Add link
+            </button>
+          </div>
+        )}
+
+        {(addKind === "file" || addKind === "image") && (
+          <div style={{ marginTop: 14, padding: 14, border: "1px dashed rgba(15,23,42,.20)", borderRadius: 14, background: "#f8fafc" }}>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept={addKind === "image" ? "image/*" : undefined}
+              multiple
+              onChange={(e) => addFiles(e.target.files)}
+            />
+            {addKind === "image" && (
+              <div style={{ color: "#64748b", fontSize: 12, marginTop: 8 }}>
+                You can also paste screenshots directly anywhere on this page.
+              </div>
+            )}
+          </div>
+        )}
+
+        {materials.length > 0 && (
+          <details style={{ marginTop: 14 }}>
+            <summary style={{ cursor: "pointer", fontWeight: 900, color: "#334155" }}>
+              Added sources ({materials.length}){primary ? ` - Primary: ${primary.title}` : ""}
+            </summary>
+            <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+              {materials.map((m) => (
+                <div
+                  key={m.id}
+                  onClick={() => setActiveId(m.id)}
+                  style={{
+                    border: m.id === active?.id ? "2px solid rgba(22,101,52,.35)" : "1px solid rgba(15,23,42,.10)",
+                    borderRadius: 14,
+                    padding: 10,
+                    background: m.isPrimary ? "#f0fdf4" : "white",
+                    cursor: "pointer",
+                  }}
+                >
+                  <div style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontWeight: 900 }}>
+                        {m.title}{m.isPrimary ? <span style={{ color: "#166534", marginLeft: 8, fontSize: 12 }}>Primary</span> : null}
+                      </div>
+                      <div style={{ color: "#64748b", fontSize: 12, marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 620 }}>
+                        {m.kind.toUpperCase()} - {m.sourceLabel || m.fileName || "source"}{m.sizeBytes ? ` - ${humanSize(m.sizeBytes)}` : ""}
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      {!m.isPrimary && (
+                        <button
+                          type="button"
+                          style={{ ...styles.btnBase, padding: "7px 9px", background: "white" }}
+                          onClick={(e) => { e.stopPropagation(); setPrimary(m.id); }}
+                        >
+                          Use as primary
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        style={{ ...styles.btnBase, padding: "7px 9px", background: "#fff1f2", color: "#9f1239" }}
+                        onClick={(e) => { e.stopPropagation(); removeMaterial(m.id); }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                  {m.objectUrl && m.kind === "image" && (
+                    <div style={{ marginTop: 8 }}>
+                      {/* Local object URLs are browser-only previews; Next image optimisation is not useful here. */}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={m.objectUrl} alt={m.title} style={{ width: "100%", maxHeight: 160, objectFit: "contain", borderRadius: 10 }} />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </details>
+        )}
+
+        <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid rgba(15,23,42,.08)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "baseline", flexWrap: "wrap" }}>
+            <div>
+              <div style={{ fontWeight: 950, color: "#0f172a" }}>Text used for generation</div>
+              <div style={{ color: "#64748b", fontSize: 12, marginTop: 4 }}>
+                Review or edit this before generating. For links, files and screenshots, make sure the usable text appears here.
+              </div>
+            </div>
+            <div style={{ color: canGenerate ? "#166534" : "#94a3b8", fontSize: 12, fontWeight: 900 }}>
+              {canGenerate ? "Ready" : "Source text required"}
+            </div>
+          </div>
+          <textarea
+            value={primary?.extractedText || primary?.text || ""}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (!primary) return;
+              setMaterials((prev) => prev.map((m) => (m.id === primary.id ? { ...m, extractedText: val } : m)));
             }}
+            placeholder="The source text will appear here..."
+            style={{ ...styles.textarea, minHeight: 190, marginTop: 10 }}
           />
         </div>
-      </div>
+      </section>
 
-      {/* Heads-up scan (non-blocking) */}
       {headsUpHits.length > 0 && (
-        <div style={{ ...styles.card, marginTop: 14, borderColor: "rgba(180,83,9,.35)", background: "#fff7ed" }}>
-          <div style={{ fontWeight: 950, marginBottom: 6, color: "#7c2d12" }}>Heads-up review</div>
-          <div style={{ color: "#7c2d12", fontSize: 12 }}>
-            I spotted a few things that *might* be identifiers (not necessarily a problem - just a quick sanity check).
+        <div style={{ border: "1px solid rgba(180,83,9,.25)", background: "#fff7ed", borderRadius: 16, padding: 12 }}>
+          <div style={{ fontWeight: 900, color: "#9a3412", fontSize: 13 }}>Quick privacy check</div>
+          <div style={{ color: "#9a3412", fontSize: 12, marginTop: 4 }}>
+            The source may contain personal details. Review them before generating if needed.
           </div>
-          <ul style={{ margin: "10px 0 0", paddingLeft: 18, color: "#7c2d12", fontSize: 12 }}>
-            {headsUpHits.map((h, i) => (
-              <li key={i}>
-                <b>{h.label}:</b> {h.sample}
-              </li>
-            ))}
-          </ul>
         </div>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 14 }}>
-        {/* LEFT: Materials */}
-        <div style={styles.card}>
-          <div style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
-            <div style={{ fontWeight: 950 }}>Materials</div>
-            <div style={{ fontSize: 12, color: "#64748b", fontWeight: 800 }}>
-              Tip: paste a screenshot anywhere on this page.
-            </div>
-          </div>
-
-          {/* Add material controls */}
-          <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 12, flexWrap: "wrap" }}>
-            <select
-              value={addKind}
-              onChange={(e) => setAddKind(e.target.value as MaterialKind)}
-              style={{
-                padding: "10px 12px",
-                borderRadius: 12,
-                border: "1px solid rgba(15,23,42,.16)",
-                background: "white",
-                fontWeight: 900,
-              }}
-            >
-              <option value="link">Link</option>
-              <option value="text">Paste text</option>
-              <option value="file">Upload file</option>
-              <option value="image">Upload image</option>
-            </select>
-
-            {addKind === "link" && (
-              <>
-                <input
-                  value={linkUrl}
-                  onChange={(e) => setLinkUrl(e.target.value)}
-                  placeholder="Paste a URL..."
-                  style={{
-                    flex: 1,
-                    minWidth: 240,
-                    padding: "10px 12px",
-                    borderRadius: 12,
-                    border: "1px solid rgba(15,23,42,.16)",
-                    fontWeight: 700,
-                  }}
-                />
-                <button type="button" style={styles.btnBase} onClick={addLink}>
-                  Add link
-                </button>
-              </>
-            )}
-
-            {addKind === "text" && (
-              <button
-                type="button"
-                style={styles.btnGhost}
-                onClick={() => {
-                  // focus the textarea below
-                  const el = document.getElementById("a10_textpaste");
-                  (el as HTMLTextAreaElement | null)?.focus();
-                }}
-              >
-                Jump to text box
-              </button>
-            )}
-
-            {(addKind === "file" || addKind === "image") && (
-              <>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept={addKind === "image" ? "image/*" : undefined}
-                  multiple
-                  onChange={(e) => addFiles(e.target.files)}
-                />
-              </>
-            )}
-          </div>
-
-          {addKind === "text" && (
-            <div style={{ marginTop: 10 }}>
-              <textarea
-                id="a10_textpaste"
-                value={textPaste}
-                onChange={(e) => setTextPaste(e.target.value)}
-                placeholder="Paste your text here (or type)..."
-                style={{
-                  width: "100%",
-                  minHeight: 120,
-                  padding: 12,
-                  borderRadius: 12,
-                  border: "1px solid rgba(15,23,42,.16)",
-                  fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-                  fontSize: 12,
-                }}
-              />
-              <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
-                <button type="button" style={styles.btnBase} onClick={addText}>
-                  Add text
-                </button>
-                <div style={{ fontSize: 12, color: "#64748b", alignSelf: "center" }}>
-                  This becomes extracted text automatically.
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Materials list */}
-          <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
-            {materials.length === 0 && (
-              <div style={{ color: "#64748b", fontSize: 13, padding: 10, border: "1px dashed rgba(15,23,42,.18)", borderRadius: 14 }}>
-                No materials yet. Add a link, paste text, paste a screenshot, or upload a file.
-              </div>
-            )}
-
-            {materials.map((m) => (
-              <div
-                key={m.id}
-                onClick={() => setActiveId(m.id)}
-                style={{
-                  border: m.id === active?.id ? "2px solid rgba(45,125,79,.6)" : "1px solid rgba(15,23,42,.12)",
-                  borderRadius: 14,
-                  padding: 12,
-                  background: m.id === active?.id ? "#f0fdf4" : "white",
-                  cursor: "pointer",
-                }}
-              >
-                <div style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "space-between" }}>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontWeight: 950 }}>
-                      {m.title}{" "}
-                      {m.isPrimary && (
-                        <span style={{ marginLeft: 8, fontSize: 12, fontWeight: 950, color: "#166534" }}>
-                          Primary
-                        </span>
-                      )}
-                    </div>
-                    <div style={{ color: "#64748b", fontSize: 12, marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {m.kind.toUpperCase()} • {m.sourceLabel || m.fileName || "-"} {m.sizeBytes ? `• ${humanSize(m.sizeBytes)}` : ""}
-                    </div>
-                  </div>
-
-                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    <button
-                      type="button"
-                      style={{ ...styles.btnGhost, padding: "8px 10px" }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setPrimary(m.id);
-                      }}
-                    >
-                      Set primary
-                    </button>
-                    <button
-                      type="button"
-                      style={{ ...styles.btnGhost, padding: "8px 10px", background: "#fee2e2", borderColor: "rgba(220,38,38,.25)" }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeMaterial(m.id);
-                      }}
-                    >
-                      Remove
-                    </button>
-                  </div>
-                </div>
-
-                {m.objectUrl && m.kind === "image" && (
-                  <div style={{ marginTop: 10 }}>
-                    {/* Local object URLs are browser-only previews; Next image optimisation is not useful here. */}
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={m.objectUrl}
-                      alt={m.title}
-                      style={{ width: "100%", maxHeight: 180, objectFit: "contain", borderRadius: 12, border: "1px solid rgba(15,23,42,.10)" }}
-                    />
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+      <section style={styles.card}>
+        <div style={{ color: "#166534", fontSize: 12, fontWeight: 950, letterSpacing: ".08em", textTransform: "uppercase" }}>Step 3</div>
+        <div style={{ fontWeight: 1000, fontSize: 20, color: "#0f172a", marginTop: 4 }}>Reading target</div>
+        <div style={{ color: "#64748b", fontSize: 13, marginTop: 5 }}>
+          Choose what you want students to do with the text. Leave the default if you do not need a special focus.
         </div>
 
-        {/* RIGHT: Review + curriculum + enrichment */}
-        <div style={{ display: "grid", gap: 12 }}>
-          <div style={styles.card}>
-            <div style={{ fontWeight: 950 }}>Primary text (editable)</div>
-            <div style={{ color: "#64748b", fontSize: 12, marginTop: 6 }}>
-              The generator uses this text. For links/files/images, paste or edit extracted text here.
-            </div>
-
-            <div style={{ marginTop: 10 }}>
-              <textarea
-                value={primary?.extractedText || primary?.text || ""}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  // write back into the primary material
-                  if (!primary) return;
-                  setMaterials((prev) => prev.map((m) => (m.id === primary.id ? { ...m, extractedText: val } : m)));
-                }}
-                placeholder="Paste / edit the text the class will work from..."
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 14 }}>
+          {purposeOptions.map((option) => {
+            const activePurpose = (curriculum.purpose || "") === option;
+            return (
+              <button
+                key={option}
+                type="button"
+                onClick={() => setCurriculum((c) => ({ ...c, purpose: option }))}
+                aria-pressed={activePurpose}
                 style={{
-                  width: "100%",
-                  minHeight: 180,
-                  padding: 12,
-                  borderRadius: 12,
-                  border: "1px solid rgba(15,23,42,.16)",
-                  fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-                  fontSize: 12,
+                  ...styles.btnBase,
+                  borderRadius: 999,
+                  background: activePurpose ? "#0f172a" : "white",
+                  color: activePurpose ? "white" : "#0f172a",
                 }}
-              />
-              <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap", alignItems: "center" }}>
-                <button
-                  type="button"
-                  style={{ ...styles.btnBase, opacity: canGenerate ? 1 : 0.5, cursor: canGenerate ? "pointer" : "not-allowed" }}
-                  disabled={!canGenerate}
-                  onClick={() => onGenerate?.(payload)}
-                >
-                  Generate from inputs
-                </button>
-                <div style={{ fontSize: 12, color: "#64748b" }}>
-                  {canGenerate ? "Ready." : "Add a Primary material and make sure the text box isn't empty."}
-                </div>
-              </div>
-            </div>
-          </div>
+              >
+                {option}
+              </button>
+            );
+          })}
+        </div>
 
-          <div style={styles.card}>
-            <div style={{ fontWeight: 950 }}>Reading target</div>
-            <div style={{ color: "#64748b", fontSize: 12, marginTop: 6 }}>
-              CEFR level and text type are selected above. Add an optional purpose or teaching note here.
-            </div>
+        <label style={{ ...styles.label, marginTop: 14 }}>
+          Extra instruction or outcome (optional)
+          <input
+            value={curriculum.outcome ?? ""}
+            onChange={(e) => setCurriculum((c) => ({ ...c, outcome: e.target.value }))}
+            placeholder="e.g. Include key travel vocabulary; focus on past tense; prepare for a short discussion..."
+            style={{ ...styles.input, marginTop: 6 }}
+          />
+        </label>
+      </section>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 }}>
-              <label style={{ fontSize: 12, fontWeight: 900, color: "#475569" }}>
-                Purpose
-                <input
-                  value={curriculum.purpose ?? ""}
-                  onChange={(e) => setCurriculum((c) => ({ ...c, purpose: e.target.value }))}
-                  style={{ width: "100%", marginTop: 6, padding: "10px 12px", borderRadius: 12, border: "1px solid rgba(15,23,42,.16)" }}
-                />
-              </label>
+      <details style={{ ...styles.card, padding: 0, overflow: "hidden" }}>
+        <summary style={{ cursor: "pointer", padding: 18, fontWeight: 950, color: "#334155", listStylePosition: "inside" }}>
+          Optional guidance and advanced settings
+        </summary>
+        <div style={{ borderTop: "1px solid rgba(15,23,42,.08)", padding: 18, display: "grid", gap: 14 }}>
+          <label style={styles.label}>
+            Pack title (optional)
+            <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Working from home" style={{ ...styles.input, marginTop: 6 }} />
+          </label>
 
-              <label style={{ fontSize: 12, fontWeight: 900, color: "#475569" }}>
-                Genre / Form
-                <input
-                  value={`${curriculum.genre ?? ""}${curriculum.form ? ` • ${curriculum.form}` : ""}`.trim()}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    const parts = v.split("•").map((x) => x.trim());
-                    setCurriculum((c) => ({ ...c, genre: parts[0] || c.genre, form: parts[1] || c.form }));
-                  }}
-                  style={{ width: "100%", marginTop: 6, padding: "10px 12px", borderRadius: 12, border: "1px solid rgba(15,23,42,.16)" }}
-                />
-              </label>
-            </div>
-
-            <label style={{ display: "block", fontSize: 12, fontWeight: 900, color: "#475569", marginTop: 10 }}>
-              Outcome / Notes (optional)
-              <input
-                value={curriculum.outcome ?? ""}
-                onChange={(e) => setCurriculum((c) => ({ ...c, outcome: e.target.value }))}
-                style={{ width: "100%", marginTop: 6, padding: "10px 12px", borderRadius: 12, border: "1px solid rgba(15,23,42,.16)" }}
-              />
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 10 }}>
+            <label style={{ display: "flex", gap: 9, alignItems: "flex-start", fontSize: 12, color: "#334155", fontWeight: 800 }}>
+              <input type="checkbox" checked={onlyUseProvidedFacts} onChange={(e) => setOnlyUseProvidedFacts(e.target.checked)} />
+              Do not invent facts that are not in the source
+            </label>
+            <label style={{ display: "flex", gap: 9, alignItems: "flex-start", fontSize: 12, color: "#334155", fontWeight: 800 }}>
+              <input type="checkbox" checked={useLocalContextExactly} onChange={(e) => setUseLocalContextExactly(e.target.checked)} />
+              Keep any local context exactly as entered
+            </label>
+            <label style={{ display: "flex", gap: 9, alignItems: "flex-start", fontSize: 12, color: "#334155", fontWeight: 800 }}>
+              <input type="checkbox" checked={pilotMode} onChange={(e) => setPilotMode(e.target.checked)} />
+              Respect source and copyright limits
             </label>
           </div>
 
-          <div style={styles.card}>
-            <div style={{ fontWeight: 950 }}>Enrichment + guardrails</div>
-
-            <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
-              <label style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 12, color: "#334155", fontWeight: 900 }}>
-                <input type="checkbox" checked={pilotMode} onChange={(e) => setPilotMode(e.target.checked)} />
-                Pilot mode (warn about copyright / internal use)
-              </label>
-
-              <label style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 12, color: "#334155", fontWeight: 900 }}>
-                <input type="checkbox" checked={useLocalContextExactly} onChange={(e) => setUseLocalContextExactly(e.target.checked)} />
-                Use local context exactly as entered
-              </label>
-
-              <label style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 12, color: "#334155", fontWeight: 900 }}>
-                <input type="checkbox" checked={onlyUseProvidedFacts} onChange={(e) => setOnlyUseProvidedFacts(e.target.checked)} />
-                Only use provided facts (don't invent local details)
-              </label>
-
-              <label style={{ fontSize: 12, fontWeight: 900, color: "#475569" }}>
-                Context tags (comma or new line)
-                <textarea
-                  value={contextTagsRaw}
-                  onChange={(e) => setContextTagsRaw(e.target.value)}
-                  placeholder="e.g. local history, health promotion, GAA, environment..."
-                  style={{ width: "100%", marginTop: 6, minHeight: 70, padding: 10, borderRadius: 12, border: "1px solid rgba(15,23,42,.16)" }}
-                />
-              </label>
-
-              <label style={{ fontSize: 12, fontWeight: 900, color: "#475569" }}>
-                Cross-curricular links (comma or new line)
-                <textarea
-                  value={crossLinksRaw}
-                  onChange={(e) => setCrossLinksRaw(e.target.value)}
-                  placeholder="e.g. Geography, SPHE, Science..."
-                  style={{ width: "100%", marginTop: 6, minHeight: 70, padding: 10, borderRadius: 12, border: "1px solid rgba(15,23,42,.16)" }}
-                />
-              </label>
-
-              <label style={{ fontSize: 12, fontWeight: 900, color: "#475569" }}>
-                Authentic material type(s)
-                <textarea
-                  value={authTypesRaw}
-                  onChange={(e) => setAuthTypesRaw(e.target.value)}
-                  placeholder="e.g. poster, leaflet, article, announcement, timetable..."
-                  style={{ width: "100%", marginTop: 6, minHeight: 70, padding: 10, borderRadius: 12, border: "1px solid rgba(15,23,42,.16)" }}
-                />
-              </label>
-
-              <label style={{ fontSize: 12, fontWeight: 900, color: "#475569" }}>
-                Preferred local vocabulary (comma or new line)
-                <textarea
-                  value={vocabRaw}
-                  onChange={(e) => setVocabRaw(e.target.value)}
-                  placeholder="e.g. (local place names), key terms, Irish words..."
-                  style={{ width: "100%", marginTop: 6, minHeight: 70, padding: 10, borderRadius: 12, border: "1px solid rgba(15,23,42,.16)" }}
-                />
-              </label>
-
-              <label style={{ fontSize: 12, fontWeight: 900, color: "#475569" }}>
-                Glossary (one per line: term: definition)
-                <textarea
-                  value={glossaryRaw}
-                  onChange={(e) => setGlossaryRaw(e.target.value)}
-                  placeholder="e.g. ember: a small piece of burning wood..."
-                  style={{ width: "100%", marginTop: 6, minHeight: 90, padding: 10, borderRadius: 12, border: "1px solid rgba(15,23,42,.16)" }}
-                />
-              </label>
-            </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 12 }}>
+            <label style={styles.label}>
+              Key vocabulary to include (optional)
+              <textarea value={vocabRaw} onChange={(e) => setVocabRaw(e.target.value)} placeholder="e.g. deadline, schedule, flexible" style={{ ...styles.textarea, minHeight: 82, marginTop: 6 }} />
+            </label>
+            <label style={styles.label}>
+              Glossary (optional)
+              <textarea value={glossaryRaw} onChange={(e) => setGlossaryRaw(e.target.value)} placeholder="one per line: term: definition" style={{ ...styles.textarea, minHeight: 82, marginTop: 6 }} />
+            </label>
+            <label style={styles.label}>
+              Context or topic tags (optional)
+              <textarea value={contextTagsRaw} onChange={(e) => setContextTagsRaw(e.target.value)} placeholder="e.g. workplace English, travel, technology" style={{ ...styles.textarea, minHeight: 82, marginTop: 6 }} />
+            </label>
+            <label style={styles.label}>
+              Related topics (optional)
+              <textarea value={crossLinksRaw} onChange={(e) => setCrossLinksRaw(e.target.value)} placeholder="e.g. customer service, health, environment" style={{ ...styles.textarea, minHeight: 82, marginTop: 6 }} />
+            </label>
+            <label style={styles.label}>
+              Source description (optional)
+              <textarea value={authTypesRaw} onChange={(e) => setAuthTypesRaw(e.target.value)} placeholder="e.g. news article, workplace notice, email" style={{ ...styles.textarea, minHeight: 82, marginTop: 6 }} />
+            </label>
           </div>
         </div>
-      </div>
-
-      {/* Debug payload (optional but handy) */}
-      <details style={{ marginTop: 14 }}>
-        <summary style={{ cursor: "pointer", fontWeight: 900, color: "#334155" }}>Debug: payload preview</summary>
-        <pre style={{ whiteSpace: "pre-wrap", fontSize: 12, color: "#0f172a", background: "#f8fafc", padding: 12, borderRadius: 12, border: "1px solid rgba(15,23,42,.12)", marginTop: 10 }}>
-          {JSON.stringify(payload, null, 2)}
-        </pre>
       </details>
+
+      <section
+        style={{
+          ...styles.card,
+          borderColor: canGenerate ? "rgba(22,101,52,.22)" : "rgba(15,23,42,.10)",
+          background: canGenerate ? "linear-gradient(135deg,#f0fdf4,#ffffff)" : "#f8fafc",
+        }}
+      >
+        <div style={{ display: "flex", gap: 16, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
+          <div>
+            <div style={{ fontWeight: 1000, fontSize: 18, color: "#0f172a" }}>{canGenerate ? "Ready to generate" : "Add a source to continue"}</div>
+            <div style={{ color: "#64748b", fontSize: 13, marginTop: 4 }}>
+              Creates a Standard and Supported reading plus aligned exercises.
+            </div>
+          </div>
+          <button
+            type="button"
+            disabled={!canGenerate || busy}
+            onClick={() => onGenerate?.(payload)}
+            style={{
+              border: 0,
+              borderRadius: 14,
+              padding: "13px 20px",
+              fontSize: 14,
+              fontWeight: 1000,
+              cursor: canGenerate && !busy ? "pointer" : "not-allowed",
+              background: canGenerate && !busy ? "#166534" : "#94a3b8",
+              color: "white",
+              minWidth: 210,
+            }}
+          >
+            {busy ? "Generating..." : "Generate reading pack"}
+          </button>
+        </div>
+      </section>
     </div>
   );
 }
-
