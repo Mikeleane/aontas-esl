@@ -7,6 +7,7 @@ import ReadingPackApp from "./ReadingPackApp";
 import type { ReadingPackData } from "./readingPackTypes";
 import { normalizeReadingPack } from "@/lib/contracts/reading";
 import type { CefrLevel, TextType } from "@/lib/cefr";
+import { DEMO_READING_PACK } from "./demoReadingPack";
 
 async function postJson<T>(url: string, body: unknown, signal?: AbortSignal): Promise<T> {
   const res = await fetch(url, {
@@ -40,8 +41,10 @@ export default function ReadingStudio() {
   const [error, setError] = useState<string>("");
   const [cefrLevel, setCefrLevel] = useState<CefrLevel>("B1");
   const [textType, setTextType] = useState<TextType>("article");
+  const [demoMode, setDemoMode] = useState(false);
 
   const generateFromInputs = useCallback(async (payload: TeacherInputsPayload) => {
+    setDemoMode(false);
     setBusy("generating");
     setError("");
     try {
@@ -76,7 +79,7 @@ export default function ReadingStudio() {
           onlyUseProvidedFacts: payload.enrichment.onlyUseProvidedFacts,
         },
         purpose: payload.curriculum.purpose,
-        outcomeLabel: payload.curriculum.outcome,
+        outcomeLabel: [payload.curriculum.focusDetail, payload.curriculum.outcome].filter(Boolean).join("; ") || undefined,
         pilotMode: payload.enrichment.pilotMode ?? payload.curriculum.pilotMode,
       };
 
@@ -99,6 +102,24 @@ export default function ReadingStudio() {
     }
   }, [cefrLevel, textType]);
 
+  const loadDemoLesson = useCallback(() => {
+    setCefrLevel("B1");
+    setTextType("article");
+    setError("");
+    setBusy("");
+    setDemoMode(true);
+    setPack(DEMO_READING_PACK);
+    window.setTimeout(() => {
+      document.getElementById("reading-pack-output")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+    try {
+      localStorage.setItem("a10_lastReadingPack", JSON.stringify(DEMO_READING_PACK));
+      localStorage.setItem("aontas_esl_last_pack_json", JSON.stringify(DEMO_READING_PACK));
+    } catch {
+      // localStorage is optional in development/test environments.
+    }
+  }, []);
+
   const card: React.CSSProperties = {
     background: "white",
     border: "1px solid rgba(15,23,42,.12)",
@@ -110,10 +131,30 @@ export default function ReadingStudio() {
   return (
     <div style={{ padding: "18px 18px 40px", maxWidth: 1100, margin: "0 auto", display: "grid", gap: 16 }}>
       <section style={card}>
-        <div style={{ color: "#166534", fontSize: 12, fontWeight: 950, letterSpacing: ".08em", textTransform: "uppercase" }}>Step 1</div>
-        <div style={{ fontWeight: 1000, fontSize: 22, color: "#0f172a", marginTop: 4 }}>Choose the level and format</div>
-        <div style={{ color: "#64748b", fontSize: 13, marginTop: 5, marginBottom: 14 }}>
-          Set the target CEFR level and the kind of text you want students to work with.
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "flex-start", flexWrap: "wrap" }}>
+          <div>
+            <div style={{ color: "#166534", fontSize: 12, fontWeight: 950, letterSpacing: ".08em", textTransform: "uppercase" }}>Step 1</div>
+            <div style={{ fontWeight: 1000, fontSize: 22, color: "#0f172a", marginTop: 4 }}>Choose the level and format</div>
+            <div style={{ color: "#64748b", fontSize: 13, marginTop: 5, marginBottom: 14 }}>
+              Set the target CEFR level and the kind of text you want students to work with.
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={loadDemoLesson}
+            style={{
+              border: "1px solid #86efac",
+              background: "#f0fdf4",
+              color: "#166534",
+              borderRadius: 14,
+              padding: "10px 13px",
+              fontWeight: 950,
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+            }}
+          >
+            Use demo lesson - no API
+          </button>
         </div>
         <CefrTextTypeControls
           cefrLevel={cefrLevel}
@@ -122,6 +163,16 @@ export default function ReadingStudio() {
           setTextType={setTextType}
         />
       </section>
+
+      {demoMode && (
+        <div style={{ ...card, padding: 14, background: "#eff6ff", borderColor: "#bfdbfe", display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+          <div>
+            <div style={{ fontWeight: 950, color: "#1e3a8a" }}>Demo lesson loaded</div>
+            <div style={{ color: "#475569", fontSize: 12, marginTop: 3 }}>No OpenAI call was made. Use the Reading, Exercises, Downloads and Wordiness controls below to test the product.</div>
+          </div>
+          <button type="button" onClick={() => { setPack(null); setDemoMode(false); }} style={{ border: "1px solid #bfdbfe", background: "white", color: "#1e3a8a", borderRadius: 12, padding: "8px 10px", fontWeight: 900, cursor: "pointer" }}>Clear demo</button>
+        </div>
+      )}
 
       <TeacherInputsPanel onGenerate={generateFromInputs} busy={busy === "generating"} />
 
@@ -143,7 +194,7 @@ export default function ReadingStudio() {
       )}
 
       {pack && (
-        <section style={{ display: "grid", gap: 10 }}>
+        <section id="reading-pack-output" style={{ display: "grid", gap: 10, scrollMarginTop: 20 }}>
           <div>
             <div style={{ color: "#166534", fontSize: 12, fontWeight: 950, letterSpacing: ".08em", textTransform: "uppercase" }}>Step 4</div>
             <div style={{ fontWeight: 1000, fontSize: 22, color: "#0f172a", marginTop: 4 }}>Your reading pack</div>

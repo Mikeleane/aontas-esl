@@ -38,6 +38,7 @@ export type CurriculumTarget = {
   strand?: string;
   element?: string;
   outcome?: string;
+  focusDetail?: string;
 };
 
 export type Enrichment = {
@@ -395,6 +396,18 @@ export default function TeacherInputsPanel({ onGenerate, busy = false }: Props) 
     "Exam-style reading",
   ];
 
+  const focusOptions: Record<string, string[]> = {
+    "Read to learn": ["Main ideas", "Key details", "Summarise", "Sequence information"],
+    "Practise comprehension": ["Gist", "Detailed understanding", "Inference", "Reference words", "Sequencing"],
+    "Build vocabulary": ["Topic vocabulary", "Collocations", "Phrasal verbs", "Word families", "Useful expressions", "Teacher's own words"],
+    "Focus on grammar": ["Past simple", "Present perfect", "Future forms", "Conditionals", "Articles", "Prepositions", "Teacher chooses"],
+    "Discuss ideas": ["Personal response", "Agree / disagree", "Compare viewpoints", "Problem-solving", "Short discussion"],
+    "Exam-style reading": ["Multiple choice", "True / false", "Matching", "Gapped text", "Short answers", "Mixed practice"],
+  };
+
+  const selectedPurpose = curriculum.purpose || "Read to learn";
+  const selectedFocusOptions = focusOptions[selectedPurpose] || [];
+
   return (
     <div onPasteCapture={onPasteCapture} style={{ display: "grid", gap: 16 }}>
       <section style={styles.card}>
@@ -576,20 +589,23 @@ export default function TeacherInputsPanel({ onGenerate, busy = false }: Props) 
       )}
 
       <section style={styles.card}>
-        <div style={{ color: "#166534", fontSize: 12, fontWeight: 950, letterSpacing: ".08em", textTransform: "uppercase" }}>Step 3</div>
-        <div style={{ fontWeight: 1000, fontSize: 20, color: "#0f172a", marginTop: 4 }}>Reading target</div>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
+          <div style={{ color: "#166534", fontSize: 12, fontWeight: 950, letterSpacing: ".08em", textTransform: "uppercase" }}>Step 3</div>
+          <div style={{ color: "#64748b", fontSize: 12, fontWeight: 850 }}>Reading target</div>
+        </div>
+        <div style={{ fontWeight: 1000, fontSize: 20, color: "#0f172a", marginTop: 4 }}>What do you want to work on?</div>
         <div style={{ color: "#64748b", fontSize: 13, marginTop: 5 }}>
-          Choose what you want students to do with the text. Leave the default if you do not need a special focus.
+          Choose the main teaching focus. This changes the emphasis of the activities Aontas creates; it does not change the CEFR level.
         </div>
 
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 14 }}>
           {purposeOptions.map((option) => {
-            const activePurpose = (curriculum.purpose || "") === option;
+            const activePurpose = selectedPurpose === option;
             return (
               <button
                 key={option}
                 type="button"
-                onClick={() => setCurriculum((c) => ({ ...c, purpose: option }))}
+                onClick={() => setCurriculum((c) => ({ ...c, purpose: option, focusDetail: "" }))}
                 aria-pressed={activePurpose}
                 style={{
                   ...styles.btnBase,
@@ -604,12 +620,41 @@ export default function TeacherInputsPanel({ onGenerate, busy = false }: Props) 
           })}
         </div>
 
+        {selectedFocusOptions.length > 0 && (
+          <div style={{ marginTop: 16, padding: 14, borderRadius: 16, background: "#f8fafc", border: "1px solid rgba(15,23,42,.08)" }}>
+            <div style={{ fontWeight: 950, color: "#334155", fontSize: 13 }}>Make it more specific <span style={{ color: "#94a3b8", fontWeight: 800 }}>(optional)</span></div>
+            <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginTop: 10 }}>
+              {selectedFocusOptions.map((option) => {
+                const activeFocus = curriculum.focusDetail === option;
+                return (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => setCurriculum((c) => ({ ...c, focusDetail: c.focusDetail === option ? "" : option }))}
+                    aria-pressed={activeFocus}
+                    style={{
+                      ...styles.btnBase,
+                      padding: "8px 11px",
+                      borderRadius: 999,
+                      background: activeFocus ? "#dcfce7" : "white",
+                      borderColor: activeFocus ? "#86efac" : "rgba(15,23,42,.14)",
+                      color: activeFocus ? "#166534" : "#334155",
+                    }}
+                  >
+                    {option}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         <label style={{ ...styles.label, marginTop: 14 }}>
-          Extra instruction or outcome (optional)
+          Anything specific? (optional)
           <input
             value={curriculum.outcome ?? ""}
             onChange={(e) => setCurriculum((c) => ({ ...c, outcome: e.target.value }))}
-            placeholder="e.g. Include key travel vocabulary; focus on past tense; prepare for a short discussion..."
+            placeholder="e.g. include travel vocabulary; practise past simple; prepare for a short discussion..."
             style={{ ...styles.input, marginTop: 6 }}
           />
         </label>
