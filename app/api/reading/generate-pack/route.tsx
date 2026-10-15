@@ -747,7 +747,13 @@ export async function POST(req: Request) {
     }
     if (qualityErrors.length) {
       console.warn("Reading pack failed basic QA", qualityErrors);
-      return NextResponse.json({ error: "The generated pack failed quality checks. No classroom pack was saved. Please generate again.", qualityIssues: qualityErrors }, { status: 422 });
+      return NextResponse.json({
+        error: "The generated pack did not pass quality checks. Review the findings before trying again.",
+        code: "READING_PACK_QA_FAILED",
+        qualityIssues: qualityErrors,
+        // Local developer diagnostics only; rejected text must never be delivered by the production API.
+        ...(process.env.NODE_ENV !== "production" ? { rejectedPack: normalizedPack } : {}),
+      }, { status: 422 });
     }
 
     return NextResponse.json({ pack: normalizedPack });
