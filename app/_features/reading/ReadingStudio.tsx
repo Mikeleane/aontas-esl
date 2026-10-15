@@ -9,6 +9,29 @@ import { normalizeReadingPack } from "@/lib/contracts/reading";
 import type { CefrLevel, TextType } from "@/lib/cefr";
 import { DEMO_READING_PACK } from "./demoReadingPack";
 
+type FailedPackReport = {
+  reportType: "aontas-reading-pack-failed-qa";
+  reportVersion: 1;
+  exportedAt: string;
+  modelRequested: string;
+  cefrLevel: CefrLevel;
+  textType: TextType;
+  qualityIssues: string[];
+  rejectedPack: ReadingPackData;
+};
+
+class GenerationRequestError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly qualityIssues: string[] = [],
+    readonly rejectedPack?: ReadingPackData
+  ) {
+    super(message);
+    this.name = "GenerationRequestError";
+  }
+}
+
 async function postJson<T>(url: string, body: unknown, signal?: AbortSignal): Promise<T> {
   const res = await fetch(url, {
     method: "POST",
@@ -29,7 +52,13 @@ async function postJson<T>(url: string, body: unknown, signal?: AbortSignal): Pr
     const obj = data && typeof data === "object" ? data as Record<string, unknown> : {};
     const msg = typeof obj.error === "string" ? obj.error : `HTTP ${res.status}`;
     const dbg = obj.debug ? `\n\nDebug:\n${JSON.stringify(obj.debug, null, 2)}` : "";
-    throw new Error(`${msg}${dbg}`);
+    const issues = Array.isArray(obj.qualityIssues)
+      ? obj.qualityIssues.filter((issue): issue is string => typeof issue === "string")
+      : [];
+    const rejectedPack = res.status === 422 && obj.rejectedPack && typeof obj.rejectedPack === "object"
+      ? normalizeReadingPack(obj.rejectedPack)
+      : undefined;
+    throw new GenerationRequestError(`${msg}${dbg}`, res.status, issues, rejectedPack);
   }
 
   return (data ?? {}) as T;
@@ -39,6 +68,8 @@ export default function ReadingStudio() {
   const [pack, setPack] = useState<ReadingPackData | null>(null);
   const [busy, setBusy] = useState<string>("");
   const [error, setError] = useState<string>("");
+  const [qualityIssues, setQualityIssues] = useState<string[]>([]);
+  const [failedPackReport, setFailedPackReport] = useState<FailedPackReport | null>(null);
   const [cefrLevel, setCefrLevel] = useState<CefrLevel>("B1");
   const [textType, setTextType] = useState<TextType>("article");
   const [demoMode, setDemoMode] = useState(false);
@@ -49,6 +80,8 @@ export default function ReadingStudio() {
     setDemoMode(false);
     setBusy("generating");
     setError("");
+    setQualityIssues([]);
+    setFailedPackReport(null);
     try {
       const body = {
         cefrLevel,
@@ -86,7 +119,7 @@ export default function ReadingStudio() {
         pilotMode: payload.enrichment.pilotMode ?? payload.curriculum.pilotMode,
       };
 
-      console.log("GENERATE payload (client -> API):", body);
+      // Do not log lesson sources or teacher-provided information to the browser console.
 
       const data = await postJson<{ pack: ReadingPackData }>("/api/reading/generate-pack", body);
       const got = normalizeReadingPack(data);
@@ -98,8 +131,26 @@ export default function ReadingStudio() {
         // ignore
       }
     } catch (e: unknown) {
-      console.error(e);
-      setError(e instanceof Error ? e.message : "Generate failed");
+      if (e instanceof GenerationRequestError) {
+        setError(e.message);
+        setQualityIssues(e.qualityIssues);
+        if (e.rejectedPack && process.env.NODE_ENV !== "production") {
+          setFailedPackReport({
+            reportType: "aontas-reading-pack-failed-qa",
+            reportVersion: 1,
+            exportedAt: new Date().toISOString(),
+            modelRequested: qaModel === "custom" ? qaCustomModel.trim() : qaModel,
+            cefrLevel,
+            textType,
+            qualityIssues: e.qualityIssues,
+            rejectedPack: e.rejectedPack,
+          });
+        }
+        // A quality rejection is an expected application response, not a Next.js console crash.
+      } else {
+        console.error("Unexpected reading generation error", e);
+        setError(e instanceof Error ? e.message : "Generate failed");
+      }
     } finally {
       setBusy("");
     }
@@ -109,6 +160,8 @@ export default function ReadingStudio() {
     setCefrLevel("B1");
     setTextType("article");
     setError("");
+    setQualityIssues([]);
+    setFailedPackReport(null);
     setBusy("");
     setDemoMode(true);
     setPack(DEMO_READING_PACK);
@@ -122,6 +175,19 @@ export default function ReadingStudio() {
       // localStorage is optional in development/test environments.
     }
   }, []);
+
+  const downloadFailedQaReport = useCallback(() => {
+    if (!failedPackReport) return;
+    const file = new Blob([JSON.stringify(failedPackReport, null, 2)], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(file);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "aontas-reading-failed-qa-report.json";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }, [failedPackReport]);
 
   const card: React.CSSProperties = {
     background: "white",
@@ -205,7 +271,25 @@ export default function ReadingStudio() {
       {error && (
         <div style={{ ...card, background: "#fff7ed", borderColor: "rgba(251,146,60,.45)", color: "#7c2d12", whiteSpace: "pre-wrap", fontSize: 13, fontWeight: 700 }}>
           <div style={{ fontWeight: 1000, marginBottom: 5 }}>Generation problem</div>
-          {error}
+          <div>{error}</div>
+          {qualityIssues.length > 0 && (
+            <div style={{ marginTop: 10 }}>
+              <div style={{ fontWeight: 900, marginBottom: 6 }}>Quality checks that failed:</div>
+              <ul style={{ paddingLeft: 22, margin: 0 }}>
+                {qualityIssues.map((issue, index) => <li key={index}>{issue}</li>)}
+              </ul>
+            </div>
+          )}
+          {failedPackReport && (
+            <div style={{ marginTop: 12 }}>
+              <button type="button" onClick={downloadFailedQaReport} style={{ background: "#fff", color: "#9a3412", border: "1px solid #fdba74", borderRadius: 10, padding: "9px 12px", fontWeight: 900, cursor: "pointer" }}>
+                Download rejected QA report (JSON)
+              </button>
+              <div style={{ marginTop: 6, fontSize: 12, fontWeight: 400 }}>
+                This developer-only report contains the rejected generated text and possibly teacher-provided information. Review before sharing.
+              </div>
+            </div>
+          )}
         </div>
       )}
 
