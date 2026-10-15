@@ -512,11 +512,15 @@ function buildUserInstruction(body: GeneratePackBody, primaryTextHint: string) {
     "\nReading requirements:",
     `- Produce a coherent STANDARD ${textType} of roughly ${targets.target} words (acceptable range ${targets.min}-${targets.max}).`,
     "- Keep the source facts locked: do not add unsupported factual claims.",
+    "- Both reading.standard and reading.supported MUST contain full student-facing reading passages, NOT learning objectives, instructions, summaries, or descriptions of support.",
     "- supported must cover the same content and learning target, using access supports rather than easier answers.",
     "- If the source is short, expand only with safe, generic connective language or clearly non-factual examples; do not invent source facts.",
     "\nExercises:",
     "- Create about 10-12 exercises.",
     "- standard and supported must use the same correct answers.",
+    "- For true_false questions, answerIndex must point to the factually correct option; verify against the source.",
+    "- For multiple_choice, answerIndex must point to the correct option in BOTH standard and supported, even when wording differs.",
+    "- If an exercise is sequencing or matching, do not present all items already in their correct order.",
     "- Use a mix of literal and inferential comprehension, vocabulary in context, sequencing/organisation, author craft and short response.",
   ].join("\n");
 }
@@ -652,7 +656,8 @@ export async function POST(req: Request) {
           ...schema,
         },
       },
-      max_output_tokens: 3600,
+      // Two substantial reading passages plus 10-12 exercises require more than 3600 tokens.
+      max_output_tokens: 7000,
       // Helps reduce "creative formatting"
       ...(selectedModel && !selectedModel.startsWith("gpt-4.1") && process.env.NODE_ENV !== "production" ? {} : { temperature: 0.4 }),
     }, selectedModel);
@@ -715,6 +720,35 @@ export async function POST(req: Request) {
       primaryMaterialId: packRecord.primaryMaterialId ?? body.primaryMaterialId ?? undefined,
       pilotMode: body.pilotMode,
     });
+
+    const qualityErrors: string[] = [];
+    const wordCount = (value: string) => value.trim().split(/\s+/).filter(Boolean).length;
+    const standardReading = normalizedPack.reading.standard.trim();
+    const supportedReading = normalizedPack.reading.supported.trim();
+    // Reject objectives and placeholders that would otherwise be shown as student reading passages.
+    if (wordCount(standardReading) < 80) qualityErrors.push("Standard reading is too short or missing.");
+    if (wordCount(supportedReading) < 65) qualityErrors.push("Supported reading is too short or missing.");
+    if (standardReading === supportedReading) qualityErrors.push("Standard and Supported readings are identical.");
+    for (const exercise of normalizedPack.exercises) {
+      const type = String(exercise.type || "").toLowerCase();
+      if (!["multiple_choice", "true_false"].includes(type)) continue;
+      const standardOptions = exercise.standard.options;
+      const supportedOptions = exercise.supported.options;
+      const index = exercise.answerIndex;
+      if (!Number.isInteger(index) || index === null || !Array.isArray(standardOptions) || !Array.isArray(supportedOptions) || index < 0 || index >= standardOptions.length || index >= supportedOptions.length) {
+        qualityErrors.push(`Exercise ${exercise.id}: invalid answer index.`);
+        continue;
+      }
+      if (type === "true_false") {
+        const expected = String(exercise.answer).trim().toLowerCase();
+        const selected = standardOptions[index].trim().toLowerCase();
+        if ((expected === "true" || expected === "false") && selected !== expected) qualityErrors.push(`Exercise ${exercise.id}: True/False answer does not match its selected option.`);
+      }
+    }
+    if (qualityErrors.length) {
+      console.warn("Reading pack failed basic QA", qualityErrors);
+      return NextResponse.json({ error: "The generated pack failed quality checks. No classroom pack was saved. Please generate again.", qualityIssues: qualityErrors }, { status: 422 });
+    }
 
     return NextResponse.json({ pack: normalizedPack });
   } catch (error: unknown) {
