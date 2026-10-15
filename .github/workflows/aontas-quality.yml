@@ -1,0 +1,52 @@
+name: Aontas ESL — Quality Checks
+
+on:
+  push:
+    branches:
+      - recovery-local-2026-08-31
+  pull_request:
+    branches:
+      - recovery-local-2026-08-31
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aontas-quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: TypeScript, ESLint, Reading QA and production build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+
+    steps:
+      - name: Check out the selected revision
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22 and npm cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: TypeScript
+        run: npm run typecheck
+
+      - name: Strict ESLint
+        run: npm run lint:strict
+
+      - name: Regression suite (including Reading Pack QA)
+        run: npm run test
+
+      - name: Next.js production build (no API requests)
+        run: npm run build
