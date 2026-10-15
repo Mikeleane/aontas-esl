@@ -735,7 +735,7 @@ export async function POST(req: Request) {
       const standardOptions = exercise.standard.options;
       const supportedOptions = exercise.supported.options;
       const index = exercise.answerIndex;
-      if (!Number.isInteger(index) || index === null || !Array.isArray(standardOptions) || !Array.isArray(supportedOptions) || index < 0 || index >= standardOptions.length || index >= supportedOptions.length) {
+      if (typeof index !== "number" || !Number.isInteger(index) || !Array.isArray(standardOptions) || !Array.isArray(supportedOptions) || index < 0 || index >= standardOptions.length || index >= supportedOptions.length) {
         qualityErrors.push(`Exercise ${exercise.id}: invalid answer index.`);
         continue;
       }
