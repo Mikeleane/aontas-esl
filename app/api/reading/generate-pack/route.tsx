@@ -523,11 +523,13 @@ function buildUserInstruction(body: GeneratePackBody, primaryTextHint: string) {
 
 /* ---------------- OpenAI call ---------------- */
 
-async function callOpenAIResponses(payload: Record<string, unknown>): Promise<unknown> {
+async function callOpenAIResponses(payload: Record<string, unknown>, requestedModel?: string): Promise<unknown> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error("Missing OPENAI_API_KEY in environment.");
 
-  const model = process.env.OPENAI_MODEL || "gpt-4.1-mini";
+  const model = process.env.NODE_ENV !== "production" && requestedModel && /^[a-zA-Z0-9][a-zA-Z0-9._-]{0,79}$/.test(requestedModel)
+    ? requestedModel
+    : (process.env.OPENAI_MODEL || "gpt-4.1-mini");
 
   const res = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
@@ -638,6 +640,7 @@ export async function POST(req: Request) {
 
     const schema = buildJsonSchema();
 
+    const selectedModel = typeof rawBody?.qaModel === "string" ? rawBody.qaModel : undefined;
     const response = await callOpenAIResponses({
       input: [
         { role: "system", content: [{ type: "input_text", text: system }] },
@@ -651,8 +654,8 @@ export async function POST(req: Request) {
       },
       max_output_tokens: 3600,
       // Helps reduce "creative formatting"
-      temperature: 0.4,
-    });
+      ...(selectedModel && !selectedModel.startsWith("gpt-4.1") && process.env.NODE_ENV !== "production" ? {} : { temperature: 0.4 }),
+    }, selectedModel);
 
     const outText = extractResponsesText(response);
 
