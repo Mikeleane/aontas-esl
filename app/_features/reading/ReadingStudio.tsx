@@ -42,6 +42,8 @@ export default function ReadingStudio() {
   const [cefrLevel, setCefrLevel] = useState<CefrLevel>("B1");
   const [textType, setTextType] = useState<TextType>("article");
   const [demoMode, setDemoMode] = useState(false);
+  const [qaModel, setQaModel] = useState("default");
+  const [qaCustomModel, setQaCustomModel] = useState("");
 
   const generateFromInputs = useCallback(async (payload: TeacherInputsPayload) => {
     setDemoMode(false);
@@ -51,6 +53,7 @@ export default function ReadingStudio() {
       const body = {
         cefrLevel,
         textType,
+        ...(process.env.NODE_ENV !== "production" && qaModel !== "default" ? { qaModel: qaModel === "custom" ? qaCustomModel.trim() : qaModel } : {}),
         title: payload.title,
         primaryText: payload.primaryText,
         materials: payload.materials.map((material) => ({
@@ -100,7 +103,7 @@ export default function ReadingStudio() {
     } finally {
       setBusy("");
     }
-  }, [cefrLevel, textType]);
+  }, [cefrLevel, textType, qaModel, qaCustomModel]);
 
   const loadDemoLesson = useCallback(() => {
     setCefrLevel("B1");
@@ -174,6 +177,19 @@ export default function ReadingStudio() {
         </div>
       )}
 
+      {process.env.NODE_ENV !== "production" && (
+        <section style={card}>
+          <div style={{ fontWeight: 950, fontSize: 18, color: "#0f172a" }}>Developer · Model Testing</div>
+          <p style={{ color: "#64748b", fontSize: 13 }}>Local development only. Select a model before generating. API charges apply.</p>
+          <select aria-label="Model for QA generation" value={qaModel} onChange={(e) => setQaModel(e.target.value)} style={{ padding: 10, borderRadius: 10, maxWidth: "100%", border: "1px solid #cbd5e1" }}>
+            <option value="default">Default (OPENAI_MODEL or gpt-4.1-mini)</option>
+            <option value="gpt-4.1-mini">gpt-4.1-mini (control)</option>
+            <option value="gpt-5-mini">gpt-5-mini</option>
+            <option value="custom">Other model ID (check API availability)</option>
+          </select>
+          {qaModel === "custom" && <input aria-label="Custom API model ID" value={qaCustomModel} onChange={(e) => setQaCustomModel(e.target.value)} placeholder="Exact OpenAI model ID" style={{ display: "block", marginTop: 10, padding: 10, borderRadius: 10, border: "1px solid #cbd5e1", maxWidth: "100%" }} />}
+        </section>
+      )}
       <TeacherInputsPanel onGenerate={generateFromInputs} busy={busy === "generating"} />
 
       {busy === "generating" && (
