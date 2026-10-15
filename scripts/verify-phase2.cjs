@@ -68,6 +68,11 @@ assert.doesNotMatch(readingRoute, /required: \["standard", "SUPPORTED"\]/, "Read
 assert.doesNotMatch(readingRoute, /adapted: \{ anyOf:/, "Reading API must not emit legacy adapted exercise sides");
 assert.doesNotMatch(readingRoute, /"schoolClass",\s*\n\s*"stage"/, "Reading API schema must not require school class/stage");
 assert.match(readingRoute, /normalizeReadingPack/, "Reading API output must pass through the canonical normalizer");
+const modelSchema = readingRoute.split("/* ---------------- Minimal JSON schema for model-generated content ---------------- */")[1]?.split("/* ---------------- Prompts ---------------- */")[0] ?? "";
+assert.match(modelSchema, /required:\s*\["schemaVersion",\s*"title",\s*"cefrLevel",\s*"textType",\s*"reading",\s*"exercises"\]/, "Model schema must prioritise student-facing readings and exercises");
+assert.doesNotMatch(modelSchema, /teacherContext:\s*\{|materials:\s*\{|primaryMaterialId:\s*Nullable/, "Model must not regenerate teacher-owned source metadata");
+assert.match(readingRoute, /minimumStandard\s*=.*lengthTarget\.min/, "Reading QA minimum length must follow the CEFR/genre target");
+assert.match(readingRoute, /rejectedPack:\s*normalizedPack/, "Local QA failures must retain an inspectable rejected pack");
 
 const studio = read("app/_features/reading/ReadingStudio.tsx");
 assert.match(studio, /useState<CefrLevel>\("B1"\)/, "Reading Studio CEFR state must be typed canonically");
