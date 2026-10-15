@@ -180,6 +180,10 @@ export async function fetchExternalText(
     } catch (error: unknown) {
       if (error instanceof DOMException && error.name === "AbortError") throw new Error("Remote request timed out.");
       if (error instanceof Error && !/^fetch failed$/i.test(error.message)) throw error;
+      // Keep low-level network details in server logs, never in the public API response.
+      const cause = error instanceof Error ? (error as Error & { cause?: unknown }).cause : undefined;
+      const details = cause instanceof Error ? { code: (cause as Error & { code?: string }).code, message: cause.message } : { type: typeof cause };
+      console.error("[fetchExternalText] Remote fetch failed", { host: current.hostname, details });
       throw new Error("Could not fetch the remote URL.");
     } finally {
       clearTimeout(timeout);
