@@ -512,7 +512,7 @@ export async function POST(req: Request) {
     }
 
     // Recover a meaningful title from a teacher-pasted Markdown heading.
-    const sourceHeading = primaryText.match(/^\\s*#\\s+(.+?)\\s*$/m)?.[1]?.trim();
+    const sourceHeading = primaryText.match(/^\s*#\s+(.+?)\s*$/m)?.[1]?.trim();
     const explicitTitle = String(body.title || "").trim();
     if (sourceHeading && (!explicitTitle || explicitTitle === "Reading Pack")) {
       body.title = sourceHeading.slice(0, 180);
