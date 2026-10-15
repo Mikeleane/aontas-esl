@@ -128,6 +128,19 @@ export default function ReadingPackApp({ pack, crestFallbackPath = "", onPackCha
 
   const nameBase = useMemo(() => slugify(packAny?.title || "reading-pack"), [packAny]);
 
+  const doExportQaReport = useCallback(() => {
+    if (!packAny) return;
+    const report = {
+      reportType: "aontas-reading-pack-qa",
+      reportVersion: 1,
+      exportedAt: new Date().toISOString(),
+      source: "reading-pack",
+      note: "Includes full lesson content and teacher context. Review before sharing if sources contain personal information.",
+      pack: packAny,
+    };
+    downloadBlob(new Blob([JSON.stringify(report, null, 2)], { type: "application/json;charset=utf-8" }), `${nameBase}-qa-report.json`);
+  }, [packAny, nameBase]);
+
   const doExportInteractive = useCallback(async () => {
     if (!packAny) return;
     setBusy("exporting");
@@ -309,6 +322,7 @@ export default function ReadingPackApp({ pack, crestFallbackPath = "", onPackCha
           </div>
 
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <button disabled={!packAny} onClick={doExportQaReport} style={{ padding: "10px 14px", borderRadius: 12, fontWeight: 900, cursor: "pointer" }}>Download QA report (JSON)</button>
             <button disabled={!packAny || busy === "exporting"} onClick={doExportInteractive} style={{ padding: "10px 14px", borderRadius: 12, fontWeight: 900, cursor: "pointer" }}>
               Export interactive HTML
             </button>
