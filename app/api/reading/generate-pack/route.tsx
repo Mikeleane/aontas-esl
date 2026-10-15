@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { buildCefrConstraints, getWordTarget, parseCefrLevel, parseTextType } from "@/lib/cefr";
 import { normalizeReadingPack } from "@/lib/contracts/reading";
+import { validateReadingPackQuality } from "@/lib/contracts/readingQuality";
 import { fetchExternalText } from "@/lib/server/fetchExternalText";
 import { checkRateLimit } from "@/lib/server/rateLimit";
 
@@ -348,6 +349,7 @@ function buildSystemPrompt(body: GeneratePackBody) {
     "Teacher agency first: preserve teacher-provided names, places, organisations, terminology and facts.",
     "Do not invent facts that are not supported by the teacher-provided material.",
     "standard and supported must share one learning target and one answer key.",
+    "For true_false items: copy the EXACT SAME statement into both standard.prompt and supported.prompt. Never rewrite or negate a True/False statement for Supported, because both versions use one answer key.",
     "supported is access support, not a different lesson: use clearer chunking, scaffolds, word banks and sentence frames without changing correct answers.",
     `STANDARD target length: about ${targets.target} words (acceptable range ${targets.min}-${targets.max}).`,
     "supported should cover the same core content and remain substantial; do not reduce it to a tiny summary.",
@@ -420,7 +422,9 @@ function buildUserInstruction(body: GeneratePackBody, primaryTextHint: string) {
     "\nExercises:",
     "- Create about 10-12 exercises.",
     "- standard and supported must use the same correct answers.",
-    "- For true_false questions, answerIndex must point to the factually correct option; verify against the source.",
+    "- For true_false questions, BOTH standard.prompt and supported.prompt MUST be character-for-character identical. They must be the same factual claim, not opposite or differently worded claims.",
+    "- For true_false questions, options MUST be exactly [\"True\", \"False\"] in that order in both variants; answer MUST be \"True\" or \"False\"; answerIndex MUST be 0 for True or 1 for False.",
+    "- Check the truth of each True/False statement against the provided reading material before selecting the answer.",
     "- For multiple_choice, answerIndex must point to the correct option in BOTH standard and supported, even when wording differs.",
     "- If an exercise is sequencing or matching, do not present all items already in their correct order.",
     "- Use a mix of literal and inferential comprehension, vocabulary in context, sequencing/organisation, author craft and short response.",
@@ -505,6 +509,13 @@ export async function POST(req: Request) {
       if (primaryImageDataUrl.length > MAX_IMAGE_DATA_URL_CHARS) {
         return NextResponse.json({ error: "Image is too large. Please use a smaller screenshot or photo." }, { status: 413 });
       }
+    }
+
+    // Recover a meaningful title from a teacher-pasted Markdown heading.
+    const sourceHeading = primaryText.match(/^\\s*#\\s+(.+?)\\s*$/m)?.[1]?.trim();
+    const explicitTitle = String(body.title || "").trim();
+    if (sourceHeading && (!explicitTitle || explicitTitle === "Reading Pack")) {
+      body.title = sourceHeading.slice(0, 180);
     }
 
     if (!primaryText && !primaryImageDataUrl) {
@@ -624,37 +635,12 @@ export async function POST(req: Request) {
       pilotMode: body.pilotMode,
     });
 
-    const qualityErrors: string[] = [];
-    const wordCount = (value: string) => value.trim().split(/\s+/).filter(Boolean).length;
-    const standardReading = normalizedPack.reading.standard.trim();
-    const supportedReading = normalizedPack.reading.supported.trim();
     const lengthTarget = getWordTarget(cefrLevel, textType);
-    // Scale limits to the selected genre: an A1 short message should not be judged as a B1 article.
-    const minimumStandard = Math.max(12, Math.floor(lengthTarget.min * 0.75));
-    const minimumSupported = Math.max(12, Math.floor(lengthTarget.min * 0.65));
-    const standardWords = wordCount(standardReading);
-    const supportedWords = wordCount(supportedReading);
-    if (standardWords < minimumStandard) qualityErrors.push(`Standard reading has ${standardWords} words; minimum for ${cefrLevel} ${textType} is ${minimumStandard}.`);
-    if (supportedWords < minimumSupported) qualityErrors.push(`Supported reading has ${supportedWords} words; minimum for ${cefrLevel} ${textType} is ${minimumSupported}.`);
-    if (/^(understand and use|students will|learning objectives?|this (text|reading) (is|will|helps))/i.test(standardReading)) qualityErrors.push("Standard reading appears to be a learning objective rather than a passage.");
-    if (/^(understand and use|students will|learning objectives?|this (text|reading) (is|will|helps))/i.test(supportedReading)) qualityErrors.push("Supported reading appears to be a learning objective rather than a passage.");
-    if (standardReading === supportedReading) qualityErrors.push("Standard and Supported readings are identical.");
-    for (const exercise of normalizedPack.exercises) {
-      const type = String(exercise.type || "").toLowerCase();
-      if (!["multiple_choice", "true_false"].includes(type)) continue;
-      const standardOptions = exercise.standard.options;
-      const supportedOptions = exercise.supported.options;
-      const index = exercise.answerIndex;
-      if (typeof index !== "number" || !Number.isInteger(index) || !Array.isArray(standardOptions) || !Array.isArray(supportedOptions) || index < 0 || index >= standardOptions.length || index >= supportedOptions.length) {
-        qualityErrors.push(`Exercise ${exercise.id}: invalid answer index.`);
-        continue;
-      }
-      if (type === "true_false") {
-        const expected = String(exercise.answer).trim().toLowerCase();
-        const selected = standardOptions[index].trim().toLowerCase();
-        if ((expected === "true" || expected === "false") && selected !== expected) qualityErrors.push(`Exercise ${exercise.id}: True/False answer does not match its selected option.`);
-      }
-    }
+    // Scale safety thresholds to the selected CEFR and genre.
+    const qualityErrors = validateReadingPackQuality(normalizedPack, {
+      standardMinWords: Math.max(12, Math.floor(lengthTarget.min * 0.75)),
+      supportedMinWords: Math.max(12, Math.floor(lengthTarget.min * 0.65)),
+    });
     if (qualityErrors.length) {
       console.warn("Reading pack failed basic QA", qualityErrors);
       return NextResponse.json({
