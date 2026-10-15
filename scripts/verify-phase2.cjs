@@ -71,7 +71,12 @@ assert.match(readingRoute, /normalizeReadingPack/, "Reading API output must pass
 const modelSchema = readingRoute.split("/* ---------------- Minimal JSON schema for model-generated content ---------------- */")[1]?.split("/* ---------------- Prompts ---------------- */")[0] ?? "";
 assert.match(modelSchema, /required:\s*\["schemaVersion",\s*"title",\s*"cefrLevel",\s*"textType",\s*"reading",\s*"exercises"\]/, "Model schema must prioritise student-facing readings and exercises");
 assert.doesNotMatch(modelSchema, /teacherContext:\s*\{|materials:\s*\{|primaryMaterialId:\s*Nullable/, "Model must not regenerate teacher-owned source metadata");
-assert.match(readingRoute, /minimumStandard\s*=.*lengthTarget\.min/, "Reading QA minimum length must follow the CEFR/genre target");
+assert.match(readingRoute, /validateReadingPackQuality\(normalizedPack,\s*\{/, "Reading API must run the shared quality validator");
+assert.match(readingRoute, /standardMinWords:\s*Math\.max\(12,\s*Math\.floor\(lengthTarget\.min\s*\*\s*0\.75\)\)/, "Reading QA Standard minimum must follow the CEFR/genre target");
+assert.match(readingRoute, /supportedMinWords:\s*Math\.max\(12,\s*Math\.floor\(lengthTarget\.min\s*\*\s*0\.65\)\)/, "Reading QA Supported minimum must follow the CEFR/genre target");
+const qualityValidator = read("lib/contracts/readingQuality.ts");
+assert.match(qualityValidator, /standardWords\s*<\s*limits\.standardMinWords/, "Shared QA validator must enforce Standard minimum length");
+assert.match(qualityValidator, /supportedWords\s*<\s*limits\.supportedMinWords/, "Shared QA validator must enforce Supported minimum length");
 assert.match(readingRoute, /rejectedPack:\s*normalizedPack/, "Local QA failures must retain an inspectable rejected pack");
 
 const studio = read("app/_features/reading/ReadingStudio.tsx");
