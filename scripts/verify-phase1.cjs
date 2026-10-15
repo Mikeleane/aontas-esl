@@ -50,7 +50,7 @@ for (const rel of activeFiles) {
 assert.match(read("app/pack/page.tsx"), /ReadingStudio/, "Reading page must use the active ReadingStudio");
 assert.doesNotMatch(read("app/layout.tsx"), /<header[\s>]/, "Root layout must not render the obsolete second header");
 assert.match(read("app/_components/TopNav.tsx"), /href:\s*"\/pack"\s*,\s*label:\s*"Reading"/, "Reading nav must point to /pack");
-assert.match(read("app/_features/reading/ReadingStudio.tsx"), /\},\s*\[cefrLevel,\s*textType\]\);/, "Reading callback must react to CEFR/text-type changes");
+assert.match(read("app/_features/reading/ReadingStudio.tsx"), /\},\s*\[cefrLevel,\s*textType,\s*qaModel,\s*qaCustomModel\]\);/, "Reading callback must react to CEFR, text-type and model-selection changes");
 
 const readingRoute = read("app/api/reading/generate-pack/route.tsx");
 assert.match(readingRoute, /parseCefrLevel\(body\.cefrLevel/, "Reading route must consume CEFR");
